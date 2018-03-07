@@ -108,7 +108,6 @@
         <dependency>
             <groupId>dk.dbc</groupId>
             <artifactId>pg-queue-supplier</artifactId>
-            <scope>test</scope>
         </dependency>
         
         <dependency>

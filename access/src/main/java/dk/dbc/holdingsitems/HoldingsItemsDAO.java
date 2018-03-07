@@ -20,6 +20,8 @@
  */
 package dk.dbc.holdingsitems;
 
+import dk.dbc.pgqueue.PreparedQueueSupplier;
+import dk.dbc.pgqueue.QueueSupplier;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -42,10 +44,21 @@ public class HoldingsItemsDAO {
 
     private static final org.slf4j.Logger log = LoggerFactory.getLogger(HoldingsItemsDAO.class);
 
+    private static final QueueSupplier QUEUE_SUPPLIER = new QueueSupplier(QueueJob.STORAGE_ABSTRACTION);
+
     private static final int SCHEMA_VERSION = 14;
 
     private final Connection connection;
     private final String trackingId;
+
+    private PreparedQueueSupplier queueSupplier = null;
+
+    private PreparedQueueSupplier getQueueSupplier() {
+        if (queueSupplier == null) {
+            queueSupplier = QUEUE_SUPPLIER.preparedSupplier(connection);
+        }
+        return queueSupplier;
+    }
 
     /**
      * Constructor
@@ -395,6 +408,44 @@ public class HoldingsItemsDAO {
                 }
                 throw new IllegalStateException("No rows from boolean query");
             }
+        } catch (SQLException ex) {
+            log.error(DATABASE_ERROR, ex);
+            throw new HoldingsItemsException(DATABASE_ERROR, ex);
+        }
+    }
+
+    /**
+     * Put an element into the queue
+     *
+     * @param bibliographicRecordId part of job id
+     * @param agencyId              part of job id
+     * @param worker                Who's get the job
+     * @throws HoldingsItemsException
+     */
+    public void enqueue(String bibliographicRecordId, int agencyId, String worker) throws HoldingsItemsException {
+        PreparedQueueSupplier supplier = getQueueSupplier();
+        try {
+            supplier.enqueue(worker, new QueueJob(agencyId, bibliographicRecordId, trackingId));
+        } catch (SQLException ex) {
+            log.error(DATABASE_ERROR, ex);
+            throw new HoldingsItemsException(DATABASE_ERROR, ex);
+        }
+    }
+
+    /**
+     * Put an element into the queue
+     *
+     * @param bibliographicRecordId part of job id
+     * @param agencyId              part of job id
+     * @param worker                Who's get the job
+     * @param milliSeconds          How many milliseconds from now it should be
+     *                              dequeued at the earliest
+     * @throws HoldingsItemsException
+     */
+    public void enqueue(String bibliographicRecordId, int agencyId, String worker, long milliSeconds) throws HoldingsItemsException {
+        PreparedQueueSupplier supplier = getQueueSupplier();
+        try {
+            supplier.enqueue(worker, new QueueJob(agencyId, bibliographicRecordId, trackingId), milliSeconds);
         } catch (SQLException ex) {
             log.error(DATABASE_ERROR, ex);
             throw new HoldingsItemsException(DATABASE_ERROR, ex);

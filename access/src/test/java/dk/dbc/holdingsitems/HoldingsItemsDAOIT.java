@@ -33,6 +33,7 @@ import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -44,8 +45,7 @@ import static org.junit.Assert.*;
  *
  * @author DBC {@literal <dbc.dk>}
  */
-public class HoldingsItemsDAOIT extends DbBase{
-
+public class HoldingsItemsDAOIT extends DbBase {
 
     @Test
     public void testValidateSchema() throws Exception {
@@ -223,6 +223,33 @@ public class HoldingsItemsDAOIT extends DbBase{
             assertEquals(3, status.size());
 
             connection.commit();
+        }
+    }
+
+    @Test
+    public void testEnqueue() throws Exception {
+        System.out.println("testEnqueue");
+        try (Connection connection = dataSource.getConnection()) {
+            HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(connection, "FOO");
+            connection.setAutoCommit(false);
+            dao.enqueue("12345678", 888888, "worker");
+            dao.enqueue("87654321", 888888, "worker", 1000);
+            connection.commit();
+        }
+        try (Connection connection = dataSource.getConnection() ;
+             Statement stmt = connection.createStatement() ;
+             ResultSet resultSet = stmt.executeQuery("SELECT bibliographicRecordId, agencyId, trackingId FROM queue")) {
+            HashSet<String> results = new HashSet<>();
+            while (resultSet.next()) {
+                int i = 0;
+                String biblId = resultSet.getString(++i);
+                int agencyId = resultSet.getInt(++i);
+                String tracking = resultSet.getString(++i);
+                results.add(biblId + "|" + agencyId + "|" + tracking);
+            }
+            assertEquals(2, results.size());
+            assertTrue(results.contains("12345678|888888|FOO"));
+            assertTrue(results.contains("87654321|888888|FOO"));
         }
     }
 
