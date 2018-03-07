@@ -122,24 +122,6 @@ public class HoldingsItemsDAOIT extends DbBase{
     }
 
     @Test
-    public void testQueueIssue() throws HoldingsItemsException, SQLException {
-        try (Connection connection = dataSource.getConnection()) {
-            connection.setAutoCommit(false);
-            HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(connection);
-            dao.enqueueIssue("123456789", 870970, "A1", "solrIndex1");
-            connection.commit();
-            List<QueueJob> queue = queue();
-            System.out.println("queue = " + queue);
-            assertEquals("Sizeof queue is 1", 1, queue.size());
-            assertEquals("Queue Entry 1 starts with: ", "solrIndex1", queue.get(0).getWorker());
-            Instant queued = queue.get(0).getQueued();
-            long diff = Math.abs(queued.toEpochMilli() - Instant.now().toEpochMilli());
-            System.out.println("diff = " + diff);
-            assertTrue("Not too long ago it has been queued", diff < 500);
-        }
-    }
-
-    @Test
     public void testGetAgenciesThatHasHoldingsFor() throws HoldingsItemsException, SQLException {
         try (Connection connection = dataSource.getConnection()) {
             HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(connection, "FOO");

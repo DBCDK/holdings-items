@@ -406,81 +406,6 @@ public class HoldingsItemsDAO {
      *
      * @param bibliographicRecordId part of job id
      * @param agencyId              part of job id
-     * @param issueId               part of job id
-     * @param worker                Who's get the job
-     * @throws HoldingsItemsException
-     */
-    @Deprecated
-    public void enqueueIssue(String bibliographicRecordId, int agencyId, String issueId, String worker) throws HoldingsItemsException {
-        HoldingsItemsDAO.this.enqueueIssue(bibliographicRecordId, agencyId, issueId, "", worker, 0);
-    }
-
-    /**
-     * Put an element into the queue
-     *
-     * @param bibliographicRecordId part of job id
-     * @param agencyId              part of job id
-     * @param issueId               part of job id
-     * @param worker                Who's get the job
-     * @param milliSeconds          How many milliseconds from now it should be
-     *                              dequeued at the earliest
-     * @throws HoldingsItemsException
-     */
-    @Deprecated
-    public void enqueueIssue(String bibliographicRecordId, int agencyId, String issueId, String worker, long milliSeconds) throws HoldingsItemsException {
-        HoldingsItemsDAO.this.enqueueIssue(bibliographicRecordId, agencyId, issueId, "", worker, milliSeconds);
-    }
-
-    /**
-     * Put an element into the queue
-     *
-     * @param bibliographicRecordId part of job id
-     * @param agencyId              part of job id
-     * @param issueId               part of job id
-     * @param additionalData        extra data for job
-     * @param worker                Who's to get the job
-     * @throws HoldingsItemsException
-     */
-    @Deprecated
-    public void enqueueIssue(String bibliographicRecordId, int agencyId, String issueId, String additionalData, String worker) throws HoldingsItemsException {
-        HoldingsItemsDAO.this.enqueueIssue(bibliographicRecordId, agencyId, issueId, additionalData, worker, 0);
-    }
-
-    /**
-     * Put an element into the queue
-     *
-     * @param bibliographicRecordId part of job id
-     * @param agencyId              part of job id
-     * @param issueId               part of job id
-     * @param additionalData        extra data for job
-     * @param worker                Who's to get the job
-     * @param milliSeconds          How many milliseconds from now it should be
-     *                              dequeued at the earliest
-     * @throws HoldingsItemsException
-     */
-    @Deprecated
-    public void enqueueIssue(String bibliographicRecordId, int agencyId, String issueId, String additionalData, String worker, long milliSeconds) throws HoldingsItemsException {
-        try (PreparedStatement stmt = connection.prepareStatement(QUEUE_INSERT_ISSUE_SQL)) {
-            int i = 0;
-            stmt.setString(++i, worker);
-            stmt.setLong(++i, milliSeconds);
-            stmt.setString(++i, bibliographicRecordId);
-            stmt.setInt(++i, agencyId);
-            stmt.setString(++i, issueId);
-            stmt.setString(++i, additionalData);
-            stmt.setString(++i, trackingId);
-            stmt.executeUpdate();
-        } catch (SQLException ex) {
-            log.error(DATABASE_ERROR, ex);
-            throw new HoldingsItemsException(DATABASE_ERROR, ex);
-        }
-    }
-
-    /**
-     * Put an element into the queue
-     *
-     * @param bibliographicRecordId part of job id
-     * @param agencyId              part of job id
      * @param worker                Who's get the job
      * @throws HoldingsItemsException
      */
@@ -701,7 +626,6 @@ public class HoldingsItemsDAO {
 
     private static final String CHECK_LIVE_HOLDINGS = "SELECT EXISTS(SELECT * FROM holdingsitemsitem WHERE agencyid=? AND bibliographicrecordid=? AND status<>'Decommissioned')";
 
-    private static final String QUEUE_INSERT_ISSUE_SQL = "INSERT INTO q(worker, queued, bibliographicRecordId, agencyId, issueId, additionalData, trackingId) VALUES(?, clock_timestamp() + ? * INTERVAL '1 milliseconds', ?, ?, ?, ?, ?)";
     private static final String QUEUE_INSERT_SQL = "INSERT INTO q(worker, queued, bibliographicRecordId, agencyId, additionalData, trackingId) VALUES(?, clock_timestamp() + ? * INTERVAL '1 milliseconds', ?, ?, ?, ?)";
 
 }

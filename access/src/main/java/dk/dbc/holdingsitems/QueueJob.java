@@ -66,7 +66,6 @@ public class QueueJob {
     public QueueJob(int agencyId, String bibliographicRecordId, String trackingId) {
         this.agencyId = agencyId;
         this.bibliographicRecordId = bibliographicRecordId;
-        this.additionalData = additionalData;
         this.trackingId = trackingId;
     }
 
