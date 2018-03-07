@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:hol="http://oss.dbc.dk/ns/holdingsItemsUpdate">
+    <soapenv:Header/>
+    <soapenv:Body>
+        <hol:onlineHoldingsItemsUpdate>
+            <hol:onlineHoldingsItemsUpdateRequest>
+                <!-- optional -->
+                <hol:authentication>
+                    <hol:groupIdAut></hol:groupIdAut>
+                    <hol:passwordAut></hol:passwordAut>
+                    <hol:userIdAut></hol:userIdAut>
+                </hol:authentication>
+                <hol:agencyId>123456</hol:agencyId>
+                <!--0 to 100 repetitions:-->
+                <hol:onlineBibliographicItem>
+                    <hol:bibliographicRecordId>87654321</hol:bibliographicRecordId>
+                    <hol:modificationTimeStamp>
+                        <hol:modificationDateTime>2017-01-01T00:00:00Z</hol:modificationDateTime>
+                        <hol:modificationMilliSeconds>0</hol:modificationMilliSeconds>
+                    </hol:modificationTimeStamp>
+                    <hol:hasOnlineHolding>true</hol:hasOnlineHolding>
+                </hol:onlineBibliographicItem>
+                <hol:trackingId>online</hol:trackingId>
+            </hol:onlineHoldingsItemsUpdateRequest>
+        </hol:onlineHoldingsItemsUpdate>
+    </soapenv:Body>
+</soapenv:Envelope>
