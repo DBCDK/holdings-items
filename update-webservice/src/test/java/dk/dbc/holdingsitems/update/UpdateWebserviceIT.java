@@ -118,7 +118,7 @@ public class UpdateWebserviceIT {
         HashMap<String, Set<String>> queue = getQueue();
         System.out.println("queue = " + queue);
         assertEquals("queue size", 1, queue.get("updateOld").size());
-////////        assertEquals("queue issue size", 2, queue.get("updateIssue").size());
+        assertEquals("queue size", 1, queue.get("update").size());
         System.out.println("OK");
     }
 
@@ -153,7 +153,7 @@ public class UpdateWebserviceIT {
         HashMap<String, Set<String>> queue = getQueue();
         System.out.println("queue = " + queue);
         assertEquals("queue size", 1, queue.get("onlineOld").size());
-////////        assertEquals("queue issue size", 1, queue.get("onlineIssue").size());
+        assertEquals("queue size", 1, queue.get("online").size());
         System.out.println("OK");
     }
 
@@ -165,7 +165,7 @@ public class UpdateWebserviceIT {
         HashMap<String, Set<String>> queue = getQueue();
         System.out.println("queue = " + queue);
         assertEquals("queue size", 1, queue.get("completeOld").size());
-////////        assertEquals("queue issue size", 1, queue.get("completeIssue").size());
+        assertEquals("queue size", 1, queue.get("complete").size());
         System.out.println("OK");
     }
 
@@ -293,6 +293,15 @@ public class UpdateWebserviceIT {
                              resultSet.getString(3) + "|" +
                              resultSet.getString(4));
 
+            }
+        }
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement stmt = connection.prepareStatement("SELECT consumer, agencyId, bibliographicRecordId FROM queue") ;
+             ResultSet resultSet = stmt.executeQuery()) {
+            while (resultSet.next()) {
+                result.computeIfAbsent(resultSet.getString(1), s -> new HashSet<>())
+                        .add(resultSet.getInt(2) + "|" +
+                             resultSet.getString(3));
             }
         }
         System.out.println("result = " + result);

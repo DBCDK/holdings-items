@@ -133,11 +133,11 @@ public abstract class UpdateRequest {
                          queueEntry.getAgencyId() + "|" +
                          queueEntry.getBibliographicRecordId() + "|" +
                          queue);
-//                try {
-//                    dao.enqueue(queueEntry.getBibliographicRecordId(), queueEntry.getAgencyId(), queue);
-//                } catch (HoldingsItemsException ex) {
-//                    throw new WrapperException(ex);
-//                }
+                try {
+                    dao.enqueue(queueEntry.getBibliographicRecordId(), queueEntry.getAgencyId(), queue);
+                } catch (HoldingsItemsException ex) {
+                    throw new WrapperException(ex);
+                }
             }
         }
         queues = getQueueListOld().split("[^-0-9a-zA-Z_]+");
