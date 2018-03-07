@@ -151,7 +151,7 @@ public abstract class UpdateRequest {
                          queueEntry.getBibliographicRecordId() + "|" +
                          queue);
                 try {
-                    dao.enqueue(queueEntry.getBibliographicRecordId(), queueEntry.getAgencyId(), queue);
+                    dao.enqueueOld(queueEntry.getBibliographicRecordId(), queueEntry.getAgencyId(), queue);
                 } catch (HoldingsItemsException ex) {
                     throw new WrapperException(ex);
                 }

@@ -108,7 +108,7 @@ public class HoldingsItemsDAOIT extends DbBase{
         try (Connection connection = dataSource.getConnection()) {
             connection.setAutoCommit(false);
             HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(connection);
-            dao.enqueue("987654321", 870970, "solrIndex1");
+            dao.enqueueOld("987654321", 870970, "solrIndex1");
             connection.commit();
             List<QueueJob> queue = queue();
             System.out.println("queue = " + queue);

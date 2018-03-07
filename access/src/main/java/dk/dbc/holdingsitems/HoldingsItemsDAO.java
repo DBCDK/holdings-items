@@ -409,8 +409,8 @@ public class HoldingsItemsDAO {
      * @param worker                Who's get the job
      * @throws HoldingsItemsException
      */
-    public void enqueue(String bibliographicRecordId, int agencyId, String worker) throws HoldingsItemsException {
-        enqueue(bibliographicRecordId, agencyId, worker, 0);
+    public void enqueueOld(String bibliographicRecordId, int agencyId, String worker) throws HoldingsItemsException {
+        HoldingsItemsDAO.this.enqueueOld(bibliographicRecordId, agencyId, worker, 0);
     }
 
     /**
@@ -423,8 +423,8 @@ public class HoldingsItemsDAO {
      *                              dequeued at the earliest
      * @throws HoldingsItemsException
      */
-    public void enqueue(String bibliographicRecordId, int agencyId, String worker, long milliSeconds) throws HoldingsItemsException {
-        enqueue(bibliographicRecordId, agencyId, "", worker, milliSeconds);
+    public void enqueueOld(String bibliographicRecordId, int agencyId, String worker, long milliSeconds) throws HoldingsItemsException {
+        enqueueOld(bibliographicRecordId, agencyId, "", worker, milliSeconds);
     }
 
     /**
@@ -436,8 +436,8 @@ public class HoldingsItemsDAO {
      * @param worker                Who's to get the job
      * @throws HoldingsItemsException
      */
-    public void enqueue(String bibliographicRecordId, int agencyId, String additionalData, String worker) throws HoldingsItemsException {
-        enqueue(bibliographicRecordId, agencyId, worker, 0);
+    public void enqueueOld(String bibliographicRecordId, int agencyId, String additionalData, String worker) throws HoldingsItemsException {
+        HoldingsItemsDAO.this.enqueueOld(bibliographicRecordId, agencyId, worker, 0);
     }
 
     /**
@@ -451,8 +451,8 @@ public class HoldingsItemsDAO {
      *                              dequeued at the earliest
      * @throws HoldingsItemsException
      */
-    public void enqueue(String bibliographicRecordId, int agencyId, String additionalData, String worker, long milliSeconds) throws HoldingsItemsException {
-        try (PreparedStatement stmt = connection.prepareStatement(QUEUE_INSERT_SQL)) {
+    public void enqueueOld(String bibliographicRecordId, int agencyId, String additionalData, String worker, long milliSeconds) throws HoldingsItemsException {
+        try (PreparedStatement stmt = connection.prepareStatement(QUEUE_INSERT_SQL_OLD)) {
             int i = 0;
             stmt.setString(++i, worker);
             stmt.setLong(++i, milliSeconds);
@@ -626,6 +626,6 @@ public class HoldingsItemsDAO {
 
     private static final String CHECK_LIVE_HOLDINGS = "SELECT EXISTS(SELECT * FROM holdingsitemsitem WHERE agencyid=? AND bibliographicrecordid=? AND status<>'Decommissioned')";
 
-    private static final String QUEUE_INSERT_SQL = "INSERT INTO q(worker, queued, bibliographicRecordId, agencyId, additionalData, trackingId) VALUES(?, clock_timestamp() + ? * INTERVAL '1 milliseconds', ?, ?, ?, ?)";
+    private static final String QUEUE_INSERT_SQL_OLD = "INSERT INTO q(worker, queued, bibliographicRecordId, agencyId, additionalData, trackingId) VALUES(?, clock_timestamp() + ? * INTERVAL '1 milliseconds', ?, ?, ?, ?)";
 
 }
