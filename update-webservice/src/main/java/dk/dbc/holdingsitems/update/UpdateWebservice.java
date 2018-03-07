@@ -130,12 +130,12 @@ public class UpdateWebservice {
             }
 
             @Override
-            public String getQueueList() {
+            public String getQueueListOld() {
                 return config.getUpdateQueueList();
             }
 
             @Override
-            public String getQueueIssueList() {
+            public String getQueueList() {
                 return config.getUpdateQueueIssueList();
             }
 
@@ -186,12 +186,12 @@ public class UpdateWebservice {
             }
 
             @Override
-            public String getQueueList() {
+            public String getQueueListOld() {
                 return config.getCompleteQueueList();
             }
 
             @Override
-            public String getQueueIssueList() {
+            public String getQueueList() {
                 return config.getCompleteQueueIssueList();
             }
 
@@ -235,7 +235,6 @@ public class UpdateWebservice {
                         try (Timer.Context time = saveCollectionTimer.time()) {
                             collection.save(modified);
                         }
-                        addQueueJob(bibliographicRecordId, agencyId, issueId);
                     }
                 } catch (HoldingsItemsException ex) {
                     throw new WrapperException(ex);
@@ -269,12 +268,12 @@ public class UpdateWebservice {
             }
 
             @Override
-            public String getQueueList() {
+            public String getQueueListOld() {
                 return config.getOnlineQueueList();
             }
 
             @Override
-            public String getQueueIssueList() {
+            public String getQueueList() {
                 return config.getOnlineQueueIssueList();
             }
 
@@ -317,7 +316,6 @@ public class UpdateWebservice {
                         rec.setAccessionDate(new Date());
                     }
                     addQueueJob(bibliographicRecordId, agencyId);
-                    addQueueJob(bibliographicRecordId, agencyId, "");
                     try (Timer.Context time = saveCollectionTimer.time()) {
                         collection.save(modified);
                     }

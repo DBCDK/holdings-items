@@ -46,24 +46,24 @@ public class Config {
 
     @PostConstruct
     public void init() {
-        splitQueue(updateQueueListReal, s -> updateQueueList = s, s -> updateQueueIssueList = s);
-        splitQueue(completeQueueListReal, s -> completeQueueList = s, s -> completeQueueIssueList = s);
-        splitQueue(onlineQueueListReal, s -> onlineQueueList = s, s -> onlineQueueIssueList = s);
+        splitQueue(updateQueueListReal, s -> updateQueueList = s, s -> updateQueueListOld = s);
+        splitQueue(completeQueueListReal, s -> completeQueueList = s, s -> completeQueueListOld = s);
+        splitQueue(onlineQueueListReal, s -> onlineQueueList = s, s -> onlineQueueListOld = s);
 
     }
 
-    private static void splitQueue(String real, Consumer<String> queueByBibliographic, Consumer<String> queueByIssue) {
-        HashSet<String> bibliographic = new HashSet<>();
-        HashSet<String> issue = new HashSet<>();
+    private static void splitQueue(String real, Consumer<String> queueByNew, Consumer<String> queueByOld) {
+        HashSet<String> byNew = new HashSet<>();
+        HashSet<String> byOld = new HashSet<>();
         for (String queue : real.split(",")) {
-            if (queue.endsWith(":issue")) {
-                issue.add(queue.substring(0, queue.lastIndexOf(':')));
+            if (queue.endsWith(":old")) {
+                byOld.add(queue.substring(0, queue.lastIndexOf(':')));
             } else {
-                bibliographic.add(queue);
+                byNew.add(queue);
             }
         }
-        queueByBibliographic.accept(String.join(",", bibliographic));
-        queueByIssue.accept(String.join(",", issue));
+        queueByNew.accept(String.join(",", byNew));
+        queueByOld.accept(String.join(",", byOld));
     }
 
     @Inject
@@ -72,16 +72,16 @@ public class Config {
     @NotNull
     String updateQueueListReal;
 
-    String updateQueueList;
+    String updateQueueListOld;
 
     public String getUpdateQueueList() {
-        return updateQueueList;
+        return updateQueueListOld;
     }
 
-    String updateQueueIssueList;
+    String updateQueueList;
 
     public String getUpdateQueueIssueList() {
-        return updateQueueIssueList;
+        return updateQueueList;
     }
 
     @Inject
@@ -90,15 +90,15 @@ public class Config {
     @NotNull
     String completeQueueListReal;
 
-    String completeQueueList;
+    String completeQueueListOld;
 
     public String getCompleteQueueList() {
-        return completeQueueList;
+        return completeQueueListOld;
     }
-    String completeQueueIssueList;
+    String completeQueueList;
 
     public String getCompleteQueueIssueList() {
-        return completeQueueIssueList;
+        return completeQueueList;
     }
 
     @Inject
@@ -107,16 +107,16 @@ public class Config {
     @NotNull
     String onlineQueueListReal;
 
-    String onlineQueueList;
+    String onlineQueueListOld;
 
     public String getOnlineQueueList() {
-        return onlineQueueList;
+        return onlineQueueListOld;
     }
 
-    String onlineQueueIssueList;
+    String onlineQueueList;
 
     public String getOnlineQueueIssueList() {
-        return onlineQueueIssueList;
+        return onlineQueueList;
     }
 
     @Inject

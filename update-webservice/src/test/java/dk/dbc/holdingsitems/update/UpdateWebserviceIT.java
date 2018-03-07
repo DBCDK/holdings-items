@@ -20,7 +20,6 @@ package dk.dbc.holdingsitems.update;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Timer;
-import dk.dbc.commons.testutils.postgres.connection.PostgresITConnection;
 import dk.dbc.commons.testutils.postgres.connection.PostgresITDataSource;
 import dk.dbc.forsrights.client.ForsRightsException;
 import dk.dbc.holdingsitems.DatabaseMigrator;
@@ -57,7 +56,6 @@ import javax.xml.datatype.DatatypeFactory;
 import javax.xml.datatype.XMLGregorianCalendar;
 import javax.xml.ws.WebServiceContext;
 import javax.xml.ws.handler.MessageContext;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -119,8 +117,8 @@ public class UpdateWebserviceIT {
                 .holdingsItemsUpdate(updateReq1());
         HashMap<String, Set<String>> queue = getQueue();
         System.out.println("queue = " + queue);
-        assertEquals("queue size", 1, queue.get("update").size());
-        assertEquals("queue issue size", 2, queue.get("updateIssue").size());
+        assertEquals("queue size", 1, queue.get("updateOld").size());
+////////        assertEquals("queue issue size", 2, queue.get("updateIssue").size());
         System.out.println("OK");
     }
 
@@ -154,8 +152,8 @@ public class UpdateWebserviceIT {
                 .onlineHoldingsItemsUpdate(onlineReqCreate());
         HashMap<String, Set<String>> queue = getQueue();
         System.out.println("queue = " + queue);
-        assertEquals("queue size", 1, queue.get("online").size());
-        assertEquals("queue issue size", 1, queue.get("onlineIssue").size());
+        assertEquals("queue size", 1, queue.get("onlineOld").size());
+////////        assertEquals("queue issue size", 1, queue.get("onlineIssue").size());
         System.out.println("OK");
     }
 
@@ -166,8 +164,8 @@ public class UpdateWebserviceIT {
                 .completeHoldingsItemsUpdate(completeReq2());
         HashMap<String, Set<String>> queue = getQueue();
         System.out.println("queue = " + queue);
-        assertEquals("queue size", 1, queue.get("complete").size());
-        assertEquals("queue issue size", 2, queue.get("completeIssue").size());
+        assertEquals("queue size", 1, queue.get("completeOld").size());
+////////        assertEquals("queue issue size", 1, queue.get("completeIssue").size());
         System.out.println("OK");
     }
 
@@ -309,9 +307,9 @@ public class UpdateWebserviceIT {
     private Config mockConfig() {
         Config mock = new Config();
         mock.disableAuthentication = true;
-        mock.updateQueueListReal = "update,updateIssue:issue";
-        mock.completeQueueListReal = "complete,completeIssue:issue";
-        mock.onlineQueueListReal = "online,onlineIssue:issue";
+        mock.updateQueueListReal = "updateOld:old,update";
+        mock.completeQueueListReal = "completeOld:old,complete";
+        mock.onlineQueueListReal = "onlineOld:old,online";
         mock.init();
         return mock;
     }

@@ -72,14 +72,14 @@ public abstract class UpdateRequest {
      *
      * @return comma separated list of queues for this endpoint
      */
-    public abstract String getQueueList();
+    public abstract String getQueueListOld();
 
     /**
      * List queues a request should enqueue onto
      *
      * @return comma separated list of queues for this endpoint
      */
-    public abstract String getQueueIssueList();
+    public abstract String getQueueList();
 
     /**
      * Actually process the request content
@@ -88,7 +88,6 @@ public abstract class UpdateRequest {
 
     private final UpdateWebservice updateWebService;
     private final HashSet<QueueEntry> queueEntries;
-    private final HashSet<QueueEntryIssue> queueIssueEntries;
     protected HoldingsItemsDAO dao;
 
     /**
@@ -99,7 +98,6 @@ public abstract class UpdateRequest {
     public UpdateRequest(UpdateWebservice updateWebservice) {
         this.updateWebService = updateWebservice;
         this.queueEntries = new HashSet<>();
-        this.queueIssueEntries = new HashSet<>();
     }
 
     /**
@@ -122,18 +120,6 @@ public abstract class UpdateRequest {
     }
 
     /**
-     * Collect queue jobs
-     *
-     * @param bibliographicRecordId jobId
-     * @param agencyId              jobId
-     * @param issueId               jobId
-     */
-    @Deprecated
-    public void addQueueJob(String bibliographicRecordId, int agencyId, String issueId) {
-        queueIssueEntries.add(new QueueEntryIssue(agencyId, bibliographicRecordId, issueId));
-    }
-
-    /**
      * Send all cached queue jobs to the queue
      */
     protected void queue() {
@@ -147,15 +133,15 @@ public abstract class UpdateRequest {
                          queueEntry.getAgencyId() + "|" +
                          queueEntry.getBibliographicRecordId() + "|" +
                          queue);
-                try {
-                    dao.enqueue(queueEntry.getBibliographicRecordId(), queueEntry.getAgencyId(), queue);
-                } catch (HoldingsItemsException ex) {
-                    throw new WrapperException(ex);
-                }
+//                try {
+//                    dao.enqueue(queueEntry.getBibliographicRecordId(), queueEntry.getAgencyId(), queue);
+//                } catch (HoldingsItemsException ex) {
+//                    throw new WrapperException(ex);
+//                }
             }
         }
-        queues = getQueueIssueList().split("[^-0-9a-zA-Z_]+");
-        for (QueueEntryIssue queueEntry : queueIssueEntries) {
+        queues = getQueueListOld().split("[^-0-9a-zA-Z_]+");
+        for (QueueEntry queueEntry : queueEntries) {
             for (String queue : queues) {
                 if (queue.isEmpty()) {
                     continue;
@@ -163,10 +149,9 @@ public abstract class UpdateRequest {
                 log.info("QUEUE: " +
                          queueEntry.getAgencyId() + "|" +
                          queueEntry.getBibliographicRecordId() + "|" +
-                         queueEntry.getIssueId() + "|" +
                          queue);
                 try {
-                    dao.enqueueIssue(queueEntry.getBibliographicRecordId(), queueEntry.getAgencyId(), queueEntry.getIssueId(), queue);
+                    dao.enqueue(queueEntry.getBibliographicRecordId(), queueEntry.getAgencyId(), queue);
                 } catch (HoldingsItemsException ex) {
                     throw new WrapperException(ex);
                 }
@@ -210,7 +195,6 @@ public abstract class UpdateRequest {
             collection.setReadyForLoan(holding.getReadyForLoan().intValueExact());
             holding.getHoldingsItem().forEach(item -> addItemToCollection(collection, item));
             log.debug("saving");
-            addQueueJob(bibliographicRecordId, agencyId, issueId);
             try (Timer.Context time = updateWebService.saveCollectionTimer.time()) {
                 collection.save(modified);
             }
