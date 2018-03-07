@@ -33,6 +33,7 @@
         <module>access</module>
         <module>update-ws-transport</module>
         <module>update-webservice</module>
+        <module>update-client</module>
     </modules>
 
     <build>
