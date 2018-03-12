@@ -27,6 +27,7 @@ import dk.dbc.holdingsitems.QueueJob;
 import dk.dbc.holdingsitems.Record;
 import dk.dbc.holdingsitems.RecordCollection;
 import dk.dbc.holdingsitems.indexer.Config;
+import dk.dbc.holdingsitems.indexer.monitor.Timed;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -82,6 +83,7 @@ public class JobProcessor {
 
     }
 
+    @Timed
     public ObjectNode buildRequestJson(Connection connection, QueueJob job) throws Exception {
         String trackingId = job.getTrackingId();
 
@@ -115,6 +117,7 @@ public class JobProcessor {
         return json;
     }
 
+    @Timed
     public JsonNode sendToSolrDocStore(JsonNode node) {
         ObjectNode res = O.createObjectNode();
         try {
