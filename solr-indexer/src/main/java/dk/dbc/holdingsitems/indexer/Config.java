@@ -58,6 +58,7 @@ public class Config {
     private int threads;
     private int retries;
     private String solrDocStoreUrl;
+    private String jmxDomain;
 
     public Config() {
         props = null;
@@ -91,6 +92,7 @@ public class Config {
         this.solrDocStoreUrl = URI.create(getOrFail("solr-doc-store-url"))
                 .resolve("/api/holdings")
                 .toString();
+        this.jmxDomain = getOrDefault("jmx-domain", "metrics");
     }
 
     public String[] getQueues() {
@@ -131,6 +133,10 @@ public class Config {
 
     public String getSolrDocStoreUrl() {
         return solrDocStoreUrl;
+    }
+
+    public String getJmxDomain() {
+        return jmxDomain;
     }
 
     private String getOrFail(String property) {
