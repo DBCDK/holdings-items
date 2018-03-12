@@ -24,6 +24,7 @@ import dk.dbc.holdingsitems.HoldingsItemsDAO;
 import dk.dbc.holdingsitems.HoldingsItemsException;
 import dk.dbc.holdingsitems.QueueJob;
 import dk.dbc.holdingsitems.indexer.logic.JobProcessor;
+import dk.dbc.holdingsitems.indexer.monitor.JmxMetrics;
 import dk.dbc.pgqueue.consumer.JobMetaData;
 import dk.dbc.pgqueue.consumer.QueueWorker;
 import java.sql.Connection;
@@ -63,6 +64,9 @@ public class Worker {
     @Inject
     JobProcessor jobProcessor;
 
+    @Inject
+    JmxMetrics metrics;
+
     private QueueWorker worker;
 
     @PostConstruct
@@ -87,6 +91,7 @@ public class Worker {
                 .maxQueryTime(config.getMaxQueryTime())
                 .rescanEvery(config.getRescanEvery())
                 .maxTries(config.getRetries())
+                .metricRegistry(metrics.getRegistry())
                 .build(QueueJob.STORAGE_ABSTRACTION, config.getThreads(), this::work);
         worker.start();
     }
