@@ -83,15 +83,13 @@ public class UpdateWebserviceIT {
         pgds = new PostgresITDataSource("holdingsitems");
         dataSource = pgds.getDataSource();
 
-
-        try (Connection connection = dataSource.getConnection();
-                Statement stmt = connection.createStatement()) {
+        try (Connection connection = dataSource.getConnection() ;
+             Statement stmt = connection.createStatement()) {
             stmt.executeUpdate("DROP SCHEMA public CASCADE");
             stmt.executeUpdate("CREATE SCHEMA public");
         }
         DatabaseMigrator.migrate(dataSource);
     }
-
 
     @Test
     public void testHoldingsItemsUpdate() throws Exception {
@@ -284,7 +282,7 @@ public class UpdateWebserviceIT {
 
     private HashMap<String, Set<String>> getQueue() throws SQLException {
         HashMap<String, Set<String>> result = new HashMap<>();
-        try (Connection connection = dataSource.getConnection();
+        try (Connection connection = dataSource.getConnection() ;
              PreparedStatement stmt = connection.prepareStatement("SELECT worker, agencyId, bibliographicRecordId, issueId FROM q") ;
              ResultSet resultSet = stmt.executeQuery()) {
             while (resultSet.next()) {
@@ -295,7 +293,7 @@ public class UpdateWebserviceIT {
 
             }
         }
-        try (Connection connection = dataSource.getConnection();
+        try (Connection connection = dataSource.getConnection() ;
              PreparedStatement stmt = connection.prepareStatement("SELECT consumer, agencyId, bibliographicRecordId FROM queue") ;
              ResultSet resultSet = stmt.executeQuery()) {
             while (resultSet.next()) {
@@ -422,8 +420,8 @@ public class UpdateWebserviceIT {
     }
 
     private int countAllCollections() throws SQLException {
-        try (Connection db = dataSource.getConnection();
-                PreparedStatement stmt = db.prepareStatement("SELECT COUNT(*) FROM holdingsitemscollection") ;
+        try (Connection db = dataSource.getConnection() ;
+             PreparedStatement stmt = db.prepareStatement("SELECT COUNT(*) FROM holdingsitemscollection") ;
              ResultSet resultSet = stmt.executeQuery()) {
             if (resultSet.next()) {
                 return resultSet.getInt(1);
@@ -433,7 +431,7 @@ public class UpdateWebserviceIT {
     }
 
     private int countAllItems() throws SQLException {
-        try (Connection db = dataSource.getConnection();
+        try (Connection db = dataSource.getConnection() ;
              PreparedStatement stmt = db.prepareStatement("SELECT COUNT(*) FROM holdingsitemsitem") ;
              ResultSet resultSet = stmt.executeQuery()) {
             if (resultSet.next()) {
@@ -444,7 +442,7 @@ public class UpdateWebserviceIT {
     }
 
     private int countItems(StatusType type) throws SQLException {
-        try (Connection db = dataSource.getConnection();
+        try (Connection db = dataSource.getConnection() ;
              PreparedStatement stmt = db.prepareStatement("SELECT COUNT(*) FROM holdingsitemsitem WHERE status=?")) {
             stmt.setString(1, type.value());
             try (ResultSet resultSet = stmt.executeQuery()) {
@@ -457,43 +455,43 @@ public class UpdateWebserviceIT {
     }
 
     private HashMap<String, String> checkRow(String agencyId, String bibliographicRecordId, String issueId, String itemId) throws SQLException {
-        try (Connection db = dataSource.getConnection();
+        try (Connection db = dataSource.getConnection() ;
              PreparedStatement stmt = db.prepareStatement(
-                "SELECT " +
-                "c.agencyid, " +
-                "c.bibliographicrecordid, " +
-                "c.issueid, " +
-                "c.issuetext, " +
-                "c.expecteddelivery, " +
-                "c.readyforloan, " +
-                "c.note, " +
-                "c.complete, " +
-                "c.created, " +
-                "c.modified, " +
-                "c.trackingid, " +
-                "i.agencyid, " +
-                "i.bibliographicrecordid, " +
-                "i.issueid, " +
-                "i.itemid, " +
-                "i.branch, " +
-                "i.department, " +
-                "i.location, " +
-                "i.sublocation, " +
-                "i.circulationrule, " +
-                "i.accessiondate, " +
-                "i.status, " +
-                "i.created, " +
-                "i.modified, " +
-                "i.trackingid " +
-                "FROM holdingsitemscollection AS c JOIN holdingsitemsitem AS i USING (" +
-                "agencyid, " +
-                "bibliographicrecordid, " +
-                "issueid" +
-                ") WHERE " +
-                "agencyid=? AND " +
-                "bibliographicrecordid=? AND " +
-                "issueid=? AND " +
-                "itemid=? ")) {
+                     "SELECT " +
+                     "c.agencyid, " +
+                     "c.bibliographicrecordid, " +
+                     "c.issueid, " +
+                     "c.issuetext, " +
+                     "c.expecteddelivery, " +
+                     "c.readyforloan, " +
+                     "c.note, " +
+                     "c.complete, " +
+                     "c.created, " +
+                     "c.modified, " +
+                     "c.trackingid, " +
+                     "i.agencyid, " +
+                     "i.bibliographicrecordid, " +
+                     "i.issueid, " +
+                     "i.itemid, " +
+                     "i.branch, " +
+                     "i.department, " +
+                     "i.location, " +
+                     "i.sublocation, " +
+                     "i.circulationrule, " +
+                     "i.accessiondate, " +
+                     "i.status, " +
+                     "i.created, " +
+                     "i.modified, " +
+                     "i.trackingid " +
+                     "FROM holdingsitemscollection AS c JOIN holdingsitemsitem AS i USING (" +
+                     "agencyid, " +
+                     "bibliographicrecordid, " +
+                     "issueid" +
+                     ") WHERE " +
+                     "agencyid=? AND " +
+                     "bibliographicrecordid=? AND " +
+                     "issueid=? AND " +
+                     "itemid=? ")) {
             stmt.setInt(1, Integer.parseInt(agencyId));
             stmt.setString(2, bibliographicRecordId);
             stmt.setString(3, issueId);

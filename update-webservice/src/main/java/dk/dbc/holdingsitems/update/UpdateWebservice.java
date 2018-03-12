@@ -131,12 +131,12 @@ public class UpdateWebservice {
 
             @Override
             public String getQueueListOld() {
-                return config.getUpdateQueueList();
+                return config.getUpdateQueueOldList();
             }
 
             @Override
             public String getQueueList() {
-                return config.getUpdateQueueIssueList();
+                return config.getUpdateQueueList();
             }
 
             /**
@@ -187,12 +187,12 @@ public class UpdateWebservice {
 
             @Override
             public String getQueueListOld() {
-                return config.getCompleteQueueList();
+                return config.getCompleteQueueOldList();
             }
 
             @Override
             public String getQueueList() {
-                return config.getCompleteQueueIssueList();
+                return config.getCompleteQueueList();
             }
 
             /**
@@ -269,12 +269,12 @@ public class UpdateWebservice {
 
             @Override
             public String getQueueListOld() {
-                return config.getOnlineQueueList();
+                return config.getOnlineQueueOldList();
             }
 
             @Override
             public String getQueueList() {
-                return config.getOnlineQueueIssueList();
+                return config.getOnlineQueueList();
             }
 
             @Override

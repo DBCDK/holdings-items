@@ -9,9 +9,9 @@ ADD post/* $PAYARA_CFG/post/
 LABEL HOLDINGS_ITEMS_POSTGRES_URL="Url pointing at holdings items postgres (required). Ex.: 'user:pass@host:1234/dbname'" \
       SERVER_NAME="Name of server (hostname) (for wsdl)" \
       CONTEXT_ROOT="Path of service (for wsdl)" \
-      UPDATE_QUEUE_LIST="Comma separated list of target queue names for update call (suffixed by ':issue' queue on issue level otherwise queue on bibliographic level) (required)" \
-      ONLINE_QUEUE_LIST="Comma separated list of target queue names for online call (suffixed by ':issue' queue on issue level otherwise queue on bibliographic level) (required)" \
-      COMPLETE_QUEUE_LIST="Comma separated list of target queue names for complete call (suffixed by ':issue' queue on issue level otherwise queue on bibliographic level) (required)" \
+      UPDATE_QUEUE_LIST="Comma separated list of target queue names for update call (suffixed by ':old' queue on q table) (required)" \
+      ONLINE_QUEUE_LIST="Comma separated list of target queue names for online call (suffixed by ':old' queue on q table) (required)" \
+      COMPLETE_QUEUE_LIST="Comma separated list of target queue names for complete call (suffixed by ':old' queue on q table) (required)" \
       WARNING_IS_FATAL="(optional, default is false)" \
       DISABLE_AUTHENTICATION="(optional, default is true)" \
       X_FORWARDED_FOR="(optional)" \

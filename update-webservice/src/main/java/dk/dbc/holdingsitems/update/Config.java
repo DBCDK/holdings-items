@@ -75,13 +75,13 @@ public class Config {
     String updateQueueListOld;
 
     public String getUpdateQueueList() {
-        return updateQueueListOld;
+        return updateQueueList;
     }
 
     String updateQueueList;
 
-    public String getUpdateQueueIssueList() {
-        return updateQueueList;
+    public String getUpdateQueueOldList() {
+        return updateQueueListOld;
     }
 
     @Inject
@@ -93,12 +93,12 @@ public class Config {
     String completeQueueListOld;
 
     public String getCompleteQueueList() {
-        return completeQueueListOld;
+        return completeQueueList;
     }
     String completeQueueList;
 
-    public String getCompleteQueueIssueList() {
-        return completeQueueList;
+    public String getCompleteQueueOldList() {
+        return completeQueueListOld;
     }
 
     @Inject
@@ -110,13 +110,13 @@ public class Config {
     String onlineQueueListOld;
 
     public String getOnlineQueueList() {
-        return onlineQueueListOld;
+        return onlineQueueList;
     }
 
     String onlineQueueList;
 
-    public String getOnlineQueueIssueList() {
-        return onlineQueueList;
+    public String getOnlineQueueOldList() {
+        return onlineQueueListOld;
     }
 
     @Inject
