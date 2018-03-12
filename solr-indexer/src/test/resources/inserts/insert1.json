@@ -1,0 +1,80 @@
+[
+    {
+        "": "holdingsitemscollection",
+        "agencyid": 700000,
+        "bibliographicrecordid": "87654321",
+        "issueid": "dp",
+        "issueText": "Don't Panic!",
+        "modified": "",
+        "readyforloan": -1
+    },
+    {
+        "": "holdingsitemsitem",
+        "agencyid": 700000,
+        "bibliographicrecordid": "87654321",
+        "issueid": "dp",
+        "itemid": "dp1",
+        "status": "OnLoan",
+        "branch": "",
+        "department": "",
+        "location": "",
+        "sublocation": "",
+        "circulationrule": "",
+        "accessiondate": "2017-01-02",
+        "modified": ""
+    },
+    {
+        "": "holdingsitemsitem",
+        "agencyid": 700000,
+        "bibliographicrecordid": "87654321",
+        "issueid": "dp",
+        "itemid": "dp2",
+        "status": "OnShelf",
+        "branch": "",
+        "department": "",
+        "location": "",
+        "sublocation": "",
+        "circulationrule": "",
+        "accessiondate": "2017-01-02",
+        "modified": ""
+    },
+    {
+        "": "holdingsitemscollection",
+        "agencyid": 700000,
+        "bibliographicrecordid": "87654321",
+        "issueid": "rpo",
+        "issueText": "ready player one",
+        "modified": "",
+        "readyforloan": -1
+    },
+    {
+        "": "holdingsitemsitem",
+        "agencyid": 700000,
+        "bibliographicrecordid": "87654321",
+        "issueid": "rpo",
+        "itemid": "rpo1",
+        "status": "OnLoan",
+        "branch": "Here",
+        "department": "",
+        "location": "",
+        "sublocation": "",
+        "circulationrule": "",
+        "accessiondate": "2016-02-03",
+        "modified": ""
+    },
+    {
+        "": "holdingsitemsitem",
+        "agencyid": 700000,
+        "bibliographicrecordid": "87654321",
+        "issueid": "rpo",
+        "itemid": "rpo2",
+        "status": "OnShelf",
+        "branch": "There",
+        "department": "",
+        "location": "",
+        "sublocation": "",
+        "circulationrule": "",
+        "accessiondate": "2015-01-02",
+        "modified": ""
+    }
+]
