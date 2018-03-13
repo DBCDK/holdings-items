@@ -9,7 +9,7 @@
     <artifactId>holdings-items-ws-transport</artifactId>
     <packaging>jar</packaging>
     
-    <name>git:holdings-items-ws-transport</name>
+    <name>${project.artifactId}</name>
 
     <build>
         <plugins>

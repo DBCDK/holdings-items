@@ -8,7 +8,7 @@
     </parent>
     <artifactId>holdings-items-access</artifactId>
     <packaging>jar</packaging>
-    <name>git:holdings-items-access</name>
+    <name>${project.artifactId}</name>
     <build>
         <plugins>
             <plugin>

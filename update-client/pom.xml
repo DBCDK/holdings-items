@@ -8,7 +8,7 @@
     </parent>
     <artifactId>holdings-items-update-client</artifactId>
     <packaging>jar</packaging>
-    <name>git:${project.artifactId}</name>
+    <name>${project.artifactId}</name>
 
     <build>
         <plugins>

@@ -9,7 +9,7 @@
 
     <artifactId>holdings-items-update-webservice</artifactId>
     <packaging>war</packaging>
-    <name>git:${project.artifactId}</name>
+    <name>${project.artifactId}</name>
 
     <properties>
         <endorsed.dir>${project.build.directory}/endorsed</endorsed.dir>
