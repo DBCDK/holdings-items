@@ -20,13 +20,17 @@
     <groupId>dk.dbc</groupId>
     <artifactId>holdings-items</artifactId>
     <version>1.1.3-SNAPSHOT</version>
-    <packaging>pom</packaging>
     <name>${project.artifactId}</name>
+
+    <packaging>pom</packaging>
     <url>http://oss.dbc.dk</url>
 
     <properties>
         <dropwizard.version>1.2.2</dropwizard.version>
         <pg-queue.version>1.0-SNAPSHOT</pg-queue.version>
+
+        <endorsed.dir>${project.build.directory}/endorsed</endorsed.dir>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
     <modules>
@@ -35,11 +39,12 @@
         <module>update-webservice</module>
         <module>update-client</module>
         <module>solr-indexer</module>
-    <module>queue-bridge</module>
-  </modules>
+        <module>queue-bridge</module>
+    </modules>
 
     <build>
         <plugins>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -49,6 +54,7 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
             </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
@@ -56,16 +62,19 @@
                     <additionalparam>-Xdoclint:none</additionalparam>
                 </configuration>
             </plugin>
+
         </plugins>
     </build>
 
     <dependencyManagement>
         <dependencies>
+
             <dependency>
                 <groupId>org.postgresql</groupId>
                 <artifactId>postgresql</artifactId>
                 <version>42.2.1</version>
             </dependency>
+
             <dependency>
                 <groupId>com.codahale.metrics</groupId>
                 <artifactId>metrics-core</artifactId>
@@ -84,16 +93,19 @@
                 <artifactId>pg-queue-common</artifactId>
                 <version>${pg-queue.version}</version>
             </dependency>
+
             <dependency>
                 <groupId>dk.dbc</groupId>
                 <artifactId>pg-queue-supplier</artifactId>
                 <version>${pg-queue.version}</version>
             </dependency>
+
             <dependency>
                 <groupId>dk.dbc</groupId>
                 <artifactId>pg-queue-consumer</artifactId>
                 <version>${pg-queue.version}</version>
             </dependency>
+
         </dependencies>
     </dependencyManagement>
 
@@ -105,24 +117,24 @@
             <url>http://mavenrepo.dbc.dk/content/repositories/snapshots</url>
         </repository>
     </distributionManagement>
+
     <dependencies>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
         </dependency>
+
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.postgresql</groupId>
-            <artifactId>postgresql</artifactId>
-        </dependency>
+
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
             <scope>test</scope>
         </dependency>
+
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>

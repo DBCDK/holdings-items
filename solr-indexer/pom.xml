@@ -9,93 +9,11 @@
 
     <artifactId>holdings-items-solr-indexer</artifactId>
     <packaging>war</packaging>
-
     <name>${project.artifactId}</name>
-
-    <properties>
-        <endorsed.dir>${project.build.directory}/endorsed</endorsed.dir>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    </properties>
-    
-    <dependencies>
-        <dependency>
-            <groupId>dk.dbc</groupId>
-            <artifactId>pg-queue-consumer</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>dk.dbc</groupId>
-            <artifactId>pg-queue-supplier</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>holdings-items-access</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.codahale.metrics</groupId>
-            <artifactId>metrics-core</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>dk.dbc.commoms.testutils</groupId>
-            <artifactId>dbc-commons-testutil-postgres-connection</artifactId>
-            <scope>test</scope>
-        </dependency>
-
-
-        <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-server</artifactId>
-            <version>9.4.2.v20170220</version>
-            <scope>test</scope>
-        </dependency>
-
-        <!--        <dependency>
-            <groupId>org.glassfish.jersey.core</groupId>
-            <artifactId>jersey-client</artifactId>
-            <version>2.26</version>
-            <scope>test</scope>
-        </dependency>-->
-        <dependency>
-            <groupId>fish.payara.extras</groupId>
-            <artifactId>payara-embedded-all</artifactId>
-            <version>4.1.153</version>
-            <scope>test</scope>
-            <type>jar</type>
-        </dependency>
-        <dependency>
-            <groupId>javax</groupId>
-            <artifactId>javaee-api</artifactId>
-            <scope>provided</scope>
-        </dependency>
-
-        <dependency> <!-- use jackson insteaf of moxy -->
-            <groupId>org.glassfish.jersey.media</groupId>
-            <artifactId>jersey-media-json-jackson</artifactId>
-            <version>2.26</version>
-        </dependency>
-
-        <!-- JOLOKIA servlet -->
-        <dependency>
-            <groupId>org.jolokia</groupId>
-            <artifactId>jolokia-core</artifactId>
-            <version>1.5.0</version>
-            <type>jar</type>
-        </dependency>
-        <dependency>
-            <groupId>org.jolokia</groupId>
-            <artifactId>jolokia-jsr160</artifactId>
-            <version>1.5.0</version>
-            <type>jar</type>
-        </dependency>
-
-    </dependencies>
 
     <build>
         <resources>
+
             <resource>
                 <directory>src/main/resources</directory>
                 <filtering>false</filtering>
@@ -103,6 +21,7 @@
                     <exclude>version.txt</exclude>
                 </excludes>
             </resource>
+
             <resource>
                 <directory>src/main/resources</directory>
                 <filtering>true</filtering>
@@ -110,9 +29,11 @@
                     <include>version.txt</include>
                 </includes>
             </resource>
+
         </resources>
 
         <plugins>
+
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>build-helper-maven-plugin</artifactId>
@@ -238,5 +159,80 @@
             
         </plugins>
     </build>
+
+    <dependencies>
+        <dependency>
+            <groupId>dk.dbc</groupId>
+            <artifactId>pg-queue-consumer</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>dk.dbc</groupId>
+            <artifactId>pg-queue-supplier</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>holdings-items-access</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.codahale.metrics</groupId>
+            <artifactId>metrics-core</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>dk.dbc.commoms.testutils</groupId>
+            <artifactId>dbc-commons-testutil-postgres-connection</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-server</artifactId>
+            <version>9.4.2.v20170220</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>fish.payara.extras</groupId>
+            <artifactId>payara-embedded-all</artifactId>
+            <version>4.1.153</version>
+            <scope>test</scope>
+            <type>jar</type>
+        </dependency>
+        <dependency>
+            <groupId>javax</groupId>
+            <artifactId>javaee-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency> <!-- use jackson insteaf of moxy -->
+            <groupId>org.glassfish.jersey.media</groupId>
+            <artifactId>jersey-media-json-jackson</artifactId>
+            <version>2.26</version>
+        </dependency>
+
+        <!-- JOLOKIA servlet -->
+        <dependency>
+            <groupId>org.jolokia</groupId>
+            <artifactId>jolokia-core</artifactId>
+            <version>1.5.0</version>
+            <type>jar</type>
+        </dependency>
+        <dependency>
+            <groupId>org.jolokia</groupId>
+            <artifactId>jolokia-jsr160</artifactId>
+            <version>1.5.0</version>
+            <type>jar</type>
+        </dependency>
+
+    </dependencies>
 
 </project>
