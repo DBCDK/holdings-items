@@ -22,5 +22,5 @@ LABEL HOLDINGS_ITEMS_POSTGRES_URL="Url pointing at holdings items postgres (requ
       POOL_RESIZE_QUANTITY="JDBC connection pool parameter (optional, default is 2)" \
       STEADY_POOL_SIZE="JDBC connection pool parameter (optional, default is 2)"
 
-ADD holdings-items-update-webservice-1.1.2-SNAPSHOT.war $PAYARA_CFG/pre/holdings-items-update-webservice.war
+ADD holdings-items-update-webservice-*-SNAPSHOT.war $PAYARA_CFG/pre/holdings-items-update-webservice.war
 RUN payara-setup $PAYARA_CFG/pre/
