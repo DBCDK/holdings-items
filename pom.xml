@@ -35,7 +35,8 @@
         <module>update-webservice</module>
         <module>update-client</module>
         <module>solr-indexer</module>
-    </modules>
+    <module>queue-bridge</module>
+  </modules>
 
     <build>
         <plugins>
