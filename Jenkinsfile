@@ -24,13 +24,19 @@ pipeline {
                     } else {
                         println(" Building BRANCH_NAME == ${BRANCH_NAME}")
                     }
-
+                    if (env.BRANCH_NAME ==~ /master|trunk/) {
+                        sh """
+                            mvn -B clean
+                            mvn -B deploy pmd:pmd javadoc:aggregate
+                        """
+                    } else {
+                        sh """
+                            mvn -B clean
+                            mvn -B verify pmd:pmd javadoc:aggregate
+                        """
+                    }
                 }
 
-                sh """
-                    mvn -B clean
-                    mvn -B verify pmd:pmd javadoc:aggregate                   
-                """
                 //junit "**/target/surefire-reports/TEST-*.xml,**/target/failsafe-reports/TEST-*.xml"
             }
         }
@@ -83,17 +89,6 @@ pipeline {
                     }
                 }
 
-            }
-        }
-        stage("upload") {
-            steps {
-                script {
-                    if (env.BRANCH_NAME ==~ /master|trunk/) {
-                        sh """
-                            mvn -Dmaven.repo.local=\$WORKSPACE/.repo jar:jar deploy:deploy
-                        """
-                    }
-                }
             }
         }
     }
