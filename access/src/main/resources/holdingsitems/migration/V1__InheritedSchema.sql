@@ -6,18 +6,18 @@ DECLARE
 BEGIN
     SELECT COUNT(*) = 1 INTO b FROM pg_tables WHERE schemaname='public' AND tablename='holdingsitemscollection';
     IF b = true THEN
-        DROP TABLE IF EXISTS queue;
         DROP FUNCTION IF EXISTS dequeue(worker_ VARCHAR(128), no_ INT);
         DROP FUNCTION IF EXISTS dequeue(worker_ VARCHAR(128));
         DROP FUNCTION IF EXISTS enqueue(bibliographicRecordId_ TEXT, agencyId_ NUMERIC(6), issueId_ TEXT, additionalData_ TEXT, provider_ VARCHAR(32));
         DROP FUNCTION IF EXISTS enqueue(bibliographicRecordId_ TEXT, agencyId_ NUMERIC(6), issueId_ TEXT, provider_ VARCHAR(32));
-        DROP TABLE IF EXISTS messagequeuerules;
-        DROP TABLE IF EXISTS queuerules;
-        DROP TABLE IF EXISTS jobdiag;
-        DROP TABLE IF EXISTS queue;
-        DROP TABLE IF EXISTS queueworkers;
         DROP FUNCTION IF EXISTS lockagency(agencyId_ NUMERIC(6));
-        DROP TABLE IF EXISTS agencylock;
+        DROP TABLE IF EXISTS queue CASCADE;
+        DROP TABLE IF EXISTS messagequeuerules CASCADE;
+        DROP TABLE IF EXISTS queuerules CASCADE;
+        DROP TABLE IF EXISTS jobdiag CASCADE;
+        DROP TABLE IF EXISTS queue CASCADE;
+        DROP TABLE IF EXISTS queueworkers CASCADE;
+        DROP TABLE IF EXISTS agencylock CASCADE;
 
     ELSE
         CREATE TABLE version (

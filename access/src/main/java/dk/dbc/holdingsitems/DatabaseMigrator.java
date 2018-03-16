@@ -21,6 +21,7 @@ package dk.dbc.holdingsitems;
 import javax.sql.DataSource;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.MigrationInfo;
+import org.flywaydb.core.api.MigrationVersion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,6 +37,7 @@ public class DatabaseMigrator {
         final Flyway flyway = new Flyway();
         flyway.setTable("schema_version");
         flyway.setBaselineOnMigrate(true);
+        flyway.setBaselineVersion(MigrationVersion.fromVersion("0"));
         flyway.setDataSource(dataSource);
         flyway.setLocations("holdingsitems/migration");
         for (MigrationInfo i : flyway.info().all()) {
