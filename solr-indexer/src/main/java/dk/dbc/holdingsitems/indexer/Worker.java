@@ -81,6 +81,7 @@ public class Worker {
         }
 
         worker = QueueWorker.builder(QueueJob.STORAGE_ABSTRACTION)
+                .skipDuplicateJobs(QueueJob.DEDUPLICATION_ABSTRACTION)
                 .consume(config.getQueues())
                 .dataSource(dataSource)
                 .databaseConnectThrottle(config.getDatabaseThrottle())
