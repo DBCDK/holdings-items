@@ -24,14 +24,9 @@ import dk.dbc.pgqueue.consumer.JobConsumer;
 import dk.dbc.pgqueue.consumer.JobMetaData;
 import dk.dbc.pgqueue.consumer.QueueWorker;
 import java.sql.Connection;
-import java.time.Instant;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,10 +59,10 @@ public class QueueJobIT extends DbBase {
 
             BlockingDeque<QueueJob> list = new LinkedBlockingDeque<>();
 
-            QueueWorker worker = QueueWorker.builder()
+            QueueWorker worker = QueueWorker.builder(QueueJob.STORAGE_ABSTRACTION)
                     .consume(QUEUE)
                     .dataSource(dataSource)
-                    .build(QueueJob.STORAGE_ABSTRACTION, (JobConsumer<QueueJob>) (Connection connection1, QueueJob job, JobMetaData metaData) -> {
+                    .build((JobConsumer<QueueJob>) (Connection connection1, QueueJob job, JobMetaData metaData) -> {
                        list.add(job);
                    });
             worker.start();
