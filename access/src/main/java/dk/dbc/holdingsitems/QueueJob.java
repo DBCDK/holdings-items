@@ -18,6 +18,7 @@
  */
 package dk.dbc.holdingsitems;
 
+import dk.dbc.pgqueue.DeduplicateAbstraction;
 import dk.dbc.pgqueue.QueueStorageAbstraction;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -30,6 +31,7 @@ import java.time.Instant;
  */
 public class QueueJob {
 
+    @Deprecated
     public static final String SQL_COLUMNS = "worker, queued, bibliographicRecordId, agencyId, additionalData, trackingId";
 
     protected String worker;
@@ -39,10 +41,12 @@ public class QueueJob {
     protected String additionalData;
     protected String trackingId;
 
+    @Deprecated
     public QueueJob(ResultSet resultSet) throws SQLException {
         this(resultSet, 1);
     }
 
+    @Deprecated
     public QueueJob(ResultSet resultSet, int column) throws SQLException {
         this.worker = resultSet.getString(column++);
         this.queued = resultSet.getTimestamp(column++).toInstant();
@@ -67,6 +71,7 @@ public class QueueJob {
         this.trackingId = trackingId;
     }
 
+    @Deprecated
     public QueueJob(String worker, Instant queued, String bibliographicRecordId, int agencyId, String additionalData, String trackingId) {
         this.worker = worker;
         this.queued = queued;
@@ -92,12 +97,17 @@ public class QueueJob {
         return agencyId;
     }
 
+    @Deprecated
     public String getAdditionalData() {
         return additionalData;
     }
 
     public String getTrackingId() {
         return trackingId;
+    }
+
+    public void addTrackingId(String trackingId) {
+        this.trackingId += "\t" + trackingId;
     }
 
     @Override
@@ -128,5 +138,24 @@ public class QueueJob {
             stmt.setString(startColumn++, job.getTrackingId());
         }
 
+    };
+    public static final DeduplicateAbstraction<QueueJob> DEDUPLICATION_ABSTRACTION = new DeduplicateAbstraction<QueueJob>() {
+        private final String[] COLUMNS = "agencyId,bibliographicRecordId".split(",");
+        @Override
+        public String[] duplicateDeleteColumnList() {
+            return COLUMNS;
+        }
+
+        @Override
+        public void duplicateValues(QueueJob job, PreparedStatement stmt, int startColumn) throws SQLException {
+            stmt.setInt(startColumn++, job.getAgencyId());
+            stmt.setString(startColumn++, job.getBibliographicRecordId());
+        }
+
+        @Override
+        public QueueJob mergeJob(QueueJob originalJob, QueueJob skippedJob) {
+            originalJob.addTrackingId(skippedJob.getTrackingId());
+            return originalJob;
+        }
     };
 }
