@@ -50,16 +50,20 @@ public class QueueJobIT extends DbBase {
 
         QueueJob job1 = new QueueJob(888888, "12345678", "t1");
         QueueJob job2 = new QueueJob(888888, "87654321", "t2");
+        QueueJob job3 = new QueueJob(888888, "87654321", "t3");
+        QueueJob job2_3 = new QueueJob(888888, "87654321", "t2\tt3");
 
         try (Connection connection = dataSource.getConnection()) {
             PreparedQueueSupplier<QueueJob> supplier = QUEUE_SUPPLIER.preparedSupplier(connection);
 
             supplier.enqueue(QUEUE, job1);
             supplier.enqueue(QUEUE, job2);
+            supplier.enqueue(QUEUE, job3);
 
             BlockingDeque<QueueJob> list = new LinkedBlockingDeque<>();
 
             QueueWorker worker = QueueWorker.builder(QueueJob.STORAGE_ABSTRACTION)
+                    .skipDuplicateJobs(QueueJob.DEDUPLICATION_ABSTRACTION)
                     .consume(QUEUE)
                     .dataSource(dataSource)
                     .build((JobConsumer<QueueJob>) (Connection connection1, QueueJob job, JobMetaData metaData) -> {
@@ -73,7 +77,7 @@ public class QueueJobIT extends DbBase {
             worker.stop();
 
             assertEquals(job1.toString(), actual1.toString());
-            assertEquals(job2.toString(), actual2.toString());
+            assertEquals(job2_3.toString(), actual2.toString());
         }
     }
 }
