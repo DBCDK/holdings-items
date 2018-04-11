@@ -24,14 +24,9 @@ import dk.dbc.pgqueue.consumer.JobConsumer;
 import dk.dbc.pgqueue.consumer.JobMetaData;
 import dk.dbc.pgqueue.consumer.QueueWorker;
 import java.sql.Connection;
-import java.time.Instant;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,19 +50,23 @@ public class QueueJobIT extends DbBase {
 
         QueueJob job1 = new QueueJob(888888, "12345678", "t1");
         QueueJob job2 = new QueueJob(888888, "87654321", "t2");
+        QueueJob job3 = new QueueJob(888888, "87654321", "t3");
+        QueueJob job2_3 = new QueueJob(888888, "87654321", "t2\tt3");
 
         try (Connection connection = dataSource.getConnection()) {
             PreparedQueueSupplier<QueueJob> supplier = QUEUE_SUPPLIER.preparedSupplier(connection);
 
             supplier.enqueue(QUEUE, job1);
             supplier.enqueue(QUEUE, job2);
+            supplier.enqueue(QUEUE, job3);
 
             BlockingDeque<QueueJob> list = new LinkedBlockingDeque<>();
 
-            QueueWorker worker = QueueWorker.builder()
+            QueueWorker worker = QueueWorker.builder(QueueJob.STORAGE_ABSTRACTION)
+                    .skipDuplicateJobs(QueueJob.DEDUPLICATION_ABSTRACTION)
                     .consume(QUEUE)
                     .dataSource(dataSource)
-                    .build(QueueJob.STORAGE_ABSTRACTION, (JobConsumer<QueueJob>) (Connection connection1, QueueJob job, JobMetaData metaData) -> {
+                    .build((JobConsumer<QueueJob>) (Connection connection1, QueueJob job, JobMetaData metaData) -> {
                        list.add(job);
                    });
             worker.start();
@@ -78,7 +77,7 @@ public class QueueJobIT extends DbBase {
             worker.stop();
 
             assertEquals(job1.toString(), actual1.toString());
-            assertEquals(job2.toString(), actual2.toString());
+            assertEquals(job2_3.toString(), actual2.toString());
         }
     }
 }

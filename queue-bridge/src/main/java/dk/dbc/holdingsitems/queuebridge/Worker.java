@@ -77,7 +77,8 @@ public class Worker {
             throw new EJBException("Error validating dao version", ex);
         }
 
-        worker = QueueWorker.builder()
+        worker = QueueWorker.builder(QueueJob.STORAGE_ABSTRACTION)
+                .skipDuplicateJobs(QueueJob.DEDUPLICATION_ABSTRACTION)
                 .consume(config.getQueues())
                 .dataSource(dataSource)
                 .databaseConnectThrottle(config.getDatabaseThrottle())
@@ -89,7 +90,7 @@ public class Worker {
                 .rescanEvery(config.getRescanEvery())
                 .maxTries(config.getRetries())
                 .metricRegistry(metrics.getRegistry())
-                .build(QueueJob.STORAGE_ABSTRACTION, config.getThreads(), this::work);
+                .build(config.getThreads(), this::work);
         worker.start();
     }
 
