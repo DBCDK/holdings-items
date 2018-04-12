@@ -40,7 +40,8 @@
         <module>update-client</module>
         <module>solr-indexer</module>
         <module>queue-bridge</module>
-    </modules>
+    <module>monitor</module>
+  </modules>
 
     <build>
         <plugins>

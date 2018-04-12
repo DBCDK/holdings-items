@@ -2,9 +2,8 @@ FROM docker.dbc.dk/payara-micro:LogAsJson
 
 ENV THREADS=4 \
     RETRIES=5 \
-    APPLICATION_NAME=HoldingsItemsSolrDocStoreIndexer
-
-
+    APPLICATION_NAME=HoldingsItemsSolrDocStoreIndexer \
+    ADD_PAYARA_ARGS=--nocluster
 
 LABEL HOLDINGS_ITEMS_POSTGRES_URL="Holdingsitems database url (required: user:pass@host:port/database)" \
        QUEUES="Comma separated list og queue names in order to drain (required)" \
