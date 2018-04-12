@@ -78,6 +78,7 @@ public class UniqueFields {
         node.putArray(SolrFields.SUBLOCATION.getFieldName()).add(subLocation);
         node.putArray(SolrFields.CIRCULATION_RULE.getFieldName()).add(circulationRule);
         node.putArray(SolrFields.ACCESSION_DATE.getFieldName()).add(String.valueOf(accessionDate) + "T00:00:00.000Z");
+        node.putArray(SolrFields.COLLECTION_ID.getFieldName()).add(String.valueOf(agencyId) + "-" + bibliographicRecordId.replaceAll("[^0-9a-zA-Z]", "_"));
     }
 
     private static String isoDate(Date expectedDelivery) {
