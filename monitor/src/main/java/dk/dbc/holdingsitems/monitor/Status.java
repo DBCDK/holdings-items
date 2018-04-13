@@ -18,7 +18,6 @@
  */
 package dk.dbc.holdingsitems.monitor;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import dk.dbc.holdingsitems.monitor.monitor.Timed;
 import dk.dbc.pgqueue.diags.QueueStatusBean;
 import java.util.Arrays;
@@ -49,6 +48,7 @@ public class Status {
 
     private static final Logger log = LoggerFactory.getLogger(Status.class);
 
+    private static final int DIAG_MAX_CACHE_AGE = 45;
     private static final int DIAG_PERCENT_MATCH = 90;
     private static final int DIAG_COLLAPSE_MAX_ROWS = 12500;
 
@@ -73,8 +73,9 @@ public class Status {
         Set<String> ign = Collections.EMPTY_SET;
         if(ignore != null && ! ignore.isEmpty()) {
             ign = new HashSet<>(Arrays.asList(ignore.split(",")));
+            log.debug("getQueueStatus(ign = {})", ign);
         }
-        return queueStatus.getQueueStatus(dataSource, DIAG_PERCENT_MATCH, DIAG_COLLAPSE_MAX_ROWS, ign);
+        return queueStatus.getQueueStatus(dataSource, DIAG_MAX_CACHE_AGE, DIAG_PERCENT_MATCH, DIAG_COLLAPSE_MAX_ROWS, ign);
     }
 
     @GET
