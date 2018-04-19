@@ -24,6 +24,11 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  *
@@ -40,10 +45,12 @@ public class QueueJob {
     protected int agencyId;
     protected String additionalData;
     protected String trackingId;
+    protected Set<String> trackingIds;
 
     @Deprecated
     public QueueJob(ResultSet resultSet) throws SQLException {
         this(resultSet, 1);
+        this.trackingIds = null;
     }
 
     @Deprecated
@@ -54,18 +61,22 @@ public class QueueJob {
         this.agencyId = resultSet.getInt(column++);
         this.additionalData = resultSet.getString(column++);
         this.trackingId = resultSet.getString(column++);
+        this.trackingIds = null;
     }
 
     QueueJob() {
+        this.trackingIds = null;
     }
 
     public QueueJob(String bibliographicRecordId, int agencyId, String additionalData) {
         this.bibliographicRecordId = bibliographicRecordId;
         this.agencyId = agencyId;
         this.additionalData = additionalData;
+        this.trackingIds = null;
     }
 
     public QueueJob(int agencyId, String bibliographicRecordId, String trackingId) {
+        this.trackingIds = null;
         this.agencyId = agencyId;
         this.bibliographicRecordId = bibliographicRecordId;
         this.trackingId = trackingId;
@@ -73,6 +84,7 @@ public class QueueJob {
 
     @Deprecated
     public QueueJob(String worker, Instant queued, String bibliographicRecordId, int agencyId, String additionalData, String trackingId) {
+        this.trackingIds = null;
         this.worker = worker;
         this.queued = queued;
         this.bibliographicRecordId = bibliographicRecordId;
@@ -103,11 +115,26 @@ public class QueueJob {
     }
 
     public String getTrackingId() {
-        return trackingId;
+        return String.join("\t", getTrackingIds());
+    }
+
+    public Set<String> getTrackingIds() {
+        synchronized (this) {
+            if (trackingIds != null) {
+                trackingIds = new HashSet<>(Arrays.asList(this.trackingId.split("\t")));
+            }
+            return trackingIds;
+        }
     }
 
     public void addTrackingId(String trackingId) {
-        this.trackingId += "\t" + trackingId;
+        addTrackingIds(Collections.singletonList(trackingId));
+    }
+
+    public void addTrackingIds(Collection<String> trackingIds) {
+        synchronized (this) {
+            getTrackingIds().addAll(trackingIds);
+        }
     }
 
     @Override
@@ -141,6 +168,7 @@ public class QueueJob {
     };
     public static final DeduplicateAbstraction<QueueJob> DEDUPLICATION_ABSTRACTION = new DeduplicateAbstraction<QueueJob>() {
         private final String[] COLUMNS = "agencyId,bibliographicRecordId".split(",");
+
         @Override
         public String[] duplicateDeleteColumnList() {
             return COLUMNS;
@@ -154,7 +182,7 @@ public class QueueJob {
 
         @Override
         public QueueJob mergeJob(QueueJob originalJob, QueueJob skippedJob) {
-            originalJob.addTrackingId(skippedJob.getTrackingId());
+            originalJob.addTrackingIds(skippedJob.getTrackingIds());
             return originalJob;
         }
     };
