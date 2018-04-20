@@ -26,9 +26,8 @@ import java.sql.SQLException;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.Set;
+import java.util.TreeSet;
 
 /**
  *
@@ -118,28 +117,31 @@ public class QueueJob {
         return String.join("\t", getTrackingIds());
     }
 
-    public Set<String> getTrackingIds() {
+    private Set<String> getTrackingIds() {
         synchronized (this) {
-            if (trackingIds != null) {
-                trackingIds = new HashSet<>(Arrays.asList(this.trackingId.split("\t")));
+            if (trackingIds == null) {
+                if (trackingId == null || trackingId.isEmpty()) {
+                    trackingIds = new TreeSet<>();
+                } else {
+                    trackingIds = new TreeSet<>(Arrays.asList(this.trackingId.split("\t")));
+                }
             }
+            System.out.println("trackingIds = " + trackingIds);
             return trackingIds;
         }
     }
 
-    public void addTrackingId(String trackingId) {
-        addTrackingIds(Collections.singletonList(trackingId));
-    }
-
-    public void addTrackingIds(Collection<String> trackingIds) {
+    private void addTrackingIds(Collection<String> trackingIds) {
+        System.out.println("(add) trackingIds = " +  trackingIds);
         synchronized (this) {
             getTrackingIds().addAll(trackingIds);
+            System.out.println("this.trackingIds = " + this.trackingIds);
         }
     }
 
     @Override
     public String toString() {
-        return "QueueJob{" + "worker=" + worker + ", queued=" + queued + ", bibliographicRecordId=" + bibliographicRecordId + ", agencyId=" + agencyId + ", additionalData=" + additionalData + ", trackingId=" + trackingId + '}';
+        return "QueueJob{" + "worker=" + worker + ", queued=" + queued + ", bibliographicRecordId=" + bibliographicRecordId + ", agencyId=" + agencyId + ", additionalData=" + additionalData + ", trackingId=" + getTrackingId() + '}';
     }
 
     public static final QueueStorageAbstraction<QueueJob> STORAGE_ABSTRACTION = new QueueStorageAbstraction<QueueJob>() {
