@@ -126,7 +126,6 @@ public class QueueJob {
                     trackingIds = new TreeSet<>(Arrays.asList(this.trackingId.split("\t")));
                 }
             }
-            System.out.println("trackingIds = " + trackingIds);
             return trackingIds;
         }
     }
