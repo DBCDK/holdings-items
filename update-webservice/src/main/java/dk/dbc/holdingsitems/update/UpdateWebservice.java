@@ -26,6 +26,7 @@ import dk.dbc.holdingsitems.HoldingsItemsDAO;
 import dk.dbc.holdingsitems.HoldingsItemsException;
 import dk.dbc.holdingsitems.Record;
 import dk.dbc.holdingsitems.RecordCollection;
+import dk.dbc.log.LogWith;
 import dk.dbc.oss.ns.holdingsitemsupdate.Authentication;
 import dk.dbc.oss.ns.holdingsitemsupdate.CompleteBibliographicItem;
 import dk.dbc.oss.ns.holdingsitemsupdate.CompleteHoldingsItemsUpdateRequest;
@@ -41,6 +42,7 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.Date;
 import java.util.Set;
+import java.util.UUID;
 import javax.annotation.Resource;
 import javax.inject.Inject;
 import javax.jws.WebService;
@@ -108,7 +110,7 @@ public class UpdateWebservice {
 
     /**
      * Accept request for multiple bibliographic record ids
-     *
+     * <p>
      * This is for small updates
      *
      * @param req soap request
@@ -116,52 +118,60 @@ public class UpdateWebservice {
      */
     public HoldingsItemsUpdateResult holdingsItemsUpdate(final HoldingsItemsUpdateRequest req) {
         requestUpdateCounter.inc();
-        return handleRequest(new UpdateRequest(this) {
-            int agencyId = Integer.parseInt(req.getAgencyId(), 10);
+        if (req.getTrackingId() == null || req.getTrackingId().isEmpty()) {
+            String trackingId = UUID.randomUUID().toString();
+            log.info("Setting tracking id to: {}", trackingId);
+            req.setTrackingId(trackingId);
+        }
+        try (LogWith logWith = new LogWith(req.getTrackingId())) {
+            logWith.agencyId(req.getAgencyId());
+            return handleRequest(new UpdateRequest(this) {
+                int agencyId = Integer.parseInt(req.getAgencyId(), 10);
 
-            @Override
-            public Authentication getAuthentication() {
-                return req.getAuthentication();
-            }
+                @Override
+                public Authentication getAuthentication() {
+                    return req.getAuthentication();
+                }
 
-            @Override
-            public String getTrakingId() {
-                return req.getTrackingId();
-            }
+                @Override
+                public String getTrakingId() {
+                    return req.getTrackingId();
+                }
 
-            @Override
-            public String getQueueListOld() {
-                return config.getUpdateQueueOldList();
-            }
+                @Override
+                public String getQueueListOld() {
+                    return config.getUpdateQueueOldList();
+                }
 
-            @Override
-            public String getQueueList() {
-                return config.getUpdateQueueList();
-            }
+                @Override
+                public String getQueueList() {
+                    return config.getUpdateQueueList();
+                }
 
-            /**
-             * iterate over bibliographic record items, and call processJHolding
-             * upon them
-             */
-            @Override
-            public void processBibliograhicItems() {
-                log.debug("update");
-                req.getBibliographicItem().stream()
-                        .sorted(BIBLIOGRAPHICITEM_SORT_COMPARE)
-                        .forEachOrdered(bibliographicItem -> {
-                            Timestamp modified = parseTimestamp(bibliographicItem.getModificationTimeStamp());
-                            String bibliographicRecordId = bibliographicItem.getBibliographicRecordId();
-                            String note = orEmptyString(bibliographicItem.getNote());
+                /**
+                 * iterate over bibliographic record items, and call
+                 * processJHolding
+                 * upon them
+                 */
+                @Override
+                public void processBibliograhicItems() {
+                    log.debug("update");
+                    req.getBibliographicItem().stream()
+                            .sorted(BIBLIOGRAPHICITEM_SORT_COMPARE)
+                            .forEachOrdered(bibliographicItem -> {
+                                Timestamp modified = parseTimestamp(bibliographicItem.getModificationTimeStamp());
+                                String bibliographicRecordId = bibliographicItem.getBibliographicRecordId();
+                                String note = orEmptyString(bibliographicItem.getNote());
+                                addQueueJob(bibliographicRecordId, agencyId);
 
-                            addQueueJob(bibliographicRecordId, agencyId);
+                                bibliographicItem.getHolding().stream()
+                                        .sorted(HOLDINGS_SORT_COMPARE)
+                                        .forEachOrdered(holding -> processHolding(modified, agencyId, bibliographicRecordId, note, false, holding));
+                            });
+                }
 
-                            bibliographicItem.getHolding().stream()
-                                    .sorted(HOLDINGS_SORT_COMPARE)
-                                    .forEachOrdered(holding -> processHolding(modified, agencyId, bibliographicRecordId, note, false, holding));
-                        });
-            }
-
-        });
+            });
+        }
     }
 
     /**
@@ -172,80 +182,89 @@ public class UpdateWebservice {
      */
     public HoldingsItemsUpdateResult completeHoldingsItemsUpdate(final CompleteHoldingsItemsUpdateRequest req) {
         requestCompleteCounter.inc();
-        return handleRequest(new UpdateRequest(this) {
-            int agencyId = Integer.parseInt(req.getAgencyId(), 10);
+        if (req.getTrackingId() == null || req.getTrackingId().isEmpty()) {
+            String trackingId = UUID.randomUUID().toString();
+            log.info("Setting tracking id to: {}", trackingId);
+            req.setTrackingId(trackingId);
+        }
+        try (LogWith logWith = new LogWith(req.getTrackingId())) {
+            logWith.agencyId(req.getAgencyId());
+            return handleRequest(new UpdateRequest(this) {
+                int agencyId = Integer.parseInt(req.getAgencyId(), 10);
 
-            @Override
-            public Authentication getAuthentication() {
-                return req.getAuthentication();
-            }
-
-            @Override
-            public String getTrakingId() {
-                return req.getTrackingId();
-            }
-
-            @Override
-            public String getQueueListOld() {
-                return config.getCompleteQueueOldList();
-            }
-
-            @Override
-            public String getQueueList() {
-                return config.getCompleteQueueList();
-            }
-
-            /**
-             * Wipe existing knowledge of record and create one from scratch
-             */
-            @Override
-            public void processBibliograhicItems() {
-                log.debug("complete");
-                CompleteBibliographicItem bibliographicItem = req.getCompleteBibliographicItem();
-                Timestamp modified = parseTimestamp(bibliographicItem.getModificationTimeStamp());
-                String bibliographicRecordId = bibliographicItem.getBibliographicRecordId();
-                String note = orEmptyString(bibliographicItem.getNote());
-
-                addQueueJob(bibliographicRecordId, agencyId);
-
-                decommissionExistingRecords(bibliographicRecordId, modified);
-                bibliographicItem.getHolding().stream()
-                        .sorted(HOLDINGS_SORT_COMPARE)
-                        .forEachOrdered(holding -> processHolding(modified, agencyId, bibliographicRecordId, note, true, holding));
-            }
-
-            /**
-             * Find all issueids and decommission them.
-             *
-             * @param bibliographicRecordId record id
-             * @param modified              then the request was made
-             * @throws WrapperException for holding exceptions through .stream()
-             */
-            public void decommissionExistingRecords(String bibliographicRecordId, Timestamp modified) throws WrapperException {
-                try {
-                    Set<String> issueIds = dao.getIssueIds(bibliographicRecordId, agencyId);
-                    addQueueJob(bibliographicRecordId, agencyId);
-                    for (String issueId : issueIds) {
-                        log.debug("agencyId = " + agencyId + "; bibliographicRecordId = " + bibliographicRecordId + "; issueId = " + issueId + "; wipe");
-                        RecordCollection collection;
-                        try (Timer.Context time = loadCollectionTimer.time()) {
-                            collection = dao.getRecordCollection(bibliographicRecordId, agencyId, issueId);
-                        }
-                        collection.setComplete(true);
-                        try (Timer.Context time = saveCollectionTimer.time()) {
-                            collection.save(modified);
-                        }
-                    }
-                } catch (HoldingsItemsException ex) {
-                    throw new WrapperException(ex);
+                @Override
+                public Authentication getAuthentication() {
+                    return req.getAuthentication();
                 }
-            }
-        });
+
+                @Override
+                public String getTrakingId() {
+                    return req.getTrackingId();
+                }
+
+                @Override
+                public String getQueueListOld() {
+                    return config.getCompleteQueueOldList();
+                }
+
+                @Override
+                public String getQueueList() {
+                    return config.getCompleteQueueList();
+                }
+
+                /**
+                 * Wipe existing knowledge of record and create one from scratch
+                 */
+                @Override
+                public void processBibliograhicItems() {
+                    log.debug("complete");
+                    CompleteBibliographicItem bibliographicItem = req.getCompleteBibliographicItem();
+                    Timestamp modified = parseTimestamp(bibliographicItem.getModificationTimeStamp());
+                    String bibliographicRecordId = bibliographicItem.getBibliographicRecordId();
+                    String note = orEmptyString(bibliographicItem.getNote());
+
+                    addQueueJob(bibliographicRecordId, agencyId);
+
+                    decommissionExistingRecords(bibliographicRecordId, modified);
+                    bibliographicItem.getHolding().stream()
+                            .sorted(HOLDINGS_SORT_COMPARE)
+                            .forEachOrdered(holding -> processHolding(modified, agencyId, bibliographicRecordId, note, true, holding));
+                }
+
+                /**
+                 * Find all issueids and decommission them.
+                 *
+                 * @param bibliographicRecordId record id
+                 * @param modified              then the request was made
+                 * @throws WrapperException for holding exceptions through
+                 *                          .stream()
+                 */
+                public void decommissionExistingRecords(String bibliographicRecordId, Timestamp modified) throws WrapperException {
+                    try {
+                        Set<String> issueIds = dao.getIssueIds(bibliographicRecordId, agencyId);
+                        addQueueJob(bibliographicRecordId, agencyId);
+                        for (String issueId : issueIds) {
+                            log.debug("agencyId = " + agencyId + "; bibliographicRecordId = " + bibliographicRecordId + "; issueId = " + issueId + "; wipe");
+                            RecordCollection collection;
+                            try (Timer.Context time = loadCollectionTimer.time()) {
+                                collection = dao.getRecordCollection(bibliographicRecordId, agencyId, issueId);
+                            }
+                            collection.setComplete(true);
+                            try (Timer.Context time = saveCollectionTimer.time()) {
+                                collection.save(modified);
+                            }
+                        }
+                    } catch (HoldingsItemsException ex) {
+                        throw new WrapperException(ex);
+                    }
+                }
+            });
+        }
     }
 
     /**
      * Request for handling holdings on online resources
-     *
+     * <p>
      * The issueId for en online holding is an empty string, so is the itemId
      * also. This itemId is not valid for anything else
      *
@@ -254,76 +273,84 @@ public class UpdateWebservice {
      */
     public HoldingsItemsUpdateResult onlineHoldingsItemsUpdate(final OnlineHoldingsItemsUpdateRequest req) {
         requestOnlineCounter.inc();
-        return handleRequest(new UpdateRequest(this) {
-            int agencyId = Integer.parseInt(req.getAgencyId(), 10);
+        if (req.getTrackingId() == null || req.getTrackingId().isEmpty()) {
+            String trackingId = UUID.randomUUID().toString();
+            log.info("Setting tracking id to: {}", trackingId);
+            req.setTrackingId(trackingId);
+        }
+        try (LogWith logWith = new LogWith(req.getTrackingId())) {
+            logWith.agencyId(req.getAgencyId());
+            return handleRequest(new UpdateRequest(this) {
+                int agencyId = Integer.parseInt(req.getAgencyId(), 10);
 
-            @Override
-            public Authentication getAuthentication() {
-                return req.getAuthentication();
-            }
-
-            @Override
-            public String getTrakingId() {
-                return req.getTrackingId();
-            }
-
-            @Override
-            public String getQueueListOld() {
-                return config.getOnlineQueueOldList();
-            }
-
-            @Override
-            public String getQueueList() {
-                return config.getOnlineQueueList();
-            }
-
-            @Override
-            public void processBibliograhicItems() {
-                req.getOnlineBibliographicItem().stream()
-                        .sorted(ONLINE_BIBLIOGRAPHICITEM_SORT_COMPARE)
-                        .forEachOrdered(this::processBibliograhicItem);
-            }
-
-            /**
-             * Create items with issueId and itemId as empty strings
-             *
-             * @param bibliographicItem soap structure
-             */
-            private void processBibliograhicItem(OnlineBibliographicItem bibliographicItem) {
-                Timestamp modified = parseTimestamp(bibliographicItem.getModificationTimeStamp());
-                String bibliographicRecordId = bibliographicItem.getBibliographicRecordId();
-                try {
-                    RecordCollection collection;
-                    try (Timer.Context time = loadCollectionTimer.time()) {
-                        collection = dao.getRecordCollection(bibliographicRecordId, agencyId, "");
-                    }
-                    if (collection.isOriginal()) {
-                        collection.setNote("");
-                        collection.setReadyForLoan(0);
-                    }
-                    Record rec = collection.findRecord(""); // Empty issueId = ONLINE
-                    if (bibliographicItem.isHasOnlineHolding()) {
-                        rec.setStatus(StatusType.ONLINE.value());
-                    } else {
-                        rec.setStatus(StatusType.DECOMMISSIONED.value());
-                    }
-                    if (rec.isOriginal()) {
-                        rec.setBranch("");
-                        rec.setDepartment("");
-                        rec.setLocation("");
-                        rec.setSubLocation("");
-                        rec.setCirculationRule("");
-                        rec.setAccessionDate(new Date());
-                    }
-                    addQueueJob(bibliographicRecordId, agencyId);
-                    try (Timer.Context time = saveCollectionTimer.time()) {
-                        collection.save(modified);
-                    }
-                } catch (HoldingsItemsException ex) {
-                    throw new WrapperException(ex);
+                @Override
+                public Authentication getAuthentication() {
+                    return req.getAuthentication();
                 }
-            }
-        });
+
+                @Override
+                public String getTrakingId() {
+                    return req.getTrackingId();
+                }
+
+                @Override
+                public String getQueueListOld() {
+                    return config.getOnlineQueueOldList();
+                }
+
+                @Override
+                public String getQueueList() {
+                    return config.getOnlineQueueList();
+                }
+
+                @Override
+                public void processBibliograhicItems() {
+                    req.getOnlineBibliographicItem().stream()
+                            .sorted(ONLINE_BIBLIOGRAPHICITEM_SORT_COMPARE)
+                            .forEachOrdered(this::processBibliograhicItem);
+                }
+
+                /**
+                 * Create items with issueId and itemId as empty strings
+                 *
+                 * @param bibliographicItem soap structure
+                 */
+                private void processBibliograhicItem(OnlineBibliographicItem bibliographicItem) {
+                    Timestamp modified = parseTimestamp(bibliographicItem.getModificationTimeStamp());
+                    String bibliographicRecordId = bibliographicItem.getBibliographicRecordId();
+                    try {
+                        RecordCollection collection;
+                        try (Timer.Context time = loadCollectionTimer.time()) {
+                            collection = dao.getRecordCollection(bibliographicRecordId, agencyId, "");
+                        }
+                        if (collection.isOriginal()) {
+                            collection.setNote("");
+                            collection.setReadyForLoan(0);
+                        }
+                        Record rec = collection.findRecord(""); // Empty issueId = ONLINE
+                        if (bibliographicItem.isHasOnlineHolding()) {
+                            rec.setStatus(StatusType.ONLINE.value());
+                        } else {
+                            rec.setStatus(StatusType.DECOMMISSIONED.value());
+                        }
+                        if (rec.isOriginal()) {
+                            rec.setBranch("");
+                            rec.setDepartment("");
+                            rec.setLocation("");
+                            rec.setSubLocation("");
+                            rec.setCirculationRule("");
+                            rec.setAccessionDate(new Date());
+                        }
+                        addQueueJob(bibliographicRecordId, agencyId);
+                        try (Timer.Context time = saveCollectionTimer.time()) {
+                            collection.save(modified);
+                        }
+                    } catch (HoldingsItemsException ex) {
+                        throw new WrapperException(ex);
+                    }
+                }
+            });
+        }
     }
 
     /**
@@ -476,7 +503,7 @@ public class UpdateWebservice {
 
     /**
      * Get an ip number for the remote user
-     *
+     * <p>
      * x-forwarded-for header is used if thre remote ip is known
      *
      * @param req Servlet context

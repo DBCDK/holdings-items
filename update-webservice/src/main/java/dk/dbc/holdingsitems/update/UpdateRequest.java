@@ -210,6 +210,7 @@ public abstract class UpdateRequest {
      * @param item       item to add
      */
     protected void addItemToCollection(RecordCollection collection, HoldingsItem item) {
+        log.info("Adding item: {}", item.getItemId());
         Record rec = collection.findRecord(item.getItemId());
         XMLGregorianCalendar accessionDate = item.getAccessionDate();
         if (accessionDate != null) {
