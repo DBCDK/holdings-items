@@ -53,7 +53,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.sql.DataSource;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
-import javax.xml.bind.Marshaller;
 import javax.xml.ws.WebServiceContext;
 import javax.xml.ws.handler.MessageContext;
 import org.slf4j.Logger;
@@ -172,7 +171,7 @@ public class UpdateWebservice {
         try (LogWith logWith = new LogWith(req.getTrackingId())) {
             logWith.agencyId(req.getAgencyId());
 
-            logXml(req.getAgencyId(), req);
+            logXml(req.getAgencyId(), req, req.getAuthentication());
             return handleRequest(new UpdateRequest(this) {
                 int agencyId = Integer.parseInt(req.getAgencyId(), 10);
 
@@ -241,7 +240,7 @@ public class UpdateWebservice {
         try (LogWith logWith = new LogWith(req.getTrackingId())) {
             logWith.agencyId(req.getAgencyId());
 
-            logXml(req.getAgencyId(), req);
+            logXml(req.getAgencyId(), req, req.getAuthentication());
             return handleRequest(new UpdateRequest(this) {
                 int agencyId = Integer.parseInt(req.getAgencyId(), 10);
 
@@ -341,7 +340,7 @@ public class UpdateWebservice {
         try (LogWith logWith = new LogWith(req.getTrackingId())) {
             logWith.agencyId(req.getAgencyId());
 
-            logXml(req.getAgencyId(), req);
+            logXml(req.getAgencyId(), req, req.getAuthentication());
             return handleRequest(new UpdateRequest(this) {
                 int agencyId = Integer.parseInt(req.getAgencyId(), 10);
 
@@ -417,9 +416,16 @@ public class UpdateWebservice {
         }
     }
 
-    private void logXml(String agencyId, Object req) {
+    private void logXml(String agencyId, Object req, Authentication auth) {
         if (config.shouldLogXml(agencyId)) {
-            log.info(mapToXml.apply(req));
+            if (auth != null) {
+                String password = auth.getPasswordAut();
+                auth.setPasswordAut("[REDACTED]");
+                log.info(mapToXml.apply(req));
+                auth.setPasswordAut(password);
+            } else {
+                log.info(mapToXml.apply(req));
+            }
         }
     }
 
