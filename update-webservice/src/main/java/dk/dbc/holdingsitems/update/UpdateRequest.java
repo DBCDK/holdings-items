@@ -23,6 +23,7 @@ import dk.dbc.holdingsitems.HoldingsItemsDAO;
 import dk.dbc.holdingsitems.HoldingsItemsException;
 import dk.dbc.holdingsitems.Record;
 import dk.dbc.holdingsitems.RecordCollection;
+import dk.dbc.log.LogWith;
 import dk.dbc.oss.ns.holdingsitemsupdate.Authentication;
 import dk.dbc.oss.ns.holdingsitemsupdate.BibliographicItem;
 import dk.dbc.oss.ns.holdingsitemsupdate.Holding;
@@ -173,8 +174,9 @@ public abstract class UpdateRequest {
      *                          (useful for using .stream())
      */
     protected void processHolding(Timestamp modified, int agencyId, String bibliographicRecordId, String note, boolean complete, Holding holding) throws WrapperException {
-        try {
+        try (LogWith logWith = new LogWith()) {
             String issueId = holding.getIssueId();
+            logWith.with("issueId", issueId);
             log.info("agencyId = " + agencyId + "; bibliographicRecordId = " + bibliographicRecordId + "; issueId = " + issueId + "; trackingId = " + getTrakingId());
             RecordCollection collection;
             try (Timer.Context time = updateWebService.loadCollectionTimer.time()) {
@@ -210,24 +212,28 @@ public abstract class UpdateRequest {
      * @param item       item to add
      */
     protected void addItemToCollection(RecordCollection collection, HoldingsItem item) {
-        log.info("Adding item: {}", item.getItemId());
-        Record rec = collection.findRecord(item.getItemId());
-        XMLGregorianCalendar accessionDate = item.getAccessionDate();
-        if (accessionDate != null) {
-            rec.setAccessionDate(toDate(accessionDate, false));
-        }
-        StatusType status = item.getStatus();
-        if (status != null) {
-            if (status == StatusType.ONLINE) {
-                throw new FailedUpdateInternalException("Use endpoint onlineHoldingsItemsUpdate got status ONLINE");
+        try (LogWith logWith = new LogWith()) {
+            String itemId = item.getItemId();
+            logWith.with("itemId", itemId);
+            log.info("Adding item: {}", itemId);
+            Record rec = collection.findRecord(itemId);
+            XMLGregorianCalendar accessionDate = item.getAccessionDate();
+            if (accessionDate != null) {
+                rec.setAccessionDate(toDate(accessionDate, false));
             }
-            rec.setStatus(status.value());
+            StatusType status = item.getStatus();
+            if (status != null) {
+                if (status == StatusType.ONLINE) {
+                    throw new FailedUpdateInternalException("Use endpoint onlineHoldingsItemsUpdate got status ONLINE");
+                }
+                rec.setStatus(status.value());
+            }
+            copyValue(item::getBranch, rec::setBranch);
+            copyValue(item::getCirculationRule, rec::setCirculationRule);
+            copyValue(item::getDepartment, rec::setDepartment);
+            copyValue(item::getLocation, rec::setLocation);
+            copyValue(item::getSubLocation, rec::setSubLocation);
         }
-        copyValue(item::getBranch, rec::setBranch);
-        copyValue(item::getCirculationRule, rec::setCirculationRule);
-        copyValue(item::getDepartment, rec::setDepartment);
-        copyValue(item::getLocation, rec::setLocation);
-        copyValue(item::getSubLocation, rec::setSubLocation);
     }
 
     /**

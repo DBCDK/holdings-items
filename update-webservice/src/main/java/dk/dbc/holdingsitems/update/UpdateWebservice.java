@@ -162,14 +162,17 @@ public class UpdateWebservice {
                                 Timestamp modified = parseTimestamp(bibliographicItem.getModificationTimeStamp());
                                 String bibliographicRecordId = bibliographicItem.getBibliographicRecordId();
                                 String note = orEmptyString(bibliographicItem.getNote());
-                                addQueueJob(bibliographicRecordId, agencyId);
+                                try (LogWith logWith = new LogWith()) {
+                                    logWith.bibliographicRecordId(bibliographicRecordId);
 
-                                bibliographicItem.getHolding().stream()
-                                        .sorted(HOLDINGS_SORT_COMPARE)
-                                        .forEachOrdered(holding -> processHolding(modified, agencyId, bibliographicRecordId, note, false, holding));
+                                    addQueueJob(bibliographicRecordId, agencyId);
+
+                                    bibliographicItem.getHolding().stream()
+                                            .sorted(HOLDINGS_SORT_COMPARE)
+                                            .forEachOrdered(holding -> processHolding(modified, agencyId, bibliographicRecordId, note, false, holding));
+                                }
                             });
                 }
-
             });
         }
     }
@@ -222,13 +225,16 @@ public class UpdateWebservice {
                     Timestamp modified = parseTimestamp(bibliographicItem.getModificationTimeStamp());
                     String bibliographicRecordId = bibliographicItem.getBibliographicRecordId();
                     String note = orEmptyString(bibliographicItem.getNote());
+                    try (LogWith logWith = new LogWith()) {
+                        logWith.bibliographicRecordId(bibliographicRecordId);
 
-                    addQueueJob(bibliographicRecordId, agencyId);
+                        addQueueJob(bibliographicRecordId, agencyId);
 
-                    decommissionExistingRecords(bibliographicRecordId, modified);
-                    bibliographicItem.getHolding().stream()
-                            .sorted(HOLDINGS_SORT_COMPARE)
-                            .forEachOrdered(holding -> processHolding(modified, agencyId, bibliographicRecordId, note, true, holding));
+                        decommissionExistingRecords(bibliographicRecordId, modified);
+                        bibliographicItem.getHolding().stream()
+                                .sorted(HOLDINGS_SORT_COMPARE)
+                                .forEachOrdered(holding -> processHolding(modified, agencyId, bibliographicRecordId, note, true, holding));
+                    }
                 }
 
                 /**
@@ -240,10 +246,14 @@ public class UpdateWebservice {
                  *                          .stream()
                  */
                 public void decommissionExistingRecords(String bibliographicRecordId, Timestamp modified) throws WrapperException {
-                    try {
+                    try (LogWith logWith = new LogWith()) {
+                        logWith.bibliographicRecordId(bibliographicRecordId);
+
                         Set<String> issueIds = dao.getIssueIds(bibliographicRecordId, agencyId);
                         addQueueJob(bibliographicRecordId, agencyId);
                         for (String issueId : issueIds) {
+                            logWith.with("issueId", issueId);
+                            log.info("Decommissioning");
                             log.debug("agencyId = " + agencyId + "; bibliographicRecordId = " + bibliographicRecordId + "; issueId = " + issueId + "; wipe");
                             RecordCollection collection;
                             try (Timer.Context time = loadCollectionTimer.time()) {
@@ -318,7 +328,9 @@ public class UpdateWebservice {
                 private void processBibliograhicItem(OnlineBibliographicItem bibliographicItem) {
                     Timestamp modified = parseTimestamp(bibliographicItem.getModificationTimeStamp());
                     String bibliographicRecordId = bibliographicItem.getBibliographicRecordId();
-                    try {
+                    try (LogWith logWith = new LogWith()) {
+                        logWith.bibliographicRecordId(bibliographicRecordId);
+                        log.info("OnlineItem");
                         RecordCollection collection;
                         try (Timer.Context time = loadCollectionTimer.time()) {
                             collection = dao.getRecordCollection(bibliographicRecordId, agencyId, "");
