@@ -36,6 +36,7 @@ import dk.dbc.oss.ns.holdingsitemsupdate.HoldingsItemsUpdateStatusEnum;
 import dk.dbc.oss.ns.holdingsitemsupdate.OnlineBibliographicItem;
 import dk.dbc.oss.ns.holdingsitemsupdate.OnlineHoldingsItemsUpdateRequest;
 import dk.dbc.oss.ns.holdingsitemsupdate.StatusType;
+import java.io.StringWriter;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -43,11 +44,16 @@ import java.sql.Timestamp;
 import java.util.Date;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
+import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import javax.inject.Inject;
 import javax.jws.WebService;
 import javax.servlet.http.HttpServletRequest;
 import javax.sql.DataSource;
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Marshaller;
 import javax.xml.ws.WebServiceContext;
 import javax.xml.ws.handler.MessageContext;
 import org.slf4j.Logger;
@@ -108,6 +114,46 @@ public class UpdateWebservice {
     @Inject
     Timer saveCollectionTimer;
 
+    private Function<Object, String> mapToXml;
+
+    @PostConstruct
+    public void init() {
+        try {
+            JAXBContext jaxbContext = JAXBContext.newInstance(
+                    dk.dbc.oss.ns.holdingsitemsupdate.Authentication.class,
+                    dk.dbc.oss.ns.holdingsitemsupdate.BibliographicItem.class,
+                    dk.dbc.oss.ns.holdingsitemsupdate.CompleteBibliographicItem.class,
+                    dk.dbc.oss.ns.holdingsitemsupdate.CompleteHoldingsItemsUpdate.class,
+                    dk.dbc.oss.ns.holdingsitemsupdate.CompleteHoldingsItemsUpdateRequest.class,
+                    dk.dbc.oss.ns.holdingsitemsupdate.Holding.class,
+                    dk.dbc.oss.ns.holdingsitemsupdate.HoldingsItem.class,
+                    dk.dbc.oss.ns.holdingsitemsupdate.HoldingsItemsUpdate.class,
+                    dk.dbc.oss.ns.holdingsitemsupdate.HoldingsItemsUpdateRequest.class,
+                    dk.dbc.oss.ns.holdingsitemsupdate.HoldingsItemsUpdateResponse.class,
+                    dk.dbc.oss.ns.holdingsitemsupdate.HoldingsItemsUpdateResult.class,
+                    dk.dbc.oss.ns.holdingsitemsupdate.HoldingsItemsUpdateStatusEnum.class,
+                    dk.dbc.oss.ns.holdingsitemsupdate.ModificationTimeStamp.class,
+                    dk.dbc.oss.ns.holdingsitemsupdate.OnlineBibliographicItem.class,
+                    dk.dbc.oss.ns.holdingsitemsupdate.OnlineHoldingsItemsUpdate.class,
+                    dk.dbc.oss.ns.holdingsitemsupdate.OnlineHoldingsItemsUpdateRequest.class,
+                    dk.dbc.oss.ns.holdingsitemsupdate.StatusType.class);
+            mapToXml = (o) -> {
+                try {
+                    StringWriter sw = new StringWriter();
+                    jaxbContext.createMarshaller()
+                            .marshal(o, sw);
+                    return sw.toString();
+                } catch (JAXBException ex) {
+                    return "[NO XML GENERATED " + ex.getMessage() + "]";
+                }
+            };
+        } catch (JAXBException ex) {
+            log.error("Error creating JAXBContext: {}", ex.getMessage());
+            log.debug("Error creating JAXBContext: ", ex);
+            mapToXml = (o) -> "[NO XML GENERATED " + ex.getMessage() + "]";
+        }
+    }
+
     /**
      * Accept request for multiple bibliographic record ids
      * <p>
@@ -125,6 +171,8 @@ public class UpdateWebservice {
         }
         try (LogWith logWith = new LogWith(req.getTrackingId())) {
             logWith.agencyId(req.getAgencyId());
+
+            logXml(req.getAgencyId(), req);
             return handleRequest(new UpdateRequest(this) {
                 int agencyId = Integer.parseInt(req.getAgencyId(), 10);
 
@@ -156,7 +204,7 @@ public class UpdateWebservice {
                 @Override
                 public void processBibliograhicItems() {
                     log.debug("update");
-                    req.getBibliographicItem().stream()
+                    req.getBibliographicItems().stream()
                             .sorted(BIBLIOGRAPHICITEM_SORT_COMPARE)
                             .forEachOrdered(bibliographicItem -> {
                                 Timestamp modified = parseTimestamp(bibliographicItem.getModificationTimeStamp());
@@ -167,7 +215,7 @@ public class UpdateWebservice {
 
                                     addQueueJob(bibliographicRecordId, agencyId);
 
-                                    bibliographicItem.getHolding().stream()
+                                    bibliographicItem.getHoldings().stream()
                                             .sorted(HOLDINGS_SORT_COMPARE)
                                             .forEachOrdered(holding -> processHolding(modified, agencyId, bibliographicRecordId, note, false, holding));
                                 }
@@ -192,6 +240,8 @@ public class UpdateWebservice {
         }
         try (LogWith logWith = new LogWith(req.getTrackingId())) {
             logWith.agencyId(req.getAgencyId());
+
+            logXml(req.getAgencyId(), req);
             return handleRequest(new UpdateRequest(this) {
                 int agencyId = Integer.parseInt(req.getAgencyId(), 10);
 
@@ -231,7 +281,7 @@ public class UpdateWebservice {
                         addQueueJob(bibliographicRecordId, agencyId);
 
                         decommissionExistingRecords(bibliographicRecordId, modified);
-                        bibliographicItem.getHolding().stream()
+                        bibliographicItem.getHoldings().stream()
                                 .sorted(HOLDINGS_SORT_COMPARE)
                                 .forEachOrdered(holding -> processHolding(modified, agencyId, bibliographicRecordId, note, true, holding));
                     }
@@ -290,6 +340,8 @@ public class UpdateWebservice {
         }
         try (LogWith logWith = new LogWith(req.getTrackingId())) {
             logWith.agencyId(req.getAgencyId());
+
+            logXml(req.getAgencyId(), req);
             return handleRequest(new UpdateRequest(this) {
                 int agencyId = Integer.parseInt(req.getAgencyId(), 10);
 
@@ -315,7 +367,7 @@ public class UpdateWebservice {
 
                 @Override
                 public void processBibliograhicItems() {
-                    req.getOnlineBibliographicItem().stream()
+                    req.getOnlineBibliographicItems().stream()
                             .sorted(ONLINE_BIBLIOGRAPHICITEM_SORT_COMPARE)
                             .forEachOrdered(this::processBibliograhicItem);
                 }
@@ -362,6 +414,12 @@ public class UpdateWebservice {
                     }
                 }
             });
+        }
+    }
+
+    private void logXml(String agencyId, Object req) {
+        if (config.shouldLogXml(agencyId)) {
+            log.info(mapToXml.apply(req));
         }
     }
 

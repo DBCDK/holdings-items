@@ -110,8 +110,8 @@ public class Request {
                 h.setReadyForLoan(BigInteger.ZERO);
             }
 
-            item.getHolding().add(h);
-            h.getHoldingsItem().add(holdingsItem);
+            item.getHoldings().add(h);
+            h.getHoldingsItems().add(holdingsItem);
 
             return new CompleteUpdateRequest(holding.getMaterialOwner(), item, trackingId);
         } catch (DatatypeConfigurationException ex) {

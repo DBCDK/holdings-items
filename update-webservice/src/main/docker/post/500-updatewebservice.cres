@@ -8,4 +8,4 @@ xForwardedFor=${X_FORWARDED_FOR|}
 forsRightsUrl=${FORSRIGHTS_URL|}
 rightsGroup=${RIGHTS_GROUP|}
 rightsName=${RIGHTS_NAME|}
-
+debugXmlAgencies=${DEBUG_XML_AGENCIES|}

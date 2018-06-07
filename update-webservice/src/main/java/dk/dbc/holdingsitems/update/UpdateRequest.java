@@ -195,7 +195,7 @@ public abstract class UpdateRequest {
                 collection.setExpectedDelivery(toDate(expectedDeliveryDate, true));
             }
             collection.setReadyForLoan(holding.getReadyForLoan().intValueExact());
-            holding.getHoldingsItem().forEach(item -> addItemToCollection(collection, item));
+            holding.getHoldingsItems().forEach(item -> addItemToCollection(collection, item));
             log.debug("saving");
             try (Timer.Context time = updateWebService.saveCollectionTimer.time()) {
                 collection.save(modified);

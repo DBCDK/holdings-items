@@ -326,7 +326,7 @@ public class UpdateWebserviceIT {
         req.setAgencyId(agencyId);
         req.setAuthentication(authentication);
         req.setTrackingId(trackingId);
-        req.getBibliographicItem().addAll(Arrays.asList(bibliographicItems));
+        req.getBibliographicItems().addAll(Arrays.asList(bibliographicItems));
         return req;
     }
 
@@ -344,7 +344,7 @@ public class UpdateWebserviceIT {
         req.setAgencyId(agencyId);
         req.setAuthentication(authentication);
         req.setTrackingId(trackingId);
-        req.getOnlineBibliographicItem().addAll(Arrays.asList(bibliographicItems));
+        req.getOnlineBibliographicItems().addAll(Arrays.asList(bibliographicItems));
         return req;
     }
 
@@ -353,7 +353,7 @@ public class UpdateWebserviceIT {
         bibl.setBibliographicRecordId(bibliographicRecordId);
         bibl.setModificationTimeStamp(modified);
         bibl.setNote(note);
-        bibl.getHolding().addAll(Arrays.asList(holdings));
+        bibl.getHoldings().addAll(Arrays.asList(holdings));
         return bibl;
     }
 
@@ -362,7 +362,7 @@ public class UpdateWebserviceIT {
         bibl.setBibliographicRecordId(bibliographicRecordId);
         bibl.setModificationTimeStamp(modified);
         bibl.setNote(note);
-        bibl.getHolding().addAll(Arrays.asList(holdings));
+        bibl.getHoldings().addAll(Arrays.asList(holdings));
         return bibl;
     }
 
@@ -380,7 +380,7 @@ public class UpdateWebserviceIT {
         hold.setIssueText(issueText);
         hold.setExpectedDeliveryDate(expectedDeliveryDate);
         hold.setReadyForLoan(BigInteger.valueOf(readyForLoan));
-        hold.getHoldingsItem().addAll(Arrays.asList(items));
+        hold.getHoldingsItems().addAll(Arrays.asList(items));
         return hold;
     }
 

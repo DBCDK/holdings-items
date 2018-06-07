@@ -20,9 +20,11 @@ package dk.dbc.holdingsitems.update;
 
 import dk.dbc.eeconfig.EEConfig;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import javax.ejb.Singleton;
@@ -48,6 +50,21 @@ public class Config {
         splitQueue(completeQueueListReal, s -> completeQueueList = s, s -> completeQueueListOld = s);
         splitQueue(onlineQueueListReal, s -> onlineQueueList = s, s -> onlineQueueListOld = s);
 
+        if (xForwardedFor == null) {
+            xForwardedFor = "";
+        }
+        xForwardedForSet = Arrays.stream(xForwardedFor.split(";"))
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toSet());
+
+        if (shouldLogXmlAgencies == null) {
+            shouldLogXmlAgencies = "";
+        }
+        shouldLogXmlAgenciesSet = Arrays.stream(shouldLogXmlAgencies.split(";"))
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toSet());
+
+        log.debug("shouldLogXmlAgenciesSet = {}", shouldLogXmlAgenciesSet);
     }
 
     private static void splitQueue(String real, Consumer<String> queueByNew, Consumer<String> queueByOld) {
@@ -165,16 +182,19 @@ public class Config {
     @EEConfig.Name(C.X_FORWARDED_FOR)
     @EEConfig.Default(C.X_FORWARDED_FOR_DEFAULT)
     String xForwardedFor;
-    HashSet<String> xForwardedForSet = null;
+    Set<String> xForwardedForSet;
 
-    synchronized public Set<String> getXForwardedFor() {
-        if (xForwardedForSet == null) {
-            xForwardedForSet = new HashSet<>();
-            if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
-                xForwardedForSet.addAll(Arrays.asList(xForwardedFor.split(";")));
-            }
-        }
-        return xForwardedForSet;
+    public Set<String> getXForwardedFor() {
+        return Collections.unmodifiableSet(xForwardedForSet);
     }
 
+    @Inject
+    @EEConfig.Name(C.DEBUG_XML_AGENCIES)
+    @EEConfig.Default(C.DEBUG_XML_AGENCIES_DEFAULT)
+    String shouldLogXmlAgencies;
+    Set<String> shouldLogXmlAgenciesSet;
+
+    public boolean shouldLogXml(String agencyId) {
+        return shouldLogXmlAgenciesSet.contains(agencyId);
+    }
 }

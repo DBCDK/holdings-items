@@ -49,6 +49,9 @@ public class C {
     public static final String X_FORWARDED_FOR = "xForwardedFor";
     public static final String X_FORWARDED_FOR_DEFAULT = "";
 
+    public static final String DEBUG_XML_AGENCIES = "debugXmlAgencies";
+    public static final String DEBUG_XML_AGENCIES_DEFAULT = "";
+
     public static final String DATASOURCE = "jdbc/holdingsitemsupdate/holdingsitems";
 
 }

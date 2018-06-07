@@ -32,6 +32,7 @@
                             </wsdlFiles>
                             <staleFile>${project.build.directory}/jaxws/stale/holdingsItemsUpdate.stale</staleFile>
                             <inlineSchemas>true</inlineSchemas>
+                            <xjcArgs>-b ${basedir}/src/main/wsdl/bindings.xjb</xjcArgs>
                         </configuration>
                         <id>wsimport-generate-holdingsItemsUpdate</id>
                         <phase>generate-sources</phase>

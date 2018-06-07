@@ -20,7 +20,8 @@ LABEL HOLDINGS_ITEMS_POSTGRES_URL="Url pointing at holdings items postgres (requ
       RIGHTS_NAME="Authentication Name (required if authentication is enabled)" \
       MAX_POOL_SIZE="JDBC connection pool parameter (optional, default is 8)" \
       POOL_RESIZE_QUANTITY="JDBC connection pool parameter (optional, default is 2)" \
-      STEADY_POOL_SIZE="JDBC connection pool parameter (optional, default is 2)"
+      STEADY_POOL_SIZE="JDBC connection pool parameter (optional, default is 2)" \
+      DEBUG_XML_AGENCIES="List of agencies that should have logged requests"
 
 ADD holdings-items-update-webservice-*-SNAPSHOT.war $PAYARA_CFG/pre/holdings-items-update-webservice.war
 RUN payara-setup $PAYARA_CFG/pre/
