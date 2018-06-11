@@ -23,7 +23,6 @@ import com.codahale.metrics.JmxReporter;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
-import dk.dbc.holdingsitems.monitor.Config;
 import java.lang.reflect.Member;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -31,7 +30,6 @@ import javax.ejb.Singleton;
 import javax.ejb.Startup;
 import javax.enterprise.inject.Produces;
 import javax.enterprise.inject.spi.InjectionPoint;
-import javax.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,9 +43,6 @@ public class JmxMetrics {
 
     private static final Logger log = LoggerFactory.getLogger(JmxMetrics.class);
 
-    @Inject
-    Config config;
-
     private final MetricRegistry registry;
     private JmxReporter reporter;
 
@@ -59,7 +54,7 @@ public class JmxMetrics {
     public void init() {
         log.info("Start JMX Reporter");
         reporter = JmxReporter.forRegistry(registry)
-                .inDomain(config.getJmxDomain())
+                .inDomain("metrics")
                 .build();
         reporter.start();
     }

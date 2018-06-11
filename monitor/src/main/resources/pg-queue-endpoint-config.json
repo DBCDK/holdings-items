@@ -1,0 +1,5 @@
+{
+    "dataSource": "jdbc/holdings-items",
+    "jobLogMapper": "dk.dbc.holdingsitems.monitor.Mapper.MAPPER",
+    "systemName": "HoldingsItems - queue admin"
+}
