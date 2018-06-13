@@ -10,12 +10,12 @@ branch=$(IFS=-; echo "${branch[*]}")
 
 function version() {
     (
-	version=""
-	while [ x$version = x ] && [ -e pom.xml ]; do
-		version=`xmlstarlet sel -N m=http://maven.apache.org/POM/4.0.0 -t -v '/*/m:version' pom.xml | tr A-Z a-z`
-		cd ..
-	done
-	echo ${version:-UNKNOWN}
+        version=""
+        while [ x$version = x ] && [ -e pom.xml ]; do
+            version=`xmlstarlet sel -N m=http://maven.apache.org/POM/4.0.0 -t -v '/*/m:version' pom.xml | tr A-Z a-z`
+            cd ..
+        done
+        echo ${version:-UNKNOWN}
     )
 }
 
@@ -32,20 +32,23 @@ if [ x"$modules" = x ]; then
 fi
 for module in $modules; do
     if [ -e $module/src/main/docker/Dockerfile ]; then
-	(
-	    echo module=$module
-	    cd $module
-	    image=$(artifactid)-$(version):$branch
-	    cd src/main/docker
-	    if [ -e prepare.sh ]; then
-		chmod +x prepare.sh
-		./prepare.sh
-	    fi
-	    rm -f *.war
-	    cp -f ../../../target/*.war .
-	    set -x
-	    docker build -t $image .
-	)
+        (
+            echo module=$module
+            cd $module
+            image=$(artifactid)-$(version):$branch
+            packaging="`xmlstarlet sel -N m=http://maven.apache.org/POM/4.0.0 -t -v '/*/m:packaging' pom.xml`"
+            cd src/main/docker
+            if [ -e prepare.sh ]; then
+                chmod +x prepare.sh
+                ./prepare.sh
+            fi
+            if [ "$packaging" = "war" ]; then
+                rm -f *.war
+                [ -e ../../../target ] && cp -f ../../../target/*.war .
+            fi
+            set -x
+            docker build -t $image .
+        )
     fi
 done
 
