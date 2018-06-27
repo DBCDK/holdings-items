@@ -42,7 +42,7 @@ public class HoldingsItemsDAO {
 
     private static final org.slf4j.Logger log = LoggerFactory.getLogger(HoldingsItemsDAO.class);
 
-    private static final QueueSupplier QUEUE_SUPPLIER = new QueueSupplier(QueueJob.STORAGE_ABSTRACTION);
+    private static final QueueSupplier QUEUE_SUPPLIER = new QueueSupplier(QueueJob.STORAGE_ABSTRACTION_IGNORE_STATECHANGE);
 
     private static final int SCHEMA_VERSION = 14;
 
@@ -417,13 +417,14 @@ public class HoldingsItemsDAO {
      *
      * @param bibliographicRecordId part of job id
      * @param agencyId              part of job id
+     * @param stateChange           part of a job
      * @param worker                Who's get the job
      * @throws HoldingsItemsException
      */
-    public void enqueue(String bibliographicRecordId, int agencyId, String worker) throws HoldingsItemsException {
+    public void enqueue(String bibliographicRecordId, int agencyId, String stateChange, String worker) throws HoldingsItemsException {
         PreparedQueueSupplier supplier = getQueueSupplier();
         try {
-            supplier.enqueue(worker, new QueueJob(agencyId, bibliographicRecordId, trackingId));
+            supplier.enqueue(worker, new QueueJob(agencyId, bibliographicRecordId, stateChange, trackingId));
         } catch (SQLException ex) {
             log.error(DATABASE_ERROR, ex);
             throw new HoldingsItemsException(DATABASE_ERROR, ex);
@@ -435,15 +436,16 @@ public class HoldingsItemsDAO {
      *
      * @param bibliographicRecordId part of job id
      * @param agencyId              part of job id
+     * @param stateChange           part of a job
      * @param worker                Who's get the job
      * @param milliSeconds          How many milliseconds from now it should be
      *                              dequeued at the earliest
      * @throws HoldingsItemsException
      */
-    public void enqueue(String bibliographicRecordId, int agencyId, String worker, long milliSeconds) throws HoldingsItemsException {
+    public void enqueue(String bibliographicRecordId, int agencyId, String stateChange, String worker, long milliSeconds) throws HoldingsItemsException {
         PreparedQueueSupplier supplier = getQueueSupplier();
         try {
-            supplier.enqueue(worker, new QueueJob(agencyId, bibliographicRecordId, trackingId), milliSeconds);
+            supplier.enqueue(worker, new QueueJob(agencyId, bibliographicRecordId, stateChange, trackingId), milliSeconds);
         } catch (SQLException ex) {
             log.error(DATABASE_ERROR, ex);
             throw new HoldingsItemsException(DATABASE_ERROR, ex);
@@ -654,7 +656,7 @@ public class HoldingsItemsDAO {
                                               " WHERE agencyId=? AND bibliographicRecordId=? AND issueId=? AND itemId=? AND modified<=?";
     private static final String DECOMMISSION_ITEMS = "UPDATE holdingsitemsitem" +
                                                      " SET status='Decommissioned', modified=?, trackingId=?" +
-                                                     " WHERE agencyId=? AND bibliographicRecordId=? AND issueId=? AND modified<=? AND status<>'Online'";
+                                                     " WHERE agencyId=? AND bibliographicRecordId=? AND issueId=? AND modified<? AND status<>'Online'";
     private static final String INSERT_ITEM = "INSERT INTO holdingsitemsitem" +
                                               " (agencyId, bibliographicRecordId, issueId, itemId," +
                                               " branch, department, location, subLocation, circulationRule, accessionDate, status," +
