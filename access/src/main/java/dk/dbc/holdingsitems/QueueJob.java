@@ -148,7 +148,7 @@ public class QueueJob {
         return "QueueJob{" + "worker=" + worker + ", queued=" + queued + ", bibliographicRecordId=" + bibliographicRecordId + ", agencyId=" + agencyId + ", stateChange=" + stateChange + ", stateChange=" + stateChange + ", trackingId=" + getTrackingId() + '}';
     }
 
-    public static final QueueStorageAbstraction<QueueJob> STORAGE_ABSTRACTION_IGNORE_STATECHANGE = new QueueStorageAbstraction<QueueJob>() {
+    public static final QueueStorageAbstraction<QueueJob> STORAGE_ABSTRACTION = new QueueStorageAbstraction<QueueJob>() {
         private final String[] COLUMNS = "agencyId,bibliographicRecordId,stateChange,trackingId".split(",");
 
         @Override
@@ -174,7 +174,7 @@ public class QueueJob {
         }
 
     };
-    public static final DeduplicateAbstraction<QueueJob> DEDUPLICATION_ABSTRACTION = new DeduplicateAbstraction<QueueJob>() {
+    public static final DeduplicateAbstraction<QueueJob> DEDUPLICATION_ABSTRACTION_IGNORE_STATECHANGE = new DeduplicateAbstraction<QueueJob>() {
         private final String[] COLUMNS = "agencyId,bibliographicRecordId".split(",");
 
         @Override

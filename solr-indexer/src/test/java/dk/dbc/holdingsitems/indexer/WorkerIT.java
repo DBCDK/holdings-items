@@ -189,7 +189,7 @@ public class WorkerIT {
         log.info("testConsumerDequeues");
 
         try (Connection connection = dataSource.getConnection()) {
-            PreparedQueueSupplier<QueueJob> supplier = new QueueSupplier<>(QueueJob.STORAGE_ABSTRACTION_IGNORE_STATECHANGE)
+            PreparedQueueSupplier<QueueJob> supplier = new QueueSupplier<>(QueueJob.STORAGE_ABSTRACTION)
                     .preparedSupplier(connection);
             supplier.enqueue("q1", new QueueJob(700000, "87654321", "{}", "foo1"));
         }
@@ -223,7 +223,7 @@ public class WorkerIT {
         }
 
         try (Connection connection = dataSource.getConnection()) {
-            PreparedQueueSupplier<QueueJob> supplier = new QueueSupplier<>(QueueJob.STORAGE_ABSTRACTION_IGNORE_STATECHANGE)
+            PreparedQueueSupplier<QueueJob> supplier = new QueueSupplier<>(QueueJob.STORAGE_ABSTRACTION)
                     .preparedSupplier(connection);
             supplier.enqueue("q1", new QueueJob(700000, "87654321", "{}", "foo1"));
         }

@@ -41,7 +41,7 @@ public class QueueJobIT extends DbBase {
 
     private static final Logger log = LoggerFactory.getLogger(QueueJobIT.class);
 
-    private static final QueueSupplier QUEUE_SUPPLIER = new QueueSupplier(QueueJob.STORAGE_ABSTRACTION_IGNORE_STATECHANGE);
+    private static final QueueSupplier QUEUE_SUPPLIER = new QueueSupplier(QueueJob.STORAGE_ABSTRACTION);
     private static final String QUEUE = "test-queue";
 
     @Test(timeout = 5000L)
@@ -62,8 +62,8 @@ public class QueueJobIT extends DbBase {
 
             BlockingDeque<QueueJob> list = new LinkedBlockingDeque<>();
 
-            QueueWorker worker = QueueWorker.builder(QueueJob.STORAGE_ABSTRACTION_IGNORE_STATECHANGE)
-                    .skipDuplicateJobs(QueueJob.DEDUPLICATION_ABSTRACTION)
+            QueueWorker worker = QueueWorker.builder(QueueJob.STORAGE_ABSTRACTION)
+                    .skipDuplicateJobs(QueueJob.DEDUPLICATION_ABSTRACTION_IGNORE_STATECHANGE)
                     .consume(QUEUE)
                     .dataSource(dataSource)
                     .build((JobConsumer<QueueJob>) (Connection connection1, QueueJob job, JobMetaData metaData) -> {

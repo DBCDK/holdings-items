@@ -38,7 +38,7 @@ public class QueueJobTest {
         QueueJob originalJob = new QueueJob(123456, "abc", "{}", "t1");
         QueueJob skippedJob = new QueueJob(123456, "abc", "{}", "t2");
 
-        QueueJob mergedJob = QueueJob.DEDUPLICATION_ABSTRACTION.mergeJob(originalJob, skippedJob);
+        QueueJob mergedJob = QueueJob.DEDUPLICATION_ABSTRACTION_IGNORE_STATECHANGE.mergeJob(originalJob, skippedJob);
 
         System.out.println("mergedJob = " + mergedJob);
         assertEquals("t1\tt2", mergedJob.getTrackingId());
