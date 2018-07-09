@@ -217,6 +217,7 @@ public class UpdateWebservice {
                                     bibliographicItem.getHoldings().stream()
                                             .sorted(HOLDINGS_SORT_COMPARE)
                                             .forEachOrdered(holding -> processHolding(modified, agencyId, bibliographicRecordId, note, false, holding));
+
                                 }
                             });
                 }
@@ -309,9 +310,7 @@ public class UpdateWebservice {
                                 collection = dao.getRecordCollection(bibliographicRecordId, agencyId, issueId);
                             }
                             collection.setComplete(true);
-                            try (Timer.Context time = saveCollectionTimer.time()) {
-                                collection.save(modified);
-                            }
+                            saveCollection(collection, modified);
                         }
                     } catch (HoldingsItemsException ex) {
                         throw new WrapperException(ex);
@@ -405,9 +404,7 @@ public class UpdateWebservice {
                             rec.setAccessionDate(new Date());
                         }
                         addQueueJob(bibliographicRecordId, agencyId);
-                        try (Timer.Context time = saveCollectionTimer.time()) {
-                            collection.save(modified);
-                        }
+                        saveCollection(collection, modified);
                     } catch (HoldingsItemsException ex) {
                         throw new WrapperException(ex);
                     }
