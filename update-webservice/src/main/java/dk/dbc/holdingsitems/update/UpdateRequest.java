@@ -60,7 +60,6 @@ public abstract class UpdateRequest {
     private static final Logger log = LoggerFactory.getLogger(UpdateRequest.class);
 
     private static final ObjectMapper O = new ObjectMapper();
-    private static final ObjectNode EMPTY_OBJECT_NODE = O.createObjectNode();
 
     /**
      * Get an authentication soap class from a request
@@ -109,7 +108,6 @@ public abstract class UpdateRequest {
         this.updateWebService = updateWebservice;
         this.queueEntries = new HashSet<>();
         this.oldItemStatus = new HashMap<>();
-//        this.biblStateChange = new HashMap<>();
     }
 
     /**
