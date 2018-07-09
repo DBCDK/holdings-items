@@ -200,7 +200,6 @@ public class UpdateWebserviceIT {
         JsonNode rec87654321 = O.readTree(rec87654321str.substring(rec87654321str.indexOf('{')));
         assertEquals("OnLoan", rec87654321.at("/it3-1/newStatus").asText(""));
         assertEquals("UNKNOWN", rec87654321.at("/it3-1/oldStatus").asText(""));
-        System.out.println("OK");
     }
 
     @Test
@@ -262,7 +261,6 @@ public class UpdateWebserviceIT {
         HashMap<String, String> row = checkRow("101010", "12345678", "I1", "it1-1");
         assertNotNull("Expected a row", row);
         assertEquals("complete time as new update", "2017-09-07T09:09:00.001Z", row.get("c.complete"));
-        System.out.println("OK");
     }
 
     public HoldingsItemsUpdateRequest updateReq1() throws DatatypeConfigurationException {

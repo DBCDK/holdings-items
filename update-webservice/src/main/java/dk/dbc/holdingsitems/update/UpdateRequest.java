@@ -18,6 +18,7 @@
  */
 package dk.dbc.holdingsitems.update;
 
+import dk.dbc.holdingsitems.StateChangeMetadata;
 import com.codahale.metrics.Timer;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -38,7 +39,6 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.GregorianCalendar;
@@ -61,7 +61,6 @@ public abstract class UpdateRequest {
 
     private static final ObjectMapper O = new ObjectMapper();
     private static final ObjectNode EMPTY_OBJECT_NODE = O.createObjectNode();
-//    private HashMap<String, ObjectNode> biblStateChange;
 
     /**
      * Get an authentication soap class from a request
@@ -98,7 +97,7 @@ public abstract class UpdateRequest {
 
     private final UpdateWebservice updateWebService;
     private final HashSet<QueueEntry> queueEntries;
-    private final HashMap<String, HashMap<String, UpdateMetadata>> oldItemStatus; // Bibl -> item -> status
+    private final HashMap<String, HashMap<String, StateChangeMetadata>> oldItemStatus; // Bibl -> item -> status
     protected HoldingsItemsDAO dao;
 
     /**
@@ -149,7 +148,7 @@ public abstract class UpdateRequest {
                 try {
                     String saveStateChangeText = "{}";
                     try {
-                        HashMap<String, UpdateMetadata> saveStateChange = oldItemStatus.computeIfAbsent(queueEntry.getBibliographicRecordId(), f -> new HashMap<>());
+                        HashMap<String, StateChangeMetadata> saveStateChange = oldItemStatus.computeIfAbsent(queueEntry.getBibliographicRecordId(), f -> new HashMap<>());
                         saveStateChangeText = O.writeValueAsString(saveStateChange);
                     } catch (JsonProcessingException ex) {
                         log.error("Cannot make json to string: {}", ex.getMessage());
@@ -201,10 +200,9 @@ public abstract class UpdateRequest {
             RecordCollection collection = getRecordCollection(bibliographicRecordId, agencyId, issueId, modified);
             collection.setComplete(complete);
             if (complete) {
-                HashMap<String, UpdateMetadata> statuses = oldItemStatus.computeIfAbsent(bibliographicRecordId, f -> new HashMap<>());
-                for (UpdateMetadata metadata : statuses.values()) {
-                    System.out.println("StatusType.DECOMMISSIONED.value() = " + StatusType.DECOMMISSIONED.value());
-                    metadata.update(StatusType.DECOMMISSIONED, modified);
+                HashMap<String, StateChangeMetadata> statuses = oldItemStatus.computeIfAbsent(bibliographicRecordId, f -> new HashMap<>());
+                for (StateChangeMetadata metadata : statuses.values()) {
+                    metadata.update(StatusType.DECOMMISSIONED.value(), modified);
                 }
                 for (Record record : collection) {
                     record.setStatus(StatusType.DECOMMISSIONED.value());
@@ -244,9 +242,9 @@ public abstract class UpdateRequest {
                     agencyId,
                     issueId,
                     modified);
-            HashMap<String, UpdateMetadata> biblItemStatus = oldItemStatus.computeIfAbsent(bibliographicRecordId, b -> new HashMap<>());
+            HashMap<String, StateChangeMetadata> biblItemStatus = oldItemStatus.computeIfAbsent(bibliographicRecordId, b -> new HashMap<>());
             for (Record record : collection) {
-                biblItemStatus.putIfAbsent(record.getItemId(), new UpdateMetadata(StatusType.fromValue(record.getStatus()), modified));
+                biblItemStatus.putIfAbsent(record.getItemId(), new StateChangeMetadata(record.getStatus(), modified));
             }
             log.debug("oldItemStatus = {}", oldItemStatus);
             return collection;
@@ -266,32 +264,11 @@ public abstract class UpdateRequest {
             collection.save(modified);
         }
         String bibliographicRecordId = collection.getBibliographicRecordId();
-//        HashMap<String, UpdateMetadata> biblItemStatus = oldItemStatus.computeIfAbsent(bibliographicRecordId, b -> new HashMap<>());
-//        ObjectNode base = biblStateChange.computeIfAbsent(bibliographicRecordId, b -> O.createObjectNode());
-        HashMap<String, UpdateMetadata> metas = oldItemStatus.computeIfAbsent(bibliographicRecordId, f -> new HashMap<>());
+        HashMap<String, StateChangeMetadata> metas = oldItemStatus.computeIfAbsent(bibliographicRecordId, f -> new HashMap<>());
         log.debug("metas = {}", metas);
         for (Record record : collection) {
             log.debug("record = {}", record);
-//            String itemId = record.getItemId();
-//            String status = record.getStatus();
-
-//            String oldStatus = biblItemStatus.getOrDefault(itemId, "UNKNOWN");
-//            if (status.equals(oldStatus)) {
-//                if (base.has(itemId)) {
-//                    base.remove(itemId);
-//                }
-//            } else {
-//                if (base.has(itemId)) {
-//                    ObjectNode itemReport = (ObjectNode) base.get(itemId);
-//                    itemReport.put("is", status);
-//                } else {
-//                    ObjectNode itemReport = base.putObject(itemId);
-//                    itemReport.put("was", oldStatus);
-//                    itemReport.put("is", status);
-//                }
-//            }
         }
-//        log.debug("this.biblStateChange = {}", this.biblStateChange);
     }
 
     /**
@@ -316,9 +293,9 @@ public abstract class UpdateRequest {
                     throw new FailedUpdateInternalException("Use endpoint onlineHoldingsItemsUpdate got status ONLINE");
                 }
                 rec.setStatus(status.value());
-                HashMap<String, UpdateMetadata> metas = oldItemStatus.computeIfAbsent(collection.getBibliographicRecordId(), f -> new HashMap<>());
-                UpdateMetadata meta = metas.computeIfAbsent(itemId, f -> new UpdateMetadata(modified));
-                meta.update(status, modified);
+                HashMap<String, StateChangeMetadata> metas = oldItemStatus.computeIfAbsent(collection.getBibliographicRecordId(), f -> new HashMap<>());
+                StateChangeMetadata meta = metas.computeIfAbsent(itemId, f -> new StateChangeMetadata(modified));
+                meta.update(status.value(), modified);
             }
             copyValue(item::getBranch, rec::setBranch);
             copyValue(item::getCirculationRule, rec::setCirculationRule);

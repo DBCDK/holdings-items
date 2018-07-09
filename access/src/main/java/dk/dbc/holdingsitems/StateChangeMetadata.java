@@ -16,46 +16,45 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package dk.dbc.holdingsitems.update;
+package dk.dbc.holdingsitems;
 
-import dk.dbc.oss.ns.holdingsitemsupdate.StatusType;
 import java.sql.Timestamp;
 
 /**
  *
  * @author DBC {@literal <dbc.dk>}
  */
-public class UpdateMetadata {
+public class StateChangeMetadata {
 
-    private StatusType newStatus;
-    private final StatusType oldStatus;
+    private String newStatus;
+    private final String oldStatus;
     private Timestamp when;
 
-    public UpdateMetadata(Timestamp when) {
+    public StateChangeMetadata(Timestamp when) {
         this(null, null, when);
     }
 
-    public UpdateMetadata(StatusType oldStatus, Timestamp when) {
+    public StateChangeMetadata(String oldStatus, Timestamp when) {
         this(oldStatus, oldStatus, when);
     }
 
-    public UpdateMetadata(StatusType newStatus, StatusType oldStatus, Timestamp when) {
+    public StateChangeMetadata(String newStatus, String oldStatus, Timestamp when) {
         this.newStatus = newStatus;
         this.oldStatus = oldStatus;
         this.when = when;
     }
 
-    public void update(StatusType status, Timestamp when) {
+    public void update(String status, Timestamp when) {
         this.newStatus = status;
         this.when = when;
     }
 
     public String getNewStatus() {
-        return newStatus == null ? "UNKNOWN" : newStatus.value();
+        return newStatus == null ? "UNKNOWN" : newStatus;
     }
 
     public String getOldStatus() {
-        return oldStatus == null ? "UNKNOWN" : oldStatus.value();
+        return oldStatus == null ? "UNKNOWN" : oldStatus;
     }
 
     public String getWhen() {
