@@ -41,17 +41,17 @@ public class QueueJobIT extends DbBase {
 
     private static final Logger log = LoggerFactory.getLogger(QueueJobIT.class);
 
-    private static final QueueSupplier QUEUE_SUPPLIER = new QueueSupplier(QueueJob.STORAGE_ABSTRACTION);
+    private static final QueueSupplier QUEUE_SUPPLIER = new QueueSupplier(QueueJob.STORAGE_ABSTRACTION_IGNORE_STATECHANGE);
     private static final String QUEUE = "test-queue";
 
     @Test(timeout = 5000L)
     public void testStoreRetrieve() throws Exception {
         System.out.println("store-retrieve");
 
-        QueueJob job1 = new QueueJob(888888, "12345678", "t1");
-        QueueJob job2 = new QueueJob(888888, "87654321", "t2");
-        QueueJob job3 = new QueueJob(888888, "87654321", "t3");
-        QueueJob job2_3 = new QueueJob(888888, "87654321", "t2\tt3");
+        QueueJob job1 = new QueueJob(888888, "12345678", "{}", "t1");
+        QueueJob job2 = new QueueJob(888888, "87654321", "{}", "t2");
+        QueueJob job3 = new QueueJob(888888, "87654321", "{}", "t3");
+        QueueJob job2_3 = new QueueJob(888888, "87654321", "{}", "t2\tt3");
 
         try (Connection connection = dataSource.getConnection()) {
             PreparedQueueSupplier<QueueJob> supplier = QUEUE_SUPPLIER.preparedSupplier(connection);
@@ -62,7 +62,7 @@ public class QueueJobIT extends DbBase {
 
             BlockingDeque<QueueJob> list = new LinkedBlockingDeque<>();
 
-            QueueWorker worker = QueueWorker.builder(QueueJob.STORAGE_ABSTRACTION)
+            QueueWorker worker = QueueWorker.builder(QueueJob.STORAGE_ABSTRACTION_IGNORE_STATECHANGE)
                     .skipDuplicateJobs(QueueJob.DEDUPLICATION_ABSTRACTION)
                     .consume(QUEUE)
                     .dataSource(dataSource)

@@ -43,6 +43,7 @@ public class QueueJob {
     protected String bibliographicRecordId;
     protected int agencyId;
     protected String additionalData;
+    protected String stateChange;
     protected String trackingId;
     protected Set<String> trackingIds;
 
@@ -67,6 +68,7 @@ public class QueueJob {
         this.trackingIds = null;
     }
 
+    @Deprecated
     public QueueJob(String bibliographicRecordId, int agencyId, String additionalData) {
         this.bibliographicRecordId = bibliographicRecordId;
         this.agencyId = agencyId;
@@ -74,11 +76,12 @@ public class QueueJob {
         this.trackingIds = null;
     }
 
-    public QueueJob(int agencyId, String bibliographicRecordId, String trackingId) {
+    public QueueJob(int agencyId, String bibliographicRecordId, String stateChange, String trackingId) {
         this.trackingIds = null;
         this.agencyId = agencyId;
         this.bibliographicRecordId = bibliographicRecordId;
         this.trackingId = trackingId;
+        this.stateChange = stateChange;
     }
 
     @Deprecated
@@ -108,6 +111,10 @@ public class QueueJob {
         return agencyId;
     }
 
+    public String getStateChange() {
+        return stateChange;
+    }
+
     @Deprecated
     public String getAdditionalData() {
         return additionalData;
@@ -131,20 +138,18 @@ public class QueueJob {
     }
 
     private void addTrackingIds(Collection<String> trackingIds) {
-        System.out.println("(add) trackingIds = " +  trackingIds);
         synchronized (this) {
             getTrackingIds().addAll(trackingIds);
-            System.out.println("this.trackingIds = " + this.trackingIds);
         }
     }
 
     @Override
     public String toString() {
-        return "QueueJob{" + "worker=" + worker + ", queued=" + queued + ", bibliographicRecordId=" + bibliographicRecordId + ", agencyId=" + agencyId + ", additionalData=" + additionalData + ", trackingId=" + getTrackingId() + '}';
+        return "QueueJob{" + "worker=" + worker + ", queued=" + queued + ", bibliographicRecordId=" + bibliographicRecordId + ", agencyId=" + agencyId + ", stateChange=" + stateChange + ", stateChange=" + stateChange + ", trackingId=" + getTrackingId() + '}';
     }
 
-    public static final QueueStorageAbstraction<QueueJob> STORAGE_ABSTRACTION = new QueueStorageAbstraction<QueueJob>() {
-        private final String[] COLUMNS = "agencyId,bibliographicRecordId,trackingId".split(",");
+    public static final QueueStorageAbstraction<QueueJob> STORAGE_ABSTRACTION_IGNORE_STATECHANGE = new QueueStorageAbstraction<QueueJob>() {
+        private final String[] COLUMNS = "agencyId,bibliographicRecordId,stateChange,trackingId".split(",");
 
         @Override
         public String[] columnList() {
@@ -155,14 +160,16 @@ public class QueueJob {
         public QueueJob createJob(ResultSet resultSet, int startColumn) throws SQLException {
             int agencyId = resultSet.getInt(startColumn++);
             String bibliographicRecordId = resultSet.getString(startColumn++);
+            String stateChange = resultSet.getString(startColumn++);
             String trackingId = resultSet.getString(startColumn++);
-            return new QueueJob(agencyId, bibliographicRecordId, trackingId);
+            return new QueueJob(agencyId, bibliographicRecordId, stateChange, trackingId);
         }
 
         @Override
         public void saveJob(QueueJob job, PreparedStatement stmt, int startColumn) throws SQLException {
             stmt.setInt(startColumn++, job.getAgencyId());
             stmt.setString(startColumn++, job.getBibliographicRecordId());
+            stmt.setString(startColumn++, job.getStateChange());
             stmt.setString(startColumn++, job.getTrackingId());
         }
 

@@ -80,7 +80,7 @@ public class Worker {
             throw new EJBException("Error validating dao version", ex);
         }
 
-        worker = QueueWorker.builder(QueueJob.STORAGE_ABSTRACTION)
+        worker = QueueWorker.builder(QueueJob.STORAGE_ABSTRACTION_IGNORE_STATECHANGE)
                 .skipDuplicateJobs(QueueJob.DEDUPLICATION_ABSTRACTION)
                 .consume(config.getQueues())
                 .dataSource(dataSource)

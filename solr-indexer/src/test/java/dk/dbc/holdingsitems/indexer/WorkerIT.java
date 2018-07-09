@@ -164,7 +164,7 @@ public class WorkerIT {
         JobProcessor jobProcessor = new JobProcessor(config);
         jobProcessor.init();
         try (Connection connection = dataSource.getConnection()) {
-            ObjectNode json = jobProcessor.buildRequestJson(connection, new QueueJob(700000, "87654321", "T#1"));
+            ObjectNode json = jobProcessor.buildRequestJson(connection, new QueueJob(700000, "87654321", "{}", "T#1"));
             System.out.println("json = " + json);
             assertJson(700000, json, "/agencyId");
             assertJson("87654321", json, "/bibliographicRecordId");
@@ -189,9 +189,9 @@ public class WorkerIT {
         log.info("testConsumerDequeues");
 
         try (Connection connection = dataSource.getConnection()) {
-            PreparedQueueSupplier<QueueJob> supplier = new QueueSupplier<>(QueueJob.STORAGE_ABSTRACTION)
+            PreparedQueueSupplier<QueueJob> supplier = new QueueSupplier<>(QueueJob.STORAGE_ABSTRACTION_IGNORE_STATECHANGE)
                     .preparedSupplier(connection);
-            supplier.enqueue("q1", new QueueJob(700000, "87654321", "foo1"));
+            supplier.enqueue("q1", new QueueJob(700000, "87654321", "{}", "foo1"));
         }
         BlockingQueue<QueueJob> jobs = new LinkedBlockingQueue<>();
 
@@ -223,9 +223,9 @@ public class WorkerIT {
         }
 
         try (Connection connection = dataSource.getConnection()) {
-            PreparedQueueSupplier<QueueJob> supplier = new QueueSupplier<>(QueueJob.STORAGE_ABSTRACTION)
+            PreparedQueueSupplier<QueueJob> supplier = new QueueSupplier<>(QueueJob.STORAGE_ABSTRACTION_IGNORE_STATECHANGE)
                     .preparedSupplier(connection);
-            supplier.enqueue("q1", new QueueJob(700000, "87654321", "foo1"));
+            supplier.enqueue("q1", new QueueJob(700000, "87654321", "{}", "foo1"));
         }
 
         Worker worker = new Worker();

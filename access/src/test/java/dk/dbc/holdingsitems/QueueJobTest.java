@@ -35,8 +35,8 @@ public class QueueJobTest {
     @Test
     public void testGetWorker() {
         System.out.println("getWorker");
-        QueueJob originalJob = new QueueJob(123456, "abc", "t1");
-        QueueJob skippedJob = new QueueJob(123456, "abc", "t2");
+        QueueJob originalJob = new QueueJob(123456, "abc", "{}", "t1");
+        QueueJob skippedJob = new QueueJob(123456, "abc", "{}", "t2");
 
         QueueJob mergedJob = QueueJob.DEDUPLICATION_ABSTRACTION.mergeJob(originalJob, skippedJob);
 

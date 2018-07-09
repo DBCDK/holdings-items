@@ -98,7 +98,7 @@ public class WorkerIT {
         jobProcessor.mapping.put("my-queue", "myQueue");
         jobProcessor.producer = context.createProducer();
 
-        QueueJob queueJob = new QueueJob(700000, "87654321", "T#1");
+        QueueJob queueJob = new QueueJob(700000, "87654321", "{}", "T#1");
         jobProcessor.transferJob(queueJob, "my-queue");
 
         Message msg = consumer.receive(1000L);
