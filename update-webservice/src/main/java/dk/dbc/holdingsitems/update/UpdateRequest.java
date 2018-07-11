@@ -261,12 +261,6 @@ public abstract class UpdateRequest {
         try (Timer.Context time = updateWebService.saveCollectionTimer.time()) {
             collection.save(modified);
         }
-        String bibliographicRecordId = collection.getBibliographicRecordId();
-        HashMap<String, StateChangeMetadata> metas = oldItemStatus.computeIfAbsent(bibliographicRecordId, f -> new HashMap<>());
-        log.debug("metas = {}", metas);
-        for (Record record : collection) {
-            log.debug("record = {}", record);
-        }
     }
 
     /**
