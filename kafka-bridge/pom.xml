@@ -88,7 +88,7 @@
                 <configuration>
                     <redirectTestOutputToFile>false</redirectTestOutputToFile>
                     <systemPropertyVariables>
-                        <hornetq.port>${hornetq.port}</hornetq.port>
+                        <postgresql.port>${postgresql.port}</postgresql.port>
                     </systemPropertyVariables>
                 </configuration>
                 <executions>
