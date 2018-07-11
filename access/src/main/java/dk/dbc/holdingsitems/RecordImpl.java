@@ -239,15 +239,10 @@ public class RecordImpl implements Record {
         return trackingId;
     }
 
-//    @Override
-//    public String toString() {
-//        return "Record{" + "itemId=" + itemId + '}';
-//    }
-
     @Override
     public String toString() {
         return "RecordImpl{" + "itemId=" + itemId + ", branch=" + branch + ", department=" + department + ", location=" + location + ", subLocation=" + subLocation + ", circulationRule=" + circulationRule + ", status=" + status + ", accessionDate=" + accessionDate + ", createdTimestamp=" + createdTimestamp + ", modifiedTimestamp=" + modifiedTimestamp + ", modified=" + modified + ", original=" + original + ", trackingId=" + trackingId + '}';
     }
 
-    
+
 }
