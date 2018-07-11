@@ -48,16 +48,7 @@ public class Config {
     public static final String PROPERTIES = "holdings-items-kafka-bridge";
 
     private Properties props;
-    private String databaseThrottle;
-    private String throttle;
-    private String[] queues;
-    private long emptyQueueSleep;
-    private long maxQueryTime;
-    private long window;
-    private int idleRescanEvery;
-    private int rescanEvery;
     private int threads;
-    private int retries;
     private String kafkaServer;
     private String kafkaTopic;
     private String jmxDomain;
@@ -74,7 +65,6 @@ public class Config {
         }
     }
 
-
     @PostConstruct
     public void init() {
         log.info("Setting up config");
@@ -82,61 +72,14 @@ public class Config {
             props = findProperties(PROPERTIES);
         }
 
-        this.queues = Arrays.stream(getOrFail("queues").split("[^-_a-zA-Z0-9]"))
-                .filter(s -> !s.isEmpty())
-                .toArray(String[]::new);
         this.kafkaServer = getOrFail("kafka-server");
         this.kafkaTopic = getOrFail("kafka-topic");
-        this.databaseThrottle = getOrDefault("database-throttle", "1/5s,3/m,5/10m");
-        this.throttle = getOrDefault("throttle", "2/100ms,3/s,5/m");
-        this.emptyQueueSleep = Long.max(1000, milliseconds(getOrDefault("empty-queue-sleep", "10s")));
-        this.window = Long.max(0, milliseconds(getOrDefault("queue-window", "500ms")));
-        this.maxQueryTime = Long.max(10, milliseconds(getOrDefault("max-query-time", "250ms")));
-        this.idleRescanEvery = Integer.max(1, Integer.parseInt(getOrDefault("idle-rescan-every", "10")));
-        this.rescanEvery = Integer.max(1, Integer.parseInt(getOrDefault("rescan-every", "1000")));
         this.threads = Integer.max(1, Integer.parseInt(getOrDefault("threads", "1")));
-        this.retries = Integer.max(1, Integer.parseInt(getOrDefault("retries", "5")));
         this.jmxDomain = getOrDefault("jmx-domain", "metrics");
-    }
-
-    public String[] getQueues() {
-        return queues;
-    }
-
-    public String getDatabaseThrottle() {
-        return databaseThrottle;
-    }
-
-    public String getThrottle() {
-        return throttle;
-    }
-
-    public long getEmptyQueueSleep() {
-        return emptyQueueSleep;
-    }
-
-    public long getWindow() {
-        return window;
-    }
-
-    public long getMaxQueryTime() {
-        return maxQueryTime;
-    }
-
-    public int getIdleRescanEvery() {
-        return idleRescanEvery;
-    }
-
-    public int getRescanEvery() {
-        return rescanEvery;
     }
 
     public int getThreads() {
         return threads;
-    }
-
-    public int getRetries() {
-        return retries;
     }
 
     public String getKafkaServers() {
@@ -185,11 +128,10 @@ public class Config {
 
     @Override
     public String toString() {
-        return "Config{databaseThrottle=" + databaseThrottle + ", throttle=" + throttle + ", queues=" + Arrays.toString(queues) + ", emptyQueueSleep=" + emptyQueueSleep + ", maxQueryTime=" + maxQueryTime + ", window=" + window + ", idleRescanEvery=" + idleRescanEvery + ", rescanEvery=" + rescanEvery + ", threads=" + threads + ", retries=" + retries + ", kafkaServer=" + kafkaServer + ", kafkaTopic=" + kafkaTopic + ", jmxDomain=" + jmxDomain + '}';
+        return "Config{" + "threads=" + threads + ", kafkaServer=" + kafkaServer + ", kafkaTopic=" + kafkaTopic + ", jmxDomain=" + jmxDomain + '}';
     }
 
-
-        /**
+    /**
      * Convert a string representation of a duration (number{h|m|s|ms}) to
      * milliseconds
      *
