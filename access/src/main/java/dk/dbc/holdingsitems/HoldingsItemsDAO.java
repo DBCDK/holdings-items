@@ -596,21 +596,6 @@ public class HoldingsItemsDAO {
                 throw new HoldingsItemsException(DATABASE_ERROR, ex);
             }
         }
-        if (collection.isComplete()) {
-            log.debug("collection.isComplete()");
-            try (PreparedStatement stmt = connection.prepareCall(DECOMMISSION_ITEMS)) {
-                stmt.setTimestamp(1, modified);
-                stmt.setString(2, trackingId);
-                stmt.setInt(3, collection.getAgencyId());
-                stmt.setString(4, collection.getBibliographicRecordId());
-                stmt.setString(5, collection.getIssueId());
-                stmt.setTimestamp(6, modified);
-                stmt.executeUpdate();
-            } catch (SQLException ex) {
-                log.error(DATABASE_ERROR, ex);
-                throw new HoldingsItemsException(DATABASE_ERROR, ex);
-            }
-        }
     }
 
     private void insertCollection(RecordCollection collection, Timestamp modified) throws SQLException {
@@ -654,9 +639,6 @@ public class HoldingsItemsDAO {
                                               " SET branch=?, department=?, location=?, subLocation=?, circulationRule=?, accessionDate=?, status=?," +
                                               " modified=?, trackingId=?" +
                                               " WHERE agencyId=? AND bibliographicRecordId=? AND issueId=? AND itemId=? AND modified<=?";
-    private static final String DECOMMISSION_ITEMS = "UPDATE holdingsitemsitem" +
-                                                     " SET status='Decommissioned', modified=?, trackingId=?" +
-                                                     " WHERE agencyId=? AND bibliographicRecordId=? AND issueId=? AND modified<? AND status<>'Online'";
     private static final String INSERT_ITEM = "INSERT INTO holdingsitemsitem" +
                                               " (agencyId, bibliographicRecordId, issueId, itemId," +
                                               " branch, department, location, subLocation, circulationRule, accessionDate, status," +
