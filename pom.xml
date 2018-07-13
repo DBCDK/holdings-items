@@ -42,6 +42,7 @@
         <module>queue-bridge</module>
     <module>monitor</module>
         <module>postgres</module>
+        <module>kafka-bridge</module>
     </modules>
 
     <build>

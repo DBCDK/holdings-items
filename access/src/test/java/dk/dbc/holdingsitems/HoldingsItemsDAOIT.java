@@ -230,8 +230,8 @@ public class HoldingsItemsDAOIT extends DbBase {
         try (Connection connection = dataSource.getConnection()) {
             HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(connection, "FOO");
             connection.setAutoCommit(false);
-            dao.enqueue("12345678", 888888, "worker");
-            dao.enqueue("87654321", 888888, "worker", 1000);
+            dao.enqueue("12345678", 888888, "{}", "worker");
+            dao.enqueue("87654321", 888888, "{}", "worker", 1000);
             connection.commit();
         }
         try (Connection connection = dataSource.getConnection() ;

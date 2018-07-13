@@ -20,6 +20,8 @@ package dk.dbc.holdingsitems.update;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Timer;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import dk.dbc.commons.testutils.postgres.connection.PostgresITDataSource;
 import dk.dbc.forsrights.client.ForsRightsException;
 import dk.dbc.holdingsitems.DatabaseMigrator;
@@ -48,6 +50,7 @@ import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.sql.DataSource;
@@ -114,7 +117,6 @@ public class UpdateWebserviceIT {
         mockUpdateWebservice()
                 .holdingsItemsUpdate(updateReq1());
         HashMap<String, Set<String>> queue = getQueue();
-        System.out.println("queue = " + queue);
         assertEquals("queue size", 1, queue.get("updateOld").size());
         assertEquals("queue size", 1, queue.get("update").size());
         System.out.println("OK");
@@ -149,7 +151,6 @@ public class UpdateWebserviceIT {
         mockUpdateWebservice()
                 .onlineHoldingsItemsUpdate(onlineReqCreate());
         HashMap<String, Set<String>> queue = getQueue();
-        System.out.println("queue = " + queue);
         assertEquals("queue size", 1, queue.get("onlineOld").size());
         assertEquals("queue size", 1, queue.get("online").size());
         System.out.println("OK");
@@ -161,9 +162,76 @@ public class UpdateWebserviceIT {
         mockUpdateWebservice()
                 .completeHoldingsItemsUpdate(completeReq2());
         HashMap<String, Set<String>> queue = getQueue();
-        System.out.println("queue = " + queue);
         assertEquals("queue size", 1, queue.get("completeOld").size());
         assertEquals("queue size", 1, queue.get("complete").size());
+        System.out.println("OK");
+    }
+
+    @Test
+    public void testUpdateHoldingsItemsCreateAndUpdateQueue() throws Exception {
+        System.out.println("testCompleteHoldingsItemsUpdateQueue");
+        mockUpdateWebservice()
+                .holdingsItemsUpdate(updateReq1());
+        getQueue(); // Just for logging
+
+        try (Connection connection = dataSource.getConnection() ;
+             Statement stmt = connection.createStatement()) {
+            stmt.executeUpdate("TRUNCATE q");
+            stmt.executeUpdate("TRUNCATE queue");
+        }
+
+        mockUpdateWebservice()
+                .holdingsItemsUpdate(updateReq2());
+        HashMap<String, Set<String>> queue = getQueue();
+        assertEquals("queue size", 2, queue.get("updateOld").size());
+        assertEquals("queue size", 2, queue.get("update").size());
+        String rec12345678str = queue.get("update").stream()
+                .filter(s -> s.contains("12345678"))
+                .findAny().orElseThrow(() -> new RuntimeException("Cannot find 12345678 record"));
+        System.out.println("rec12345678 = " + rec12345678str);
+        String rec87654321str = queue.get("update").stream()
+                .filter(s -> s.contains("87654321"))
+                .findAny().orElseThrow(() -> new RuntimeException("Cannot find 87654321 record"));
+        System.out.println("rec87654321 = " + rec87654321str);
+        ObjectMapper O = new ObjectMapper();
+        JsonNode rec12345678 = O.readTree(rec12345678str.substring(rec12345678str.indexOf('{')));
+        assertEquals("OnLoan", rec12345678.at("/it1-2/newStatus").asText(""));
+        assertEquals("OnShelf", rec12345678.at("/it1-2/oldStatus").asText(""));
+        JsonNode rec87654321 = O.readTree(rec87654321str.substring(rec87654321str.indexOf('{')));
+        assertEquals("OnLoan", rec87654321.at("/it3-1/newStatus").asText(""));
+        assertEquals("UNKNOWN", rec87654321.at("/it3-1/oldStatus").asText(""));
+    }
+
+    @Test
+    public void testCompleteHoldingsItemsCreateAndUpdateQueue() throws Exception {
+        System.out.println("testCompleteHoldingsItemsUpdateQueue");
+        mockUpdateWebservice()
+                .completeHoldingsItemsUpdate(completeReq1());
+        getQueue(); // Just for logging
+
+        try (Connection connection = dataSource.getConnection() ;
+             Statement stmt = connection.createStatement()) {
+            stmt.executeUpdate("TRUNCATE q");
+            stmt.executeUpdate("TRUNCATE queue");
+        }
+
+        mockUpdateWebservice()
+                .completeHoldingsItemsUpdate(completeReq3());
+        HashMap<String, Set<String>> queue = getQueue();
+        assertEquals("queue size", 1, queue.get("completeOld").size());
+        assertEquals("queue size", 1, queue.get("complete").size());
+
+        String rec12345678str = queue.get("complete").stream()
+                .filter(s -> s.contains("12345678"))
+                .findAny().orElseThrow(() -> new RuntimeException("Cannot find 12345678 record"));
+        System.out.println("rec12345678 = " + rec12345678str);
+        ObjectMapper O = new ObjectMapper();
+        JsonNode rec12345678 = O.readTree(rec12345678str.substring(rec12345678str.indexOf('{')));
+        assertEquals("OnLoan", rec12345678.at("/it3-2/newStatus").asText(""));
+        assertEquals("UNKNOWN", rec12345678.at("/it3-2/oldStatus").asText(""));
+        assertEquals("Decommissioned", rec12345678.at("/it3-1/newStatus").asText(""));
+        assertEquals("OnLoan", rec12345678.at("/it3-1/oldStatus").asText(""));
+
         System.out.println("OK");
     }
 
@@ -193,7 +261,6 @@ public class UpdateWebserviceIT {
         HashMap<String, String> row = checkRow("101010", "12345678", "I1", "it1-1");
         assertNotNull("Expected a row", row);
         assertEquals("complete time as new update", "2017-09-07T09:09:00.001Z", row.get("c.complete"));
-        System.out.println("OK");
     }
 
     public HoldingsItemsUpdateRequest updateReq1() throws DatatypeConfigurationException {
@@ -210,6 +277,27 @@ public class UpdateWebserviceIT {
                                 item("it2-1", branch, department, location, subLocation, circulationRule,
                                      StatusType.ON_ORDER, date("2017-01-01")))
                 ));
+    }
+
+    public HoldingsItemsUpdateRequest updateReq2() throws DatatypeConfigurationException {
+        return holdingsItemsUpdateRequest(
+                "101010", null, "track-update-2",
+                bibliographicItem(
+                        "12345678", modified("2017-09-07T09:09:00.001Z"), "Some Note",
+                        holding("I1", "Issue #1", date("2199-01-01"), 0,
+                                item("it1-1", branch, department, location, subLocation, circulationRule,
+                                     StatusType.ON_SHELF, date("2017-01-01")),
+                                item("it1-2", branch, department, location, subLocation, circulationRule,
+                                     StatusType.ON_LOAN, date("2017-01-01"))), // Changed
+                        holding("I2", "Issue #2", null, 1,
+                                item("it2-1", branch, department, location, subLocation, circulationRule,
+                                     StatusType.ON_ORDER, date("2017-01-01")))),
+                bibliographicItem(
+                        "87654321", modified("2017-09-07T09:09:00.001Z"), "Some Note",
+                        holding("I1", "Issue #1", date("2199-01-01"), 0,
+                                item("it3-1", branch, department, location, subLocation, circulationRule,
+                                     StatusType.ON_LOAN, date("2017-01-01")))) // new
+        );
     }
 
     private OnlineHoldingsItemsUpdateRequest onlineReqCreate() throws DatatypeConfigurationException {
@@ -244,6 +332,19 @@ public class UpdateWebserviceIT {
                                      StatusType.ON_LOAN, date("2017-01-01"))),
                         holding("I4", "Issue #4", null, 1,
                                 item("it4-1", branch, department, location, subLocation, circulationRule,
+                                     StatusType.ON_LOAN, date("2017-01-01")))));
+    }
+
+    private CompleteHoldingsItemsUpdateRequest completeReq3() throws DatatypeConfigurationException {
+        return completeHoldingsItemsUpdateRequest(
+                "101010", null, "track-complete-1",
+                completeBibliographicItem(
+                        "12345678", modified("2017-09-07T09:09:00.001Z"), "Other Note",
+                        holding("I3", "Issue #3", null, 1,
+                                item("it3-1", branch, department, location, subLocation, circulationRule,
+                                     StatusType.ON_LOAN, date("2017-01-01"))),
+                        holding("I3", "Issue #3", null, 1,
+                                item("it3-2", branch, department, location, subLocation, circulationRule,
                                      StatusType.ON_LOAN, date("2017-01-01")))));
     }
 
@@ -294,15 +395,16 @@ public class UpdateWebserviceIT {
             }
         }
         try (Connection connection = dataSource.getConnection() ;
-             PreparedStatement stmt = connection.prepareStatement("SELECT consumer, agencyId, bibliographicRecordId FROM queue") ;
+             PreparedStatement stmt = connection.prepareStatement("SELECT consumer, agencyId, bibliographicRecordId, stateChange FROM queue") ;
              ResultSet resultSet = stmt.executeQuery()) {
             while (resultSet.next()) {
                 result.computeIfAbsent(resultSet.getString(1), s -> new HashSet<>())
                         .add(resultSet.getInt(2) + "|" +
-                             resultSet.getString(3));
+                             resultSet.getString(3) + "|" +
+                             resultSet.getString(4));
             }
         }
-        System.out.println("result = " + result);
+        System.out.println("queue = " + result);
         return result;
     }
 

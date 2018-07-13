@@ -42,7 +42,7 @@ public class HoldingsItemsDAO {
 
     private static final org.slf4j.Logger log = LoggerFactory.getLogger(HoldingsItemsDAO.class);
 
-    private static final QueueSupplier QUEUE_SUPPLIER = new QueueSupplier(QueueJob.STORAGE_ABSTRACTION_IGNORE_STATECHANGE);
+    private static final QueueSupplier QUEUE_SUPPLIER = new QueueSupplier(QueueJob.STORAGE_ABSTRACTION);
 
     private static final int SCHEMA_VERSION = 14;
 

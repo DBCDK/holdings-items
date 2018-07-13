@@ -48,10 +48,10 @@ public class QueueJobIT extends DbBase {
     public void testStoreRetrieve() throws Exception {
         System.out.println("store-retrieve");
 
-        QueueJob job1 = new QueueJob(888888, "12345678", "t1");
-        QueueJob job2 = new QueueJob(888888, "87654321", "t2");
-        QueueJob job3 = new QueueJob(888888, "87654321", "t3");
-        QueueJob job2_3 = new QueueJob(888888, "87654321", "t2\tt3");
+        QueueJob job1 = new QueueJob(888888, "12345678", "{}", "t1");
+        QueueJob job2 = new QueueJob(888888, "87654321", "{}", "t2");
+        QueueJob job3 = new QueueJob(888888, "87654321", "{}", "t3");
+        QueueJob job2_3 = new QueueJob(888888, "87654321", "{}", "t2\tt3");
 
         try (Connection connection = dataSource.getConnection()) {
             PreparedQueueSupplier<QueueJob> supplier = QUEUE_SUPPLIER.preparedSupplier(connection);
@@ -63,7 +63,7 @@ public class QueueJobIT extends DbBase {
             BlockingDeque<QueueJob> list = new LinkedBlockingDeque<>();
 
             QueueWorker worker = QueueWorker.builder(QueueJob.STORAGE_ABSTRACTION)
-                    .skipDuplicateJobs(QueueJob.DEDUPLICATION_ABSTRACTION)
+                    .skipDuplicateJobs(QueueJob.DEDUPLICATION_ABSTRACTION_IGNORE_STATECHANGE)
                     .consume(QUEUE)
                     .dataSource(dataSource)
                     .build((JobConsumer<QueueJob>) (Connection connection1, QueueJob job, JobMetaData metaData) -> {

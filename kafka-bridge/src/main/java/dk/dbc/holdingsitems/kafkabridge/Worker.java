@@ -16,12 +16,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package dk.dbc.holdingsitems.queuebridge;
+package dk.dbc.holdingsitems.kafkabridge;
 
 import dk.dbc.holdingsitems.HoldingsItemsDAO;
 import dk.dbc.holdingsitems.HoldingsItemsException;
 import dk.dbc.holdingsitems.QueueJob;
-import dk.dbc.holdingsitems.queuebridge.monitor.JmxMetrics;
+import dk.dbc.holdingsitems.kafkabridge.monitor.JmxMetrics;
 import dk.dbc.pgqueue.consumer.JobMetaData;
 import dk.dbc.pgqueue.consumer.QueueWorker;
 import java.sql.Connection;
@@ -62,7 +62,7 @@ public class Worker {
     JmxMetrics metrics;
 
     @Inject
-    JobProcessor joProcessor;
+    JobProcessor kafkaBridge;
 
     QueueWorker worker;
 
@@ -79,16 +79,9 @@ public class Worker {
 
         worker = QueueWorker.builder(QueueJob.STORAGE_ABSTRACTION)
                 .skipDuplicateJobs(QueueJob.DEDUPLICATION_ABSTRACTION_IGNORE_STATECHANGE)
-                .consume(config.getQueues())
+                .fromEnvWithDefaults()
                 .dataSource(dataSource)
-                .databaseConnectThrottle(config.getDatabaseThrottle())
-                .failureThrottle(config.getThrottle())
                 .executor(executor)
-                .emptyQueueSleep(config.getEmptyQueueSleep())
-                .idleRescanEvery(config.getIdleRescanEvery())
-                .maxQueryTime(config.getMaxQueryTime())
-                .rescanEvery(config.getRescanEvery())
-                .maxTries(config.getRetries())
                 .metricRegistry(metrics.getRegistry())
                 .build(config.getThreads(), this::work);
         worker.start();
@@ -102,7 +95,7 @@ public class Worker {
     public void work(Connection connection, QueueJob job, JobMetaData metaData) {
         log.info("Processing job: {}:{}", job.getAgencyId(), job.getBibliographicRecordId());
         try {
-            joProcessor.transferJob(job, metaData.getConsumer());
+            kafkaBridge.transferJob(connection, job);
         } catch (RuntimeException ex) {
             throw ex;
         } catch (Exception ex) {

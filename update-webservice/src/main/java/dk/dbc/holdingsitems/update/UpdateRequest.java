@@ -18,7 +18,11 @@
  */
 package dk.dbc.holdingsitems.update;
 
+import dk.dbc.holdingsitems.StateChangeMetadata;
 import com.codahale.metrics.Timer;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import dk.dbc.holdingsitems.HoldingsItemsDAO;
 import dk.dbc.holdingsitems.HoldingsItemsException;
 import dk.dbc.holdingsitems.Record;
@@ -38,6 +42,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.GregorianCalendar;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -53,6 +58,8 @@ import org.slf4j.LoggerFactory;
 public abstract class UpdateRequest {
 
     private static final Logger log = LoggerFactory.getLogger(UpdateRequest.class);
+
+    private static final ObjectMapper O = new ObjectMapper();
 
     /**
      * Get an authentication soap class from a request
@@ -89,6 +96,7 @@ public abstract class UpdateRequest {
 
     private final UpdateWebservice updateWebService;
     private final HashSet<QueueEntry> queueEntries;
+    private final HashMap<String, HashMap<String, StateChangeMetadata>> oldItemStatus; // Bibl -> item -> status
     protected HoldingsItemsDAO dao;
 
     /**
@@ -99,6 +107,7 @@ public abstract class UpdateRequest {
     public UpdateRequest(UpdateWebservice updateWebservice) {
         this.updateWebService = updateWebservice;
         this.queueEntries = new HashSet<>();
+        this.oldItemStatus = new HashMap<>();
     }
 
     /**
@@ -135,7 +144,15 @@ public abstract class UpdateRequest {
                          queueEntry.getBibliographicRecordId() + "|" +
                          queue);
                 try {
-                    dao.enqueue(queueEntry.getBibliographicRecordId(), queueEntry.getAgencyId(), queue);
+                    String saveStateChangeText = "{}";
+                    try {
+                        HashMap<String, StateChangeMetadata> saveStateChange = oldItemStatus.computeIfAbsent(queueEntry.getBibliographicRecordId(), f -> new HashMap<>());
+                        saveStateChangeText = O.writeValueAsString(saveStateChange);
+                    } catch (JsonProcessingException ex) {
+                        log.error("Cannot make json to string: {}", ex.getMessage());
+                        log.debug("Cannot make json to string: ", ex);
+                    }
+                    dao.enqueue(queueEntry.getBibliographicRecordId(), queueEntry.getAgencyId(), saveStateChangeText, queue);
                 } catch (HoldingsItemsException ex) {
                     throw new WrapperException(ex);
                 }
@@ -178,14 +195,17 @@ public abstract class UpdateRequest {
             String issueId = holding.getIssueId();
             logWith.with("issueId", issueId);
             log.info("agencyId = " + agencyId + "; bibliographicRecordId = " + bibliographicRecordId + "; issueId = " + issueId + "; trackingId = " + getTrakingId());
-            RecordCollection collection;
-            try (Timer.Context time = updateWebService.loadCollectionTimer.time()) {
-                collection = dao.getRecordCollectionForUpdate(bibliographicRecordId,
-                                                              agencyId,
-                                                              issueId,
-                                                              modified);
-            }
+            RecordCollection collection = getRecordCollection(bibliographicRecordId, agencyId, issueId, modified);
             collection.setComplete(complete);
+            if (complete) {
+                HashMap<String, StateChangeMetadata> statuses = oldItemStatus.computeIfAbsent(bibliographicRecordId, f -> new HashMap<>());
+                for (StateChangeMetadata metadata : statuses.values()) {
+                    metadata.update(StatusType.DECOMMISSIONED.value(), modified);
+                }
+                for (Record record : collection) {
+                    record.setStatus(StatusType.DECOMMISSIONED.value());
+                }
+            }
             collection.setNote(note);
             copyValue(holding::getIssueText, collection::setIssueText);
             XMLGregorianCalendar expectedDeliveryDate = holding.getExpectedDeliveryDate();
@@ -195,13 +215,51 @@ public abstract class UpdateRequest {
                 collection.setExpectedDelivery(toDate(expectedDeliveryDate, true));
             }
             collection.setReadyForLoan(holding.getReadyForLoan().intValueExact());
-            holding.getHoldingsItems().forEach(item -> addItemToCollection(collection, item));
+            holding.getHoldingsItems().forEach(item -> addItemToCollection(collection, item, modified));
             log.debug("saving");
-            try (Timer.Context time = updateWebService.saveCollectionTimer.time()) {
-                collection.save(modified);
-            }
+            saveCollection(collection, modified);
         } catch (HoldingsItemsException ex) {
             throw new WrapperException(ex);
+        }
+    }
+
+    /**
+     * Fetch a collection and record old item states
+     *
+     * @param bibliographicRecordId
+     * @param agencyId
+     * @param issueId
+     * @param modified
+     * @return
+     * @throws HoldingsItemsException
+     */
+    protected RecordCollection getRecordCollection(String bibliographicRecordId, int agencyId, String issueId, Timestamp modified) throws HoldingsItemsException {
+        try (Timer.Context time = updateWebService.loadCollectionTimer.time()) {
+            RecordCollection collection = dao.getRecordCollectionForUpdate(
+                    bibliographicRecordId,
+                    agencyId,
+                    issueId,
+                    modified);
+            HashMap<String, StateChangeMetadata> biblItemStatus = oldItemStatus.computeIfAbsent(bibliographicRecordId, b -> new HashMap<>());
+            for (Record record : collection) {
+                biblItemStatus.putIfAbsent(record.getItemId(), new StateChangeMetadata(record.getStatus(), modified));
+            }
+            log.debug("oldItemStatus = {}", oldItemStatus);
+            return collection;
+        }
+    }
+
+    /**
+     * call collection.save(modified), and compute state changes pr. itemid
+     *
+     * @param collection collection to save
+     * @param modified   timestamp it has been modified
+     * @throws HoldingsItemsException save (database) error
+     */
+    protected void saveCollection(RecordCollection collection, Timestamp modified) throws HoldingsItemsException {
+        log.debug("saveCollection {}", collection);
+        try (Timer.Context time = updateWebService.saveCollectionTimer.time()) {
+            collection.save(modified);
         }
     }
 
@@ -211,7 +269,7 @@ public abstract class UpdateRequest {
      * @param collection target collection
      * @param item       item to add
      */
-    protected void addItemToCollection(RecordCollection collection, HoldingsItem item) {
+    protected void addItemToCollection(RecordCollection collection, HoldingsItem item, Timestamp modified) {
         try (LogWith logWith = new LogWith()) {
             String itemId = item.getItemId();
             logWith.with("itemId", itemId);
@@ -227,6 +285,9 @@ public abstract class UpdateRequest {
                     throw new FailedUpdateInternalException("Use endpoint onlineHoldingsItemsUpdate got status ONLINE");
                 }
                 rec.setStatus(status.value());
+                HashMap<String, StateChangeMetadata> metas = oldItemStatus.computeIfAbsent(collection.getBibliographicRecordId(), f -> new HashMap<>());
+                StateChangeMetadata meta = metas.computeIfAbsent(itemId, f -> new StateChangeMetadata(modified));
+                meta.update(status.value(), modified);
             }
             copyValue(item::getBranch, rec::setBranch);
             copyValue(item::getCirculationRule, rec::setCirculationRule);
