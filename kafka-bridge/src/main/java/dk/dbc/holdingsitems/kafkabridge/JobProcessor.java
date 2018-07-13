@@ -63,7 +63,7 @@ public class JobProcessor {
                 stateChange.charAt(0) != '{' ||
                 stateChange.startsWith("{}")) {
                 message.put("complete", true);
-                ObjectNode obj = sendFullStatus(connection, job);
+                ObjectNode obj = buildFullStatus(connection, job);
                 message.set("items", obj);
             } else {
                 message.put("complete", false);
@@ -83,7 +83,7 @@ public class JobProcessor {
                 .build();
     }
 
-    private ObjectNode sendFullStatus(Connection connection, QueueJob job) throws HoldingsItemsException {
+    private ObjectNode buildFullStatus(Connection connection, QueueJob job) throws HoldingsItemsException {
         HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(connection, job.getTrackingId());
         String bibliographicRecordId = job.getBibliographicRecordId();
         int agencyId = job.getAgencyId();
