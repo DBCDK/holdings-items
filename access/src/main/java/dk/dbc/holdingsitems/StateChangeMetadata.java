@@ -60,4 +60,9 @@ public class StateChangeMetadata {
     public String getWhen() {
         return when.toInstant().toString();
     }
+
+    @Override
+    public String toString() {
+        return "StateChangeMetadata{" + "newStatus=" + newStatus + ", oldStatus=" + oldStatus + ", when=" + when + '}';
+    }
 }

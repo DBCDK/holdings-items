@@ -30,6 +30,7 @@ import dk.dbc.log.LogWith;
 import dk.dbc.oss.ns.holdingsitemsupdate.Authentication;
 import dk.dbc.oss.ns.holdingsitemsupdate.CompleteBibliographicItem;
 import dk.dbc.oss.ns.holdingsitemsupdate.CompleteHoldingsItemsUpdateRequest;
+import dk.dbc.oss.ns.holdingsitemsupdate.Holding;
 import dk.dbc.oss.ns.holdingsitemsupdate.HoldingsItemsUpdateRequest;
 import dk.dbc.oss.ns.holdingsitemsupdate.HoldingsItemsUpdateResult;
 import dk.dbc.oss.ns.holdingsitemsupdate.HoldingsItemsUpdateStatusEnum;
@@ -37,6 +38,7 @@ import dk.dbc.oss.ns.holdingsitemsupdate.OnlineBibliographicItem;
 import dk.dbc.oss.ns.holdingsitemsupdate.OnlineHoldingsItemsUpdateRequest;
 import dk.dbc.oss.ns.holdingsitemsupdate.StatusType;
 import java.io.StringWriter;
+import java.math.BigInteger;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -45,6 +47,7 @@ import java.util.Date;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import javax.inject.Inject;
@@ -279,11 +282,11 @@ public class UpdateWebservice {
                         logWith.bibliographicRecordId(bibliographicRecordId);
 
                         addQueueJob(bibliographicRecordId, agencyId);
-
-                        decommissionExistingRecords(bibliographicRecordId, modified);
                         bibliographicItem.getHoldings().stream()
                                 .sorted(HOLDINGS_SORT_COMPARE)
                                 .forEachOrdered(holding -> processHolding(modified, agencyId, bibliographicRecordId, note, true, holding));
+                        Set<String> handledIssues = bibliographicItem.getHoldings().stream().map(h -> h.getIssueId()).collect(Collectors.toSet());
+                        decommissionExistingRecords(bibliographicRecordId, agencyId, modified, handledIssues);
                     }
                 }
 
@@ -295,13 +298,14 @@ public class UpdateWebservice {
                  * @throws WrapperException for holding exceptions through
                  *                          .stream()
                  */
-                public void decommissionExistingRecords(String bibliographicRecordId, Timestamp modified) throws WrapperException {
+                public void decommissionExistingRecords(String bibliographicRecordId, int agencyId, Timestamp modified, Set<String> handledIssues) throws WrapperException {
                     try (LogWith logWith = new LogWith()) {
                         logWith.bibliographicRecordId(bibliographicRecordId);
-
                         Set<String> issueIds = dao.getIssueIds(bibliographicRecordId, agencyId);
-                        addQueueJob(bibliographicRecordId, agencyId);
                         for (String issueId : issueIds) {
+                            if (handledIssues.contains(issueId)) {
+                                continue;
+                            }
                             logWith.with("issueId", issueId);
                             log.info("Decommissioning");
                             log.debug("agencyId = " + agencyId + "; bibliographicRecordId = " + bibliographicRecordId + "; issueId = " + issueId + "; wipe");
@@ -309,7 +313,12 @@ public class UpdateWebservice {
                             try (Timer.Context time = loadCollectionTimer.time()) {
                                 collection = dao.getRecordCollection(bibliographicRecordId, agencyId, issueId);
                             }
-                            collection.setComplete(true);
+                            if (!collection.getCompleteTimestamp().after(modified)) {
+                                decommissionEntireHolding(collection, modified);
+                            } else {
+                                log.info("Got older modified {} from last complete {}", modified, collection.getCompleteTimestamp());
+                            }
+                            log.debug("collection = {}", collection);
                             saveCollection(collection, modified);
                         }
                     } catch (HoldingsItemsException ex) {

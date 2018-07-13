@@ -22,7 +22,6 @@ import dk.dbc.holdingsitems.StateChangeMetadata;
 import com.codahale.metrics.Timer;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import dk.dbc.holdingsitems.HoldingsItemsDAO;
 import dk.dbc.holdingsitems.HoldingsItemsException;
 import dk.dbc.holdingsitems.Record;
@@ -197,14 +196,8 @@ public abstract class UpdateRequest {
             log.info("agencyId = " + agencyId + "; bibliographicRecordId = " + bibliographicRecordId + "; issueId = " + issueId + "; trackingId = " + getTrakingId());
             RecordCollection collection = getRecordCollection(bibliographicRecordId, agencyId, issueId, modified);
             collection.setComplete(complete);
-            if (complete) {
-                HashMap<String, StateChangeMetadata> statuses = oldItemStatus.computeIfAbsent(bibliographicRecordId, f -> new HashMap<>());
-                for (StateChangeMetadata metadata : statuses.values()) {
-                    metadata.update(StatusType.DECOMMISSIONED.value(), modified);
-                }
-                for (Record record : collection) {
-                    record.setStatus(StatusType.DECOMMISSIONED.value());
-                }
+            if (complete && !collection.getCompleteTimestamp().after(modified)) {
+                decommissionEntireHolding(collection, modified);
             }
             collection.setNote(note);
             copyValue(holding::getIssueText, collection::setIssueText);
@@ -220,6 +213,31 @@ public abstract class UpdateRequest {
             saveCollection(collection, modified);
         } catch (HoldingsItemsException ex) {
             throw new WrapperException(ex);
+        }
+    }
+
+    /**
+     * Set all values to Decommissioned for a collection, and set complete
+     * timestamp
+     *
+     * @param collection the collection (bibid/agency/issue)
+     * @param modified   then data has been changed
+     */
+    public void decommissionEntireHolding(RecordCollection collection, Timestamp modified) {
+        collection.setCompleteTimestamp(modified);
+        String bibliographicRecordId = collection.getBibliographicRecordId();
+        HashMap<String, StateChangeMetadata> statuses = oldItemStatus.computeIfAbsent(bibliographicRecordId, f -> new HashMap<>());
+        for (Record record : collection) {
+            String itemId = record.getItemId();
+            String oldStatus = record.getStatus();
+            if (oldStatus.equals(StatusType.ONLINE.value())) {
+                continue;
+            };
+            StateChangeMetadata metadata = statuses.computeIfAbsent(itemId, i -> new StateChangeMetadata(oldStatus, record.getModified()));
+            metadata.update(StatusType.DECOMMISSIONED.value(), modified);
+            record.setStatus(StatusType.DECOMMISSIONED.value());
+            log.debug("record = {}", record);
+            log.debug("metadata = {}", metadata);
         }
     }
 
@@ -288,6 +306,7 @@ public abstract class UpdateRequest {
                 HashMap<String, StateChangeMetadata> metas = oldItemStatus.computeIfAbsent(collection.getBibliographicRecordId(), f -> new HashMap<>());
                 StateChangeMetadata meta = metas.computeIfAbsent(itemId, f -> new StateChangeMetadata(modified));
                 meta.update(status.value(), modified);
+                log.debug("meta = {}", meta);
             }
             copyValue(item::getBranch, rec::setBranch);
             copyValue(item::getCirculationRule, rec::setCirculationRule);

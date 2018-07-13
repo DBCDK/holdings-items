@@ -235,6 +235,37 @@ public class UpdateWebserviceIT {
         System.out.println("OK");
     }
 
+    @Test
+    public void testCompleteHoldingsItemsCreateEmptyJson() throws Exception {
+        System.out.println("testCompleteHoldingsItemsCreateEmptyJson");
+        mockUpdateWebservice()
+                .completeHoldingsItemsUpdate(completeReq1());
+        getQueue(); // Just for logging
+
+        try (Connection connection = dataSource.getConnection() ;
+             Statement stmt = connection.createStatement()) {
+            stmt.executeUpdate("TRUNCATE q");
+            stmt.executeUpdate("TRUNCATE queue");
+        }
+
+        mockUpdateWebservice()
+                .completeHoldingsItemsUpdate(completeReqEmpty());
+        HashMap<String, Set<String>> queue = getQueue();
+        assertEquals("queue size", 1, queue.get("completeOld").size());
+        assertEquals("queue size", 1, queue.get("complete").size());
+
+        String rec12345678str = queue.get("complete").stream()
+                .filter(s -> s.contains("12345678"))
+                .findAny().orElseThrow(() -> new RuntimeException("Cannot find 12345678 record"));
+        System.out.println("rec12345678 = " + rec12345678str);
+        ObjectMapper O = new ObjectMapper();
+        JsonNode rec12345678 = O.readTree(rec12345678str.substring(rec12345678str.indexOf('{')));
+        assertEquals("Decommissioned", rec12345678.at("/it3-1/newStatus").asText(""));
+        assertEquals("OnLoan", rec12345678.at("/it3-1/oldStatus").asText(""));
+
+        System.out.println("OK");
+    }
+
     /**
      *
      * @throws Exception
@@ -260,7 +291,7 @@ public class UpdateWebserviceIT {
         assertEquals("Expected online", 1, countItems(StatusType.ONLINE));
         HashMap<String, String> row = checkRow("101010", "12345678", "I1", "it1-1");
         assertNotNull("Expected a row", row);
-        assertEquals("complete time as new update", "2017-09-07T09:09:00.001Z", row.get("c.complete"));
+        assertEquals("complete time as new update", "2017-09-07T09:09:01.001Z", row.get("c.complete"));
     }
 
     public HoldingsItemsUpdateRequest updateReq1() throws DatatypeConfigurationException {
@@ -316,7 +347,7 @@ public class UpdateWebserviceIT {
         return completeHoldingsItemsUpdateRequest(
                 "101010", null, "track-complete-1",
                 completeBibliographicItem(
-                        "12345678", modified("2017-09-07T09:09:00.001Z"), "Other Note",
+                        "12345678", modified("2017-09-07T09:09:01.001Z"), "Other Note",
                         holding("I3", "Issue #3", null, 1,
                                 item("it3-1", branch, department, location, subLocation, circulationRule,
                                      StatusType.ON_LOAN, date("2017-01-01")))));
@@ -326,7 +357,7 @@ public class UpdateWebserviceIT {
         return completeHoldingsItemsUpdateRequest(
                 "101010", null, "track-complete-1",
                 completeBibliographicItem(
-                        "12345678", modified("2017-09-07T09:09:00.001Z"), "Other Note",
+                        "12345678", modified("2017-09-07T09:09:02.001Z"), "Other Note",
                         holding("I3", "Issue #3", null, 1,
                                 item("it3-1", branch, department, location, subLocation, circulationRule,
                                      StatusType.ON_LOAN, date("2017-01-01"))),
@@ -339,13 +370,20 @@ public class UpdateWebserviceIT {
         return completeHoldingsItemsUpdateRequest(
                 "101010", null, "track-complete-1",
                 completeBibliographicItem(
-                        "12345678", modified("2017-09-07T09:09:00.001Z"), "Other Note",
+                        "12345678", modified("2017-09-07T09:09:03.001Z"), "Other Note",
                         holding("I3", "Issue #3", null, 1,
                                 item("it3-1", branch, department, location, subLocation, circulationRule,
                                      StatusType.ON_LOAN, date("2017-01-01"))),
                         holding("I3", "Issue #3", null, 1,
                                 item("it3-2", branch, department, location, subLocation, circulationRule,
                                      StatusType.ON_LOAN, date("2017-01-01")))));
+    }
+
+    private CompleteHoldingsItemsUpdateRequest completeReqEmpty() throws DatatypeConfigurationException {
+        return completeHoldingsItemsUpdateRequest(
+                "101010", null, "track-complete-empty", completeBibliographicItem(
+                        "12345678", modified("2017-09-07T09:09:04.001Z"), "Other Note"));
+
     }
 
     private UpdateWebservice mockUpdateWebservice() throws SQLException, ForsRightsException {
