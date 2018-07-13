@@ -18,7 +18,6 @@
  */
 package dk.dbc.holdingsitems.kafkabridge;
 
-import java.time.Instant;
 import javax.ejb.Stateless;
 import javax.inject.Inject;
 import javax.ws.rs.GET;
@@ -39,9 +38,9 @@ public class Status {
     Worker worker;
 
     @GET
-    @Produces(MediaType.TEXT_PLAIN)
+    @Produces(MediaType.APPLICATION_JSON)
     public Response status() {
-        return Response.ok(Instant.now().toString()).build();
+        return Response.ok("{\"ok\":true}").build();
     }
 
 }
