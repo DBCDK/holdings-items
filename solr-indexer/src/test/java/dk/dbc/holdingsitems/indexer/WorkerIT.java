@@ -27,7 +27,6 @@ import dk.dbc.commons.testutils.postgres.connection.PostgresITDataSource;
 import dk.dbc.holdingsitems.DatabaseMigrator;
 import dk.dbc.holdingsitems.QueueJob;
 import dk.dbc.holdingsitems.indexer.logic.JobProcessor;
-import dk.dbc.holdingsitems.indexer.monitor.JmxMetrics;
 import dk.dbc.pgqueue.PreparedQueueSupplier;
 import dk.dbc.pgqueue.QueueSupplier;
 import dk.dbc.pgqueue.consumer.JobMetaData;
@@ -203,12 +202,7 @@ public class WorkerIT {
         };
         worker.config = config;
         worker.dataSource = dataSource;
-        worker.metrics = new JmxMetrics() {
-            @Override
-            public MetricRegistry getRegistry() {
-                return new MetricRegistry();
-            }
-        };
+        worker.metrics = new MetricRegistry();
         worker.init();
         QueueJob job = jobs.poll(10, TimeUnit.SECONDS);
         worker.destroy();
@@ -232,12 +226,7 @@ public class WorkerIT {
         worker.config = config;
         worker.dataSource = dataSource;
         worker.jobProcessor = new JobProcessor(config);
-        worker.metrics = new JmxMetrics() {
-            @Override
-            public MetricRegistry getRegistry() {
-                return new MetricRegistry();
-            }
-        };
+        worker.metrics = new MetricRegistry();
         worker.jobProcessor.init();
         worker.init();
         ObjectNode job = consumer.requests.poll(10, TimeUnit.SECONDS);

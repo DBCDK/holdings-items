@@ -18,13 +18,13 @@
  */
 package dk.dbc.holdingsitems.indexer;
 
+import com.codahale.metrics.MetricRegistry;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import dk.dbc.holdingsitems.HoldingsItemsDAO;
 import dk.dbc.holdingsitems.HoldingsItemsException;
 import dk.dbc.holdingsitems.QueueJob;
 import dk.dbc.holdingsitems.indexer.logic.JobProcessor;
-import dk.dbc.holdingsitems.indexer.monitor.JmxMetrics;
 import dk.dbc.pgqueue.consumer.JobMetaData;
 import dk.dbc.pgqueue.consumer.QueueWorker;
 import java.sql.Connection;
@@ -65,7 +65,7 @@ public class Worker {
     JobProcessor jobProcessor;
 
     @Inject
-    JmxMetrics metrics;
+    MetricRegistry metrics;
 
     private QueueWorker worker;
 
@@ -92,7 +92,7 @@ public class Worker {
                 .maxQueryTime(config.getMaxQueryTime())
                 .rescanEvery(config.getRescanEvery())
                 .maxTries(config.getRetries())
-                .metricRegistry(metrics.getRegistry())
+                .metricRegistry(metrics)
                 .build(config.getThreads(), this::work);
         worker.start();
     }
