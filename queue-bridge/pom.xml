@@ -127,9 +127,9 @@
         </dependency>
 
         <dependency>
-            <groupId>com.codahale.metrics</groupId>
-            <artifactId>metrics-core</artifactId>
-            <type>jar</type>
+            <groupId>dk.dbc</groupId>
+            <artifactId>ee-stats</artifactId>
+            <version>1.0-SNAPSHOT</version>
         </dependency>
 
         <dependency>
