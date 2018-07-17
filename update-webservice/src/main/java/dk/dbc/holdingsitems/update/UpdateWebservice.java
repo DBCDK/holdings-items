@@ -19,8 +19,10 @@
 package dk.dbc.holdingsitems.update;
 
 import com.codahale.metrics.Counter;
+import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import com.sun.xml.ws.developer.SchemaValidation;
+import dk.dbc.ee.stats.Timed;
 import dk.dbc.forsrights.client.ForsRightsException;
 import dk.dbc.holdingsitems.HoldingsItemsDAO;
 import dk.dbc.holdingsitems.HoldingsItemsException;
@@ -30,7 +32,6 @@ import dk.dbc.log.LogWith;
 import dk.dbc.oss.ns.holdingsitemsupdate.Authentication;
 import dk.dbc.oss.ns.holdingsitemsupdate.CompleteBibliographicItem;
 import dk.dbc.oss.ns.holdingsitemsupdate.CompleteHoldingsItemsUpdateRequest;
-import dk.dbc.oss.ns.holdingsitemsupdate.Holding;
 import dk.dbc.oss.ns.holdingsitemsupdate.HoldingsItemsUpdateRequest;
 import dk.dbc.oss.ns.holdingsitemsupdate.HoldingsItemsUpdateResult;
 import dk.dbc.oss.ns.holdingsitemsupdate.HoldingsItemsUpdateStatusEnum;
@@ -38,7 +39,6 @@ import dk.dbc.oss.ns.holdingsitemsupdate.OnlineBibliographicItem;
 import dk.dbc.oss.ns.holdingsitemsupdate.OnlineHoldingsItemsUpdateRequest;
 import dk.dbc.oss.ns.holdingsitemsupdate.StatusType;
 import java.io.StringWriter;
-import java.math.BigInteger;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -90,36 +90,32 @@ public class UpdateWebservice {
     WebServiceContext wsc;
 
     @Inject
+    MetricRegistry metric;
+
     Counter requestCounter;
-
-    @Inject
     Counter requestUpdateCounter;
-
-    @Inject
     Counter requestCompleteCounter;
-
-    @Inject
     Counter requestOnlineCounter;
-
-    @Inject
     Counter requestInvalidCounter;
-
-    @Inject
-    Counter requestSystemError;
-
-    @Inject
-    Counter requestAuthenticationError;
-
-    @Inject
+    Counter requestSystemErrorCounter;
+    Counter requestAuthenticationErrorCounter;
     Timer loadCollectionTimer;
-
-    @Inject
     Timer saveCollectionTimer;
 
     private Function<Object, String> mapToXml;
 
     @PostConstruct
     public void init() {
+        requestCounter = metric.counter(getClass().getCanonicalName() + "request");
+        requestUpdateCounter = metric.counter(getClass().getCanonicalName() + "requestUpdate");
+        requestCompleteCounter = metric.counter(getClass().getCanonicalName() + "requestComplete");
+        requestOnlineCounter = metric.counter(getClass().getCanonicalName() + "requestOnline");
+        requestInvalidCounter = metric.counter(getClass().getCanonicalName() + "requestInvalid");
+        requestSystemErrorCounter = metric.counter(getClass().getCanonicalName() + "requestSystemError");
+        requestAuthenticationErrorCounter = metric.counter(getClass().getCanonicalName() + "requestAuthenticationError");
+        loadCollectionTimer = metric.timer(getClass().getCanonicalName() + "loadCollection");
+        saveCollectionTimer = metric.timer(getClass().getCanonicalName() + "saveCollection");
+
         try {
             JAXBContext jaxbContext = JAXBContext.newInstance(
                     dk.dbc.oss.ns.holdingsitemsupdate.Authentication.class,
@@ -164,6 +160,7 @@ public class UpdateWebservice {
      * @param req soap request
      * @return soap response
      */
+    @Timed
     public HoldingsItemsUpdateResult holdingsItemsUpdate(final HoldingsItemsUpdateRequest req) {
         requestUpdateCounter.inc();
         if (req.getTrackingId() == null || req.getTrackingId().isEmpty()) {
@@ -234,6 +231,7 @@ public class UpdateWebservice {
      * @param req soap request
      * @return soap response
      */
+    @Timed
     public HoldingsItemsUpdateResult completeHoldingsItemsUpdate(final CompleteHoldingsItemsUpdateRequest req) {
         requestCompleteCounter.inc();
         if (req.getTrackingId() == null || req.getTrackingId().isEmpty()) {
@@ -338,6 +336,7 @@ public class UpdateWebservice {
      * @param req soap request
      * @return soap response
      */
+    @Timed
     public HoldingsItemsUpdateResult onlineHoldingsItemsUpdate(final OnlineHoldingsItemsUpdateRequest req) {
         requestOnlineCounter.inc();
         if (req.getTrackingId() == null || req.getTrackingId().isEmpty()) {
@@ -464,27 +463,27 @@ public class UpdateWebservice {
             connection.commit();
             return buildReponse(HoldingsItemsUpdateStatusEnum.OK, "Success");
         } catch (HoldingsItemsException ex) {
-            requestSystemError.inc();
+            requestSystemErrorCounter.inc();
             log.error("HoldingsItemdsDAO exception: " + ex.getMessage());
             log.debug("HoldingsItemdsDAO exception:", ex);
             return buildReponse(HoldingsItemsUpdateStatusEnum.FAILED_UPDATE_INTERNAL_ERROR, "Database Error");
         } catch (SQLException ex) {
-            requestSystemError.inc();
+            requestSystemErrorCounter.inc();
             log.error("SQL exception: " + ex.getMessage());
             log.debug("SQL exception:", ex);
             return buildReponse(HoldingsItemsUpdateStatusEnum.FAILED_UPDATE_INTERNAL_ERROR, "Database Error");
         } catch (AuthenticationException ex) {
-            requestAuthenticationError.inc();
+            requestAuthenticationErrorCounter.inc();
             log.error("Authentication failed: " + ex.getMessage());
             log.debug("Authentication failed:", ex);
             return buildReponse(HoldingsItemsUpdateStatusEnum.AUTHENTICATION_ERROR, "Authentication failed");
         } catch (FailedUpdateInternalException | InvalidDeliveryDateException ex) {
-            requestSystemError.inc();
+            requestSystemErrorCounter.inc();
             log.error("Update Internal exception: " + ex.getMessage());
             log.debug("Update Internal exception:", ex);
             return buildReponse(HoldingsItemsUpdateStatusEnum.FAILED_UPDATE_INTERNAL_ERROR, ex.getMessage());
         } catch (Exception ex) {
-            requestSystemError.inc();
+            requestSystemErrorCounter.inc();
             log.error("Unknown exception: " + ex.getMessage());
             log.debug("Unknown exception:", ex);
             return buildReponse(HoldingsItemsUpdateStatusEnum.FAILED_UPDATE_INTERNAL_ERROR, "Internal Server Error");

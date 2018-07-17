@@ -394,8 +394,8 @@ public class UpdateWebserviceIT {
         mock.requestCompleteCounter = mock(Counter.class);
         mock.requestOnlineCounter = mock(Counter.class);
         mock.requestInvalidCounter = mock(Counter.class);
-        mock.requestSystemError = mock(Counter.class);
-        mock.requestAuthenticationError = mock(Counter.class);
+        mock.requestSystemErrorCounter = mock(Counter.class);
+        mock.requestAuthenticationErrorCounter = mock(Counter.class);
         mock.saveCollectionTimer = mock(Timer.class);
         mock.loadCollectionTimer = mock(Timer.class);
         mock.validator = mock(AccessValidator.class);
