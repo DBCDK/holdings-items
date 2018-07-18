@@ -302,10 +302,10 @@ public abstract class UpdateRequest {
                 if (status == StatusType.ONLINE) {
                     throw new FailedUpdateInternalException("Use endpoint onlineHoldingsItemsUpdate got status ONLINE");
                 }
-                rec.setStatus(status.value());
                 HashMap<String, StateChangeMetadata> metas = oldItemStatus.computeIfAbsent(collection.getBibliographicRecordId(), f -> new HashMap<>());
-                StateChangeMetadata meta = metas.computeIfAbsent(itemId, f -> new StateChangeMetadata(modified));
+                StateChangeMetadata meta = metas.computeIfAbsent(itemId, f -> new StateChangeMetadata(rec.isOriginal() ? "UNKNOWN" : rec.getStatus(), rec.getModified()));
                 meta.update(status.value(), modified);
+                rec.setStatus(status.value());
                 log.debug("meta = {}", meta);
             }
             copyValue(item::getBranch, rec::setBranch);
