@@ -88,7 +88,8 @@ public class JobProcessor {
         String trackingId = job.getTrackingId();
 
         HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(connection, trackingId, true);
-        String bibliographicRecordId = job.getBibliographicRecordId();
+        String bibliographicRecordId = job.getBibliographicRecordId()
+                .replaceAll("\\s", "");
         int agencyId = job.getAgencyId();
         Set<String> issueIds = dao.getIssueIds(bibliographicRecordId, agencyId);
         log.debug("issueIds = {}", issueIds);
