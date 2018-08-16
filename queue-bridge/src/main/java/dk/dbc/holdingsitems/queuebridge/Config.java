@@ -18,7 +18,6 @@
  */
 package dk.dbc.holdingsitems.queuebridge;
 
-import java.net.URI;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Locale;
@@ -52,15 +51,8 @@ public class Config {
     public static final String PROPERTIES = "holdings-items-queue-bridge";
 
     private Properties props;
-    private String databaseThrottle;
-    private String throttle;
     private String[] queues;
-    private long emptyQueueSleep;
-    private long maxQueryTime;
-    private int idleRescanEvery;
-    private int rescanEvery;
     private int threads;
-    private int retries;
     private String mqServer;
     private String jmxDomain;
     private Map<String, String> mapping;
@@ -97,14 +89,7 @@ public class Config {
         this.mapping = Arrays.stream(rules.split("\\s*,\\s*"))
                 .map(s -> s.split("=", 2))
                 .collect(Collectors.toMap(a -> a[1], a -> a[0]));
-        this.databaseThrottle = getOrDefault("database-throttle", "1/5s,3/m,5/10m");
-        this.throttle = getOrDefault("throttle", "2/100ms,3/s,5/m");
-        this.emptyQueueSleep = Long.max(1000, Long.parseLong(getOrDefault("empty-queue-sleep", "10000")));
-        this.maxQueryTime = Long.max(10, Long.parseLong(getOrDefault("max-query-time", "250")));
-        this.idleRescanEvery = Integer.max(1, Integer.parseInt(getOrDefault("idle-rescan-every", "10")));
-        this.rescanEvery = Integer.max(1, Integer.parseInt(getOrDefault("rescan-every", "1000")));
         this.threads = Integer.max(1, Integer.parseInt(getOrDefault("threads", "1")));
-        this.retries = Integer.max(1, Integer.parseInt(getOrDefault("retries", "5")));
         this.mqServer = getOrFail("queue-server");
         this.jmxDomain = getOrDefault("jmx-domain", "metrics");
     }
@@ -113,36 +98,9 @@ public class Config {
         return queues;
     }
 
-    public String getDatabaseThrottle() {
-        return databaseThrottle;
-    }
-
-    public String getThrottle() {
-        return throttle;
-    }
-
-    public long getEmptyQueueSleep() {
-        return emptyQueueSleep;
-    }
-
-    public long getMaxQueryTime() {
-        return maxQueryTime;
-    }
-
-    public int getIdleRescanEvery() {
-        return idleRescanEvery;
-    }
-
-    public int getRescanEvery() {
-        return rescanEvery;
-    }
 
     public int getThreads() {
         return threads;
-    }
-
-    public int getRetries() {
-        return retries;
     }
 
     public String getMqServer() {
@@ -191,7 +149,9 @@ public class Config {
 
     @Override
     public String toString() {
-        return "Config{" + "databaseThrottle=" + databaseThrottle + ", throttle=" + throttle + ", queues=" + Arrays.toString(queues) + ", emptyQueueSleep=" + emptyQueueSleep + ", maxQueryTime=" + maxQueryTime + ", idleRescanEvery=" + idleRescanEvery + ", rescanEvery=" + rescanEvery + ", threads=" + threads + ", retries=" + retries + ", solrDocStoreUrl=" + mqServer + '}';
+        return "Config{" + "queues=" + Arrays.toString(queues) + ", threads=" + threads + ", mqServer=" + mqServer + ", jmxDomain=" + jmxDomain + ", mapping=" + mapping + '}';
     }
+
+
 
 }

@@ -48,15 +48,8 @@ public class Config {
     public static final String PROPERTIES = "holdings-items-indexer";
 
     private Properties props;
-    private String databaseThrottle;
-    private String throttle;
     private String[] queues;
-    private long emptyQueueSleep;
-    private long maxQueryTime;
-    private int idleRescanEvery;
-    private int rescanEvery;
     private int threads;
-    private int retries;
     private String solrDocStoreUrl;
     private String jmxDomain;
 
@@ -81,14 +74,7 @@ public class Config {
         this.queues = Arrays.stream(getOrFail("queues").split("[\\s,]+"))
                 .filter(s -> !s.isEmpty())
                 .toArray(String[]::new);
-        this.databaseThrottle = getOrDefault("database-throttle", "1/5s,3/m,5/10m");
-        this.throttle = getOrDefault("throttle", "2/100ms,3/s,5/m");
-        this.emptyQueueSleep = Long.max(1000, Long.parseLong(getOrDefault("empty-queue-sleep", "10000")));
-        this.maxQueryTime = Long.max(10, Long.parseLong(getOrDefault("max-query-time", "250")));
-        this.idleRescanEvery = Integer.max(1, Integer.parseInt(getOrDefault("idle-rescan-every", "10")));
-        this.rescanEvery = Integer.max(1, Integer.parseInt(getOrDefault("rescan-every", "1000")));
         this.threads = Integer.max(1, Integer.parseInt(getOrDefault("threads", "5")));
-        this.retries = Integer.max(1, Integer.parseInt(getOrDefault("retries", "5")));
         this.solrDocStoreUrl = URI.create(getOrFail("solr-doc-store-url"))
                 .resolve("/api/holdings")
                 .toString();
@@ -99,36 +85,8 @@ public class Config {
         return queues;
     }
 
-    public String getDatabaseThrottle() {
-        return databaseThrottle;
-    }
-
-    public String getThrottle() {
-        return throttle;
-    }
-
-    public long getEmptyQueueSleep() {
-        return emptyQueueSleep;
-    }
-
-    public long getMaxQueryTime() {
-        return maxQueryTime;
-    }
-
-    public int getIdleRescanEvery() {
-        return idleRescanEvery;
-    }
-
-    public int getRescanEvery() {
-        return rescanEvery;
-    }
-
     public int getThreads() {
         return threads;
-    }
-
-    public int getRetries() {
-        return retries;
     }
 
     public String getSolrDocStoreUrl() {
@@ -173,7 +131,7 @@ public class Config {
 
     @Override
     public String toString() {
-        return "Config{" + "databaseThrottle=" + databaseThrottle + ", throttle=" + throttle + ", queues=" + Arrays.toString(queues) + ", emptyQueueSleep=" + emptyQueueSleep + ", maxQueryTime=" + maxQueryTime + ", idleRescanEvery=" + idleRescanEvery + ", rescanEvery=" + rescanEvery + ", threads=" + threads + ", retries=" + retries + ", solrDocStoreUrl=" + solrDocStoreUrl + '}';
+        return "Config{" + "queues=" + Arrays.toString(queues) + ", threads=" + threads + ", solrDocStoreUrl=" + solrDocStoreUrl + ", jmxDomain=" + jmxDomain + '}';
     }
 
 }

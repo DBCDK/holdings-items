@@ -84,14 +84,8 @@ public class Worker {
                 .skipDuplicateJobs(QueueJob.DEDUPLICATION_ABSTRACTION_IGNORE_STATECHANGE)
                 .consume(config.getQueues())
                 .dataSource(dataSource)
-                .databaseConnectThrottle(config.getDatabaseThrottle())
-                .failureThrottle(config.getThrottle())
+                .fromEnvWithDefaults()
                 .executor(executor)
-                .emptyQueueSleep(config.getEmptyQueueSleep())
-                .idleRescanEvery(config.getIdleRescanEvery())
-                .maxQueryTime(config.getMaxQueryTime())
-                .rescanEvery(config.getRescanEvery())
-                .maxTries(config.getRetries())
                 .metricRegistry(metrics)
                 .build(config.getThreads(), this::work);
         worker.start();
