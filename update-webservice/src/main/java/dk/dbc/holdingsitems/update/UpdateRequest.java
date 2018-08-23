@@ -118,6 +118,14 @@ public abstract class UpdateRequest {
         this.dao = dao;
     }
 
+    public void updateNote(String note, int agencyId, String bibliographicRecordId, Timestamp modified) {
+        try {
+            dao.updateBibliographicItemNote(note, agencyId, bibliographicRecordId, modified);
+        } catch (HoldingsItemsException ex) {
+            throw new WrapperException(ex);
+        }
+    }
+
     /**
      * Collect queue jobs
      *

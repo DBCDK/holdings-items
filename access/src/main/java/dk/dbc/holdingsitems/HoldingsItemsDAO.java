@@ -292,6 +292,30 @@ public class HoldingsItemsDAO {
     }
 
     /**
+     * Update bibliographic item note - should be called before items are fetched
+     *
+     * @param note The text to apply to all issues
+     * @param agencyId owner
+     * @param bibliographicRecordId owner
+     * @param modified modified timestamp
+     * @throws HoldingsItemsException in case of a database error
+     */
+    public void updateBibliographicItemNote(String note, int agencyId, String bibliographicRecordId, Timestamp modified) throws HoldingsItemsException {
+        try (PreparedStatement stmt = connection.prepareCall(UPDATE_COLLECTION_NOTE)) {
+            int i = 1;
+            stmt.setString(i++, note);
+            stmt.setInt(i++, agencyId);
+            stmt.setString(i++, bibliographicRecordId);
+            stmt.setTimestamp(i++, modified);
+            stmt.executeUpdate();
+        } catch (SQLException ex) {
+            log.error(DATABASE_ERROR, ex);
+            throw new HoldingsItemsException(DATABASE_ERROR, ex);
+        }
+
+    }
+
+    /**
      * Called by RecordCollection.save()
      *
      * @param collection
@@ -630,6 +654,9 @@ public class HoldingsItemsDAO {
     private static final String UPDATE_COLLECTION = "UPDATE holdingsitemscollection" +
                                                     " SET issueText=?, expectedDelivery=?, readyForLoan=?, note=?, complete=?, modified=?, trackingId=?" +
                                                     " WHERE agencyId=? AND bibliographicRecordId=? AND issueId=? AND modified<=?";
+    private static final String UPDATE_COLLECTION_NOTE = "UPDATE holdingsitemscollection" +
+                                                         " SET note=?" +
+                                                         " WHERE agencyId=? AND bibliographicRecordId=? AND modified<=?";
     private static final String INSERT_COLLECTION = "INSERT INTO holdingsitemscollection" +
                                                     " (agencyId, bibliographicRecordId, issueId, issueText, expectedDelivery, readyForLoan, note, complete, created, modified, trackingId)" +
                                                     " VALUES (?, ?, ?, ?, ?, ?, ?, ?, timeofday()::timestamp, ?, ?)";

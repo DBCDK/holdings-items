@@ -209,6 +209,7 @@ public class UpdateWebservice {
                                 Timestamp modified = parseTimestamp(bibliographicItem.getModificationTimeStamp());
                                 String bibliographicRecordId = bibliographicItem.getBibliographicRecordId();
                                 String note = orEmptyString(bibliographicItem.getNote());
+                                updateNote(note, agencyId, bibliographicRecordId, modified);
                                 try (LogWith logWith = new LogWith()) {
                                     logWith.bibliographicRecordId(bibliographicRecordId);
 
@@ -276,6 +277,7 @@ public class UpdateWebservice {
                     Timestamp modified = parseTimestamp(bibliographicItem.getModificationTimeStamp());
                     String bibliographicRecordId = bibliographicItem.getBibliographicRecordId();
                     String note = orEmptyString(bibliographicItem.getNote());
+                    updateNote(note, agencyId, bibliographicRecordId, modified);
                     try (LogWith logWith = new LogWith()) {
                         logWith.bibliographicRecordId(bibliographicRecordId);
 

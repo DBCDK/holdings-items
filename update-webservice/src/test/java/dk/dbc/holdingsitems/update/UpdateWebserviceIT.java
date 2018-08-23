@@ -50,7 +50,6 @@ import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.sql.DataSource;
@@ -294,6 +293,18 @@ public class UpdateWebserviceIT {
         assertEquals("complete time as new update", "2017-09-07T09:09:01.001Z", row.get("c.complete"));
     }
 
+    @Test(timeout = 2_000L)
+    public void testNoteGetsUpdated() throws Exception {
+        System.out.println("testNoteGetsUpdated");
+
+        mockUpdateWebservice().holdingsItemsUpdate(updateReqNote1());
+        String noteBefore = checkRow("101010", "12345678", "I1", "it1-1").getOrDefault("c.note", "N/A");
+        assertEquals("Original Note", noteBefore);
+        mockUpdateWebservice().holdingsItemsUpdate(updateReqNote2());
+        String noteAfter = checkRow("101010", "12345678", "I1", "it1-1").getOrDefault("c.note", "N/A");
+        assertEquals("Updated Note", noteAfter);
+    }
+
     public HoldingsItemsUpdateRequest updateReq1() throws DatatypeConfigurationException {
         return holdingsItemsUpdateRequest(
                 "101010", null, "track-update-1",
@@ -384,6 +395,28 @@ public class UpdateWebserviceIT {
                 "101010", null, "track-complete-empty", completeBibliographicItem(
                         "12345678", modified("2017-09-07T09:09:04.001Z"), "Other Note"));
 
+    }
+
+    public HoldingsItemsUpdateRequest updateReqNote1() throws DatatypeConfigurationException {
+        return holdingsItemsUpdateRequest(
+                "101010", null, "track-update-1",
+                bibliographicItem(
+                        "12345678", modified("2017-09-07T09:09:00.000Z"), "Original Note",
+                        holding("I1", "Issue #1", date("2199-01-01"), 0,
+                                item("it1-1", branch, department, location, subLocation, circulationRule,
+                                     StatusType.ON_SHELF, date("2017-01-01")))
+                ));
+    }
+
+    public HoldingsItemsUpdateRequest updateReqNote2() throws DatatypeConfigurationException {
+        return holdingsItemsUpdateRequest(
+                "101010", null, "track-update-2",
+                bibliographicItem(
+                        "12345678", modified("2017-09-07T09:09:00.100Z"), "Updated Note",
+                        holding("I2", "Issue #2", date("2199-01-01"), 0,
+                                item("it2-1", branch, department, location, subLocation, circulationRule,
+                                     StatusType.ON_SHELF, date("2017-01-01")))
+                ));
     }
 
     private UpdateWebservice mockUpdateWebservice() throws SQLException, ForsRightsException {
