@@ -103,6 +103,7 @@ public class UpdateWebservice {
     Timer saveCollectionTimer;
 
     private Function<Object, String> mapToXml;
+    String validatedAgencyId;
 
     @PostConstruct
     public void init() {
@@ -561,47 +562,28 @@ public class UpdateWebservice {
      *                                       authentication service
      */
     private void userValidation(Authentication authentication) throws AuthenticationException, FailedUpdateInternalException {
-        if (config.getDisableAuthentication()) {
-            return;
-        }
-        MessageContext mc = wsc.getMessageContext();
-        HttpServletRequest req = (HttpServletRequest) mc.get(MessageContext.SERVLET_REQUEST);
-        String ip = getIp(req);
         try {
-            if (!validator.validate(authentication, ip, config.getRightsGroup(), config.getRightsName())) {
-                String authText = "[Unknown]";
-                if (authentication != null) {
-                    authText = authentication.getUserIdAut() + "/" + authentication.getGroupIdAut();
+            if (authentication == null) {
+                log.error("No authentication supplied");
+                if (config.getDisableAuthentication()) {
+                    this.validatedAgencyId = null;
+                    return;
                 }
-                log.error("Error validating {} from {}",
-                          authText, ip
-                );
-                throw new AuthenticationException("Unauthorized");
+                throw new AuthenticationException("No authentication supplied");
+            } else {
+                this.validatedAgencyId = validator.validate(authentication, config.getRightsGroup(), config.getRightsName());
+                if (this.validatedAgencyId == null) {
+                    log.error("User not validated {}/{}/...", authentication.getUserIdAut(), authentication.getGroupIdAut());
+                    if (config.getDisableAuthentication()) {
+                        return;
+                    }
+                    throw new AuthenticationException("User not validated");
+                }
             }
         } catch (ForsRightsException ex) {
             log.error("Cannot get rights: {}", ex.getMessage());
             throw new FailedUpdateInternalException("Authentication service unavailable");
         }
-    }
-
-    /**
-     * Get an ip number for the remote user
-     * <p>
-     * x-forwarded-for header is used if thre remote ip is known
-     *
-     * @param req Servlet context
-     * @return Ip number
-     */
-    private String getIp(HttpServletRequest req) {
-        String ip = req.getRemoteAddr();
-        if (config.getXForwardedFor().contains(ip)) {
-            String x = req.getHeader("x-forwarded-for");
-            if (x != null) {
-                String[] split = x.split(", ");
-                ip = split[split.length - 1];
-            }
-        }
-        return ip;
     }
 
     /**
