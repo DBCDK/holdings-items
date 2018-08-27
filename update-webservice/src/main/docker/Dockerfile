@@ -14,7 +14,6 @@ LABEL HOLDINGS_ITEMS_POSTGRES_URL="Url pointing at holdings items postgres (requ
       COMPLETE_QUEUE_LIST="Comma separated list of target queue names for complete call (suffixed by ':old' queue on q table) (required)" \
       WARNING_IS_FATAL="(optional, default is false)" \
       DISABLE_AUTHENTICATION="(optional, default is true)" \
-      X_FORWARDED_FOR="(optional)" \
       FORSRIGHTS_URL="Url of forsrights service (remember trailing slash) (required if authentication is enabled)" \
       RIGHTS_GROUP="Authentication group (required if authentication is enabled)" \
       RIGHTS_NAME="Authentication Name (required if authentication is enabled)" \
