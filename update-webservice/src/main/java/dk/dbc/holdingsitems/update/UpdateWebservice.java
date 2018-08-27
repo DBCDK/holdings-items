@@ -103,7 +103,6 @@ public class UpdateWebservice {
     Timer saveCollectionTimer;
 
     private Function<Object, String> mapToXml;
-    String validatedAgencyId;
 
     @PostConstruct
     public void init() {
@@ -182,6 +181,11 @@ public class UpdateWebservice {
                 }
 
                 @Override
+                public String getAgencyId() {
+                    return req.getAgencyId();
+                }
+
+                @Override
                 public String getTrakingId() {
                     return req.getTrackingId();
                 }
@@ -251,6 +255,11 @@ public class UpdateWebservice {
                 @Override
                 public Authentication getAuthentication() {
                     return req.getAuthentication();
+                }
+
+                @Override
+                public String getAgencyId() {
+                    return req.getAgencyId();
                 }
 
                 @Override
@@ -360,6 +369,11 @@ public class UpdateWebservice {
                 }
 
                 @Override
+                public String getAgencyId() {
+                    return req.getAgencyId();
+                }
+
+                @Override
                 public String getTrakingId() {
                     return req.getTrackingId();
                 }
@@ -456,7 +470,7 @@ public class UpdateWebservice {
         try (Connection connection = getUTCConnection()) {
             HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(connection, req.getTrakingId());
             req.setDao(dao);
-            userValidation(req.getAuthentication());
+            userValidation(req);
             try {
                 req.processBibliograhicItems();
                 req.queue();
@@ -556,28 +570,37 @@ public class UpdateWebservice {
     /**
      * Validate a user
      *
-     * @param authentication soap authentication element
+     * @param req the full request
      * @throws AuthenticationException       In case of bad access
      * @throws FailedUpdateInternalException in case of errors accessing the
      *                                       authentication service
      */
-    private void userValidation(Authentication authentication) throws AuthenticationException, FailedUpdateInternalException {
+    void userValidation(UpdateRequest req) throws AuthenticationException, FailedUpdateInternalException {
+        Authentication authentication = req.getAuthentication();
         try {
             if (authentication == null) {
                 log.error("No authentication supplied");
                 if (config.getDisableAuthentication()) {
-                    this.validatedAgencyId = null;
                     return;
                 }
                 throw new AuthenticationException("No authentication supplied");
             } else {
-                this.validatedAgencyId = validator.validate(authentication, config.getRightsGroup(), config.getRightsName());
-                if (this.validatedAgencyId == null) {
+                String validatedAgencyId = validator.validate(authentication, config.getRightsGroup(), config.getRightsName());
+                // Not validated
+                if (validatedAgencyId == null) {
                     log.error("User not validated {}/{}/...", authentication.getUserIdAut(), authentication.getGroupIdAut());
                     if (config.getDisableAuthentication()) {
                         return;
                     }
                     throw new AuthenticationException("User not validated");
+                }
+                // Validated verify agency match
+                if (!validatedAgencyId.equalsIgnoreCase(req.getAgencyId())) {
+                    log.error("User validation ({}), record update mismatch ({})", validatedAgencyId, req.getAgencyId());
+                    if (config.getDisableAuthentication()) {
+                        return;
+                    }
+                    throw new AuthenticationException("User validation, record update mismatch");
                 }
             }
         } catch (ForsRightsException ex) {
