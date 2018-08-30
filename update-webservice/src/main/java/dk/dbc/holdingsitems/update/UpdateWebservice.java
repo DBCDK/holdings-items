@@ -52,7 +52,6 @@ import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import javax.inject.Inject;
 import javax.jws.WebService;
-import javax.servlet.http.HttpServletRequest;
 import javax.sql.DataSource;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
@@ -579,7 +578,7 @@ public class UpdateWebservice {
         Authentication authentication = req.getAuthentication();
         try {
             if (authentication == null) {
-                log.error("No authentication supplied");
+                log.error("No authentication supplied. Agency requested modified: {}", req.getAgencyId());
                 if (config.getDisableAuthentication()) {
                     return;
                 }
