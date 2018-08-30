@@ -431,8 +431,14 @@ public class UpdateWebserviceIT {
         mock.requestAuthenticationErrorCounter = mock(Counter.class);
         mock.saveCollectionTimer = mock(Timer.class);
         mock.loadCollectionTimer = mock(Timer.class);
-        mock.validator = mock(AccessValidator.class);
-        doReturn(true).when(mock.validator).validate(anyObject(), anyString(), anyString(), anyString());
+        AccessValidator validator = mock(AccessValidator.class);
+        mock.validator = validator;
+        when(validator.validate(anyObject(), anyString(), anyString()))
+                .then((invocation) -> {
+                    Authentication auth = (Authentication) invocation.getArguments()[0];
+                    if(auth == null) return null;
+                    return auth.getGroupIdAut();
+                });
         mock.wsc = mock(WebServiceContext.class);
         doReturn(mockMessageContext()).when(mock.wsc).getMessageContext();
 

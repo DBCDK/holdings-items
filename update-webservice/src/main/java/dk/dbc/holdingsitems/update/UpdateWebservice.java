@@ -181,6 +181,11 @@ public class UpdateWebservice {
                 }
 
                 @Override
+                public String getAgencyId() {
+                    return req.getAgencyId();
+                }
+
+                @Override
                 public String getTrakingId() {
                     return req.getTrackingId();
                 }
@@ -250,6 +255,11 @@ public class UpdateWebservice {
                 @Override
                 public Authentication getAuthentication() {
                     return req.getAuthentication();
+                }
+
+                @Override
+                public String getAgencyId() {
+                    return req.getAgencyId();
                 }
 
                 @Override
@@ -359,6 +369,11 @@ public class UpdateWebservice {
                 }
 
                 @Override
+                public String getAgencyId() {
+                    return req.getAgencyId();
+                }
+
+                @Override
                 public String getTrakingId() {
                     return req.getTrackingId();
                 }
@@ -455,7 +470,7 @@ public class UpdateWebservice {
         try (Connection connection = getUTCConnection()) {
             HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(connection, req.getTrakingId());
             req.setDao(dao);
-            userValidation(req.getAuthentication());
+            userValidation(req);
             try {
                 req.processBibliograhicItems();
                 req.queue();
@@ -555,53 +570,43 @@ public class UpdateWebservice {
     /**
      * Validate a user
      *
-     * @param authentication soap authentication element
+     * @param req the full request
      * @throws AuthenticationException       In case of bad access
      * @throws FailedUpdateInternalException in case of errors accessing the
      *                                       authentication service
      */
-    private void userValidation(Authentication authentication) throws AuthenticationException, FailedUpdateInternalException {
-        if (config.getDisableAuthentication()) {
-            return;
-        }
-        MessageContext mc = wsc.getMessageContext();
-        HttpServletRequest req = (HttpServletRequest) mc.get(MessageContext.SERVLET_REQUEST);
-        String ip = getIp(req);
+    void userValidation(UpdateRequest req) throws AuthenticationException, FailedUpdateInternalException {
+        Authentication authentication = req.getAuthentication();
         try {
-            if (!validator.validate(authentication, ip, config.getRightsGroup(), config.getRightsName())) {
-                String authText = "[Unknown]";
-                if (authentication != null) {
-                    authText = authentication.getUserIdAut() + "/" + authentication.getGroupIdAut();
+            if (authentication == null) {
+                log.error("No authentication supplied");
+                if (config.getDisableAuthentication()) {
+                    return;
                 }
-                log.error("Error validating {} from {}",
-                          authText, ip
-                );
-                throw new AuthenticationException("Unauthorized");
+                throw new AuthenticationException("No authentication supplied");
+            } else {
+                String validatedAgencyId = validator.validate(authentication, config.getRightsGroup(), config.getRightsName());
+                // Not validated
+                if (validatedAgencyId == null) {
+                    log.error("User not validated {}/{}/...", authentication.getUserIdAut(), authentication.getGroupIdAut());
+                    if (config.getDisableAuthentication()) {
+                        return;
+                    }
+                    throw new AuthenticationException("User not validated");
+                }
+                // Validated verify agency match
+                if (!validatedAgencyId.equalsIgnoreCase(req.getAgencyId())) {
+                    log.error("User validation ({}), record update mismatch ({})", validatedAgencyId, req.getAgencyId());
+                    if (config.getDisableAuthentication()) {
+                        return;
+                    }
+                    throw new AuthenticationException("User validation, record update mismatch");
+                }
             }
         } catch (ForsRightsException ex) {
             log.error("Cannot get rights: {}", ex.getMessage());
             throw new FailedUpdateInternalException("Authentication service unavailable");
         }
-    }
-
-    /**
-     * Get an ip number for the remote user
-     * <p>
-     * x-forwarded-for header is used if thre remote ip is known
-     *
-     * @param req Servlet context
-     * @return Ip number
-     */
-    private String getIp(HttpServletRequest req) {
-        String ip = req.getRemoteAddr();
-        if (config.getXForwardedFor().contains(ip)) {
-            String x = req.getHeader("x-forwarded-for");
-            if (x != null) {
-                String[] split = x.split(", ");
-                ip = split[split.length - 1];
-            }
-        }
-        return ip;
     }
 
     /**

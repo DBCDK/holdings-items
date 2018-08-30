@@ -67,6 +67,14 @@ public abstract class UpdateRequest {
      */
     public abstract Authentication getAuthentication();
 
+
+    /**
+     * Retrieve agencyId from request as string
+     *
+     * @return agency id
+     */
+    public abstract String getAgencyId();
+
     /**
      * extract tracking id from incoming request
      *

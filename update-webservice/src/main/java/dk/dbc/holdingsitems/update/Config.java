@@ -50,13 +50,6 @@ public class Config {
         splitQueue(completeQueueListReal, s -> completeQueueList = s, s -> completeQueueListOld = s);
         splitQueue(onlineQueueListReal, s -> onlineQueueList = s, s -> onlineQueueListOld = s);
 
-        if (xForwardedFor == null) {
-            xForwardedFor = "";
-        }
-        xForwardedForSet = Arrays.stream(xForwardedFor.split(";"))
-                .filter(s -> !s.isEmpty())
-                .collect(Collectors.toSet());
-
         if (shouldLogXmlAgencies == null) {
             shouldLogXmlAgencies = "";
         }
@@ -176,16 +169,6 @@ public class Config {
 
     public String getRightsName() {
         return rightsName;
-    }
-
-    @Inject
-    @EEConfig.Name(C.X_FORWARDED_FOR)
-    @EEConfig.Default(C.X_FORWARDED_FOR_DEFAULT)
-    String xForwardedFor;
-    Set<String> xForwardedForSet;
-
-    public Set<String> getXForwardedFor() {
-        return Collections.unmodifiableSet(xForwardedForSet);
     }
 
     @Inject
