@@ -115,6 +115,7 @@
       <xs:element ref="tns:circulationRule"/>
       <xs:element ref="tns:status"/>
       <xs:element ref="tns:accessionDate"/>
+      <xs:element name="borrowerId" type="tns:BorrowerId" minOccurs="0"/>
     </xs:sequence>
   </xs:complexType>
   <xs:element name="ModificationTimeStamp" type="tns:ModificationTimeStamp"/>
@@ -132,13 +133,35 @@
       <xs:element name="hasOnlineHolding" type="xs:boolean"/>
     </xs:sequence>
   </xs:complexType>
-
+  <xs:complexType name="BorrowerId">
+    <xs:choice>
+      <xs:element ref="tns:cpr"/> 
+      <xs:element name="userIdentification" type="tns:UserIdentification"/> 
+    </xs:choice>
+  </xs:complexType>
+  <xs:complexType name="UserIdentification">
+    <xs:sequence>
+      <xs:element ref="tns:userIdentifier"/>
+      <xs:element ref="tns:age" minOccurs="0"/>
+      <xs:element ref="tns:gender" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
 
   <!-- types -->
   <xs:element name="accessionDate" type="xs:date">
     <xs:annotation>
       <xs:documentation xml:lang="en">Accession date for the specific copy.</xs:documentation>
     </xs:annotation>
+  </xs:element>
+  <xs:element name="age">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Age of borrower (0-</xs:documentation>
+    </xs:annotation>
+    <xs:simpleType>
+      <xs:restriction base="xs:integer">
+        <xs:minInclusive value="0"/>
+      </xs:restriction>
+    </xs:simpleType>
   </xs:element>
   <xs:element name="agencyId" type="xs:string">
     <xs:annotation>
@@ -160,6 +183,11 @@
           <xs:documentation xml:lang="en">Circulation rule (Udlånsregel)</xs:documentation>
       </xs:annotation>
   </xs:element>
+  <xs:element name="cpr" type="xs:string">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">CPR number</xs:documentation>
+    </xs:annotation>
+  </xs:element>
   <xs:element name="department" type="xs:string">
       <xs:annotation>
           <xs:documentation xml:lang="en">ie. books, music, ... (Afdeling)</xs:documentation>
@@ -170,6 +198,7 @@
       <xs:documentation xml:lang="en">Used if one or more copies are available for loan.</xs:documentation>
     </xs:annotation>
   </xs:element>
+  <xs:element name="gender" type="tns:genderType"/>
   <xs:element name="groupIdAut" type="xs:string">
     <xs:annotation>
       <xs:documentation xml:lang="en">Identifier of the group (most often a library number) the user belongs to (for authentication purposes)</xs:documentation>
@@ -252,6 +281,11 @@
       <xs:documentation xml:lang="en">User identifier (for authentication purposes)</xs:documentation>
     </xs:annotation>
   </xs:element>
+  <xs:element name="userIdentifier" type="xs:string">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Some nonedescribing user identifier</xs:documentation>
+    </xs:annotation>
+  </xs:element>
 
 
   <!-- enums -->
@@ -272,6 +306,13 @@
       <xs:enumeration value="OnShelf"/>
       <xs:enumeration value="Online"/>
       <xs:enumeration value="Decommissioned"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="genderType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="Unknown"/>
+      <xs:enumeration value="Male"/>
+      <xs:enumeration value="Female"/>
     </xs:restriction>
   </xs:simpleType>
 
