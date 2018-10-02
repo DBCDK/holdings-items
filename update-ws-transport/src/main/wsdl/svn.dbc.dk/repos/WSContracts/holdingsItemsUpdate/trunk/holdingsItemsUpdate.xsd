@@ -163,7 +163,7 @@
   </xs:element>
   <xs:element name="age">
     <xs:annotation>
-      <xs:documentation xml:lang="en">Age of borrower (0-</xs:documentation>
+      <xs:documentation xml:lang="en">Age of borrower</xs:documentation>
     </xs:annotation>
     <xs:simpleType>
       <xs:restriction base="xs:integer">
