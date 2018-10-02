@@ -102,6 +102,7 @@
       <xs:element ref="tns:issueId"/>
       <xs:element ref="tns:issueText"/>
       <xs:element name="holdingsItem" type="tns:HoldingsItem" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="reservation" type="tns:BorrowerId" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
   </xs:complexType>
   <xs:element name="HoldingsItem" type="tns:HoldingsItem"/>
@@ -133,21 +134,28 @@
       <xs:element name="hasOnlineHolding" type="xs:boolean"/>
     </xs:sequence>
   </xs:complexType>
+  
+  <!-- types -->
   <xs:complexType name="BorrowerId">
-    <xs:choice>
-      <xs:element ref="tns:cpr"/> 
-      <xs:element name="userIdentification" type="tns:UserIdentification"/> 
-    </xs:choice>
-  </xs:complexType>
-  <xs:complexType name="UserIdentification">
     <xs:sequence>
-      <xs:element ref="tns:userIdentifier"/>
+      <xs:element ref="tns:borrowerIdType"/>
+      <xs:element ref="tns:borrowerIdValue"/>
       <xs:element ref="tns:age" minOccurs="0"/>
       <xs:element ref="tns:gender" minOccurs="0"/>
     </xs:sequence>
   </xs:complexType>
 
-  <!-- types -->
+  <xs:element name="borrowerIdType" type="tns:borrowerIdTypes"/>
+  <xs:simpleType name="borrowerIdTypes">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="LOCAL"/>
+      <xs:enumeration value="UNILOGIN"/>
+      <xs:enumeration value="CPR"/>
+      <xs:enumeration value="CVR"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:element name="borrowerIdValue" type="xs:string"/>
+
   <xs:element name="accessionDate" type="xs:date">
     <xs:annotation>
       <xs:documentation xml:lang="en">Accession date for the specific copy.</xs:documentation>
