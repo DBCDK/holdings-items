@@ -13,3 +13,4 @@ buildNumber.properties
 /*/nbproject/
 /*/src/main/docker/*.war
 /*/src/main/docker/*.jar
+/**/nb-configuration.xml

@@ -50,7 +50,6 @@ import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.sql.DataSource;
@@ -294,6 +293,18 @@ public class UpdateWebserviceIT {
         assertEquals("complete time as new update", "2017-09-07T09:09:01.001Z", row.get("c.complete"));
     }
 
+    @Test(timeout = 2_000L)
+    public void testNoteGetsUpdated() throws Exception {
+        System.out.println("testNoteGetsUpdated");
+
+        mockUpdateWebservice().holdingsItemsUpdate(updateReqNote1());
+        String noteBefore = checkRow("101010", "12345678", "I1", "it1-1").getOrDefault("c.note", "N/A");
+        assertEquals("Original Note", noteBefore);
+        mockUpdateWebservice().holdingsItemsUpdate(updateReqNote2());
+        String noteAfter = checkRow("101010", "12345678", "I1", "it1-1").getOrDefault("c.note", "N/A");
+        assertEquals("Updated Note", noteAfter);
+    }
+
     public HoldingsItemsUpdateRequest updateReq1() throws DatatypeConfigurationException {
         return holdingsItemsUpdateRequest(
                 "101010", null, "track-update-1",
@@ -386,6 +397,28 @@ public class UpdateWebserviceIT {
 
     }
 
+    public HoldingsItemsUpdateRequest updateReqNote1() throws DatatypeConfigurationException {
+        return holdingsItemsUpdateRequest(
+                "101010", null, "track-update-1",
+                bibliographicItem(
+                        "12345678", modified("2017-09-07T09:09:00.000Z"), "Original Note",
+                        holding("I1", "Issue #1", date("2199-01-01"), 0,
+                                item("it1-1", branch, department, location, subLocation, circulationRule,
+                                     StatusType.ON_SHELF, date("2017-01-01")))
+                ));
+    }
+
+    public HoldingsItemsUpdateRequest updateReqNote2() throws DatatypeConfigurationException {
+        return holdingsItemsUpdateRequest(
+                "101010", null, "track-update-2",
+                bibliographicItem(
+                        "12345678", modified("2017-09-07T09:09:00.100Z"), "Updated Note",
+                        holding("I2", "Issue #2", date("2199-01-01"), 0,
+                                item("it2-1", branch, department, location, subLocation, circulationRule,
+                                     StatusType.ON_SHELF, date("2017-01-01")))
+                ));
+    }
+
     private UpdateWebservice mockUpdateWebservice() throws SQLException, ForsRightsException {
         UpdateWebservice mock = mock(UpdateWebservice.class);
         mock.config = mockConfig();
@@ -394,12 +427,18 @@ public class UpdateWebserviceIT {
         mock.requestCompleteCounter = mock(Counter.class);
         mock.requestOnlineCounter = mock(Counter.class);
         mock.requestInvalidCounter = mock(Counter.class);
-        mock.requestSystemError = mock(Counter.class);
-        mock.requestAuthenticationError = mock(Counter.class);
+        mock.requestSystemErrorCounter = mock(Counter.class);
+        mock.requestAuthenticationErrorCounter = mock(Counter.class);
         mock.saveCollectionTimer = mock(Timer.class);
         mock.loadCollectionTimer = mock(Timer.class);
-        mock.validator = mock(AccessValidator.class);
-        doReturn(true).when(mock.validator).validate(anyObject(), anyString(), anyString(), anyString());
+        AccessValidator validator = mock(AccessValidator.class);
+        mock.validator = validator;
+        when(validator.validate(anyObject(), anyString(), anyString()))
+                .then((invocation) -> {
+                    Authentication auth = (Authentication) invocation.getArguments()[0];
+                    if(auth == null) return null;
+                    return auth.getGroupIdAut();
+                });
         mock.wsc = mock(WebServiceContext.class);
         doReturn(mockMessageContext()).when(mock.wsc).getMessageContext();
 

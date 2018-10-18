@@ -18,7 +18,7 @@
  */
 package dk.dbc.holdingsitems.monitor;
 
-import dk.dbc.holdingsitems.monitor.monitor.Timed;
+import dk.dbc.ee.stats.Timed;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;

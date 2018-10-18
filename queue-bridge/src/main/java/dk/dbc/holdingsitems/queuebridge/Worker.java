@@ -18,10 +18,10 @@
  */
 package dk.dbc.holdingsitems.queuebridge;
 
+import com.codahale.metrics.MetricRegistry;
 import dk.dbc.holdingsitems.HoldingsItemsDAO;
 import dk.dbc.holdingsitems.HoldingsItemsException;
 import dk.dbc.holdingsitems.QueueJob;
-import dk.dbc.holdingsitems.queuebridge.monitor.JmxMetrics;
 import dk.dbc.pgqueue.consumer.JobMetaData;
 import dk.dbc.pgqueue.consumer.QueueWorker;
 import java.sql.Connection;
@@ -59,7 +59,7 @@ public class Worker {
     Config config;
 
     @Inject
-    JmxMetrics metrics;
+    MetricRegistry metrics;
 
     @Inject
     JobProcessor joProcessor;
@@ -81,15 +81,9 @@ public class Worker {
                 .skipDuplicateJobs(QueueJob.DEDUPLICATION_ABSTRACTION_IGNORE_STATECHANGE)
                 .consume(config.getQueues())
                 .dataSource(dataSource)
-                .databaseConnectThrottle(config.getDatabaseThrottle())
-                .failureThrottle(config.getThrottle())
+                .fromEnvWithDefaults()
                 .executor(executor)
-                .emptyQueueSleep(config.getEmptyQueueSleep())
-                .idleRescanEvery(config.getIdleRescanEvery())
-                .maxQueryTime(config.getMaxQueryTime())
-                .rescanEvery(config.getRescanEvery())
-                .maxTries(config.getRetries())
-                .metricRegistry(metrics.getRegistry())
+                .metricRegistry(metrics)
                 .build(config.getThreads(), this::work);
         worker.start();
     }

@@ -20,13 +20,14 @@ package dk.dbc.holdingsitems.update;
 
 import dk.dbc.eeconfig.EEConfig;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
+import javax.ejb.Lock;
+import javax.ejb.LockType;
 import javax.ejb.Singleton;
 import javax.inject.Inject;
 import javax.validation.constraints.Min;
@@ -40,6 +41,7 @@ import org.slf4j.LoggerFactory;
  * @author DBC {@literal <dbc.dk>}
  */
 @Singleton
+@Lock(LockType.READ)
 public class Config {
 
     private static final Logger log = LoggerFactory.getLogger(Config.class);
@@ -49,13 +51,6 @@ public class Config {
         splitQueue(updateQueueListReal, s -> updateQueueList = s, s -> updateQueueListOld = s);
         splitQueue(completeQueueListReal, s -> completeQueueList = s, s -> completeQueueListOld = s);
         splitQueue(onlineQueueListReal, s -> onlineQueueList = s, s -> onlineQueueListOld = s);
-
-        if (xForwardedFor == null) {
-            xForwardedFor = "";
-        }
-        xForwardedForSet = Arrays.stream(xForwardedFor.split(";"))
-                .filter(s -> !s.isEmpty())
-                .collect(Collectors.toSet());
 
         if (shouldLogXmlAgencies == null) {
             shouldLogXmlAgencies = "";
@@ -176,16 +171,6 @@ public class Config {
 
     public String getRightsName() {
         return rightsName;
-    }
-
-    @Inject
-    @EEConfig.Name(C.X_FORWARDED_FOR)
-    @EEConfig.Default(C.X_FORWARDED_FOR_DEFAULT)
-    String xForwardedFor;
-    Set<String> xForwardedForSet;
-
-    public Set<String> getXForwardedFor() {
-        return Collections.unmodifiableSet(xForwardedForSet);
     }
 
     @Inject

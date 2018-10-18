@@ -22,12 +22,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import dk.dbc.ee.stats.Timed;
 import dk.dbc.holdingsitems.HoldingsItemsDAO;
 import dk.dbc.holdingsitems.QueueJob;
 import dk.dbc.holdingsitems.Record;
 import dk.dbc.holdingsitems.RecordCollection;
 import dk.dbc.holdingsitems.indexer.Config;
-import dk.dbc.holdingsitems.indexer.monitor.Timed;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -88,7 +88,8 @@ public class JobProcessor {
         String trackingId = job.getTrackingId();
 
         HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(connection, trackingId, true);
-        String bibliographicRecordId = job.getBibliographicRecordId();
+        String bibliographicRecordId = job.getBibliographicRecordId()
+                .replaceAll("\\s", "");
         int agencyId = job.getAgencyId();
         Set<String> issueIds = dao.getIssueIds(bibliographicRecordId, agencyId);
         log.debug("issueIds = {}", issueIds);

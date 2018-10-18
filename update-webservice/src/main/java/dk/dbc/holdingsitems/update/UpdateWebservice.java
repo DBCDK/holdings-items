@@ -19,8 +19,10 @@
 package dk.dbc.holdingsitems.update;
 
 import com.codahale.metrics.Counter;
+import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import com.sun.xml.ws.developer.SchemaValidation;
+import dk.dbc.ee.stats.Timed;
 import dk.dbc.forsrights.client.ForsRightsException;
 import dk.dbc.holdingsitems.HoldingsItemsDAO;
 import dk.dbc.holdingsitems.HoldingsItemsException;
@@ -30,7 +32,6 @@ import dk.dbc.log.LogWith;
 import dk.dbc.oss.ns.holdingsitemsupdate.Authentication;
 import dk.dbc.oss.ns.holdingsitemsupdate.CompleteBibliographicItem;
 import dk.dbc.oss.ns.holdingsitemsupdate.CompleteHoldingsItemsUpdateRequest;
-import dk.dbc.oss.ns.holdingsitemsupdate.Holding;
 import dk.dbc.oss.ns.holdingsitemsupdate.HoldingsItemsUpdateRequest;
 import dk.dbc.oss.ns.holdingsitemsupdate.HoldingsItemsUpdateResult;
 import dk.dbc.oss.ns.holdingsitemsupdate.HoldingsItemsUpdateStatusEnum;
@@ -38,7 +39,6 @@ import dk.dbc.oss.ns.holdingsitemsupdate.OnlineBibliographicItem;
 import dk.dbc.oss.ns.holdingsitemsupdate.OnlineHoldingsItemsUpdateRequest;
 import dk.dbc.oss.ns.holdingsitemsupdate.StatusType;
 import java.io.StringWriter;
-import java.math.BigInteger;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -52,7 +52,6 @@ import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import javax.inject.Inject;
 import javax.jws.WebService;
-import javax.servlet.http.HttpServletRequest;
 import javax.sql.DataSource;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
@@ -90,36 +89,32 @@ public class UpdateWebservice {
     WebServiceContext wsc;
 
     @Inject
+    MetricRegistry metric;
+
     Counter requestCounter;
-
-    @Inject
     Counter requestUpdateCounter;
-
-    @Inject
     Counter requestCompleteCounter;
-
-    @Inject
     Counter requestOnlineCounter;
-
-    @Inject
     Counter requestInvalidCounter;
-
-    @Inject
-    Counter requestSystemError;
-
-    @Inject
-    Counter requestAuthenticationError;
-
-    @Inject
+    Counter requestSystemErrorCounter;
+    Counter requestAuthenticationErrorCounter;
     Timer loadCollectionTimer;
-
-    @Inject
     Timer saveCollectionTimer;
 
     private Function<Object, String> mapToXml;
 
     @PostConstruct
     public void init() {
+        requestCounter = metric.counter(getClass().getCanonicalName() + "request");
+        requestUpdateCounter = metric.counter(getClass().getCanonicalName() + "requestUpdate");
+        requestCompleteCounter = metric.counter(getClass().getCanonicalName() + "requestComplete");
+        requestOnlineCounter = metric.counter(getClass().getCanonicalName() + "requestOnline");
+        requestInvalidCounter = metric.counter(getClass().getCanonicalName() + "requestInvalid");
+        requestSystemErrorCounter = metric.counter(getClass().getCanonicalName() + "requestSystemError");
+        requestAuthenticationErrorCounter = metric.counter(getClass().getCanonicalName() + "requestAuthenticationError");
+        loadCollectionTimer = metric.timer(getClass().getCanonicalName() + "loadCollection");
+        saveCollectionTimer = metric.timer(getClass().getCanonicalName() + "saveCollection");
+
         try {
             JAXBContext jaxbContext = JAXBContext.newInstance(
                     dk.dbc.oss.ns.holdingsitemsupdate.Authentication.class,
@@ -164,6 +159,7 @@ public class UpdateWebservice {
      * @param req soap request
      * @return soap response
      */
+    @Timed
     public HoldingsItemsUpdateResult holdingsItemsUpdate(final HoldingsItemsUpdateRequest req) {
         requestUpdateCounter.inc();
         if (req.getTrackingId() == null || req.getTrackingId().isEmpty()) {
@@ -181,6 +177,11 @@ public class UpdateWebservice {
                 @Override
                 public Authentication getAuthentication() {
                     return req.getAuthentication();
+                }
+
+                @Override
+                public String getAgencyId() {
+                    return req.getAgencyId();
                 }
 
                 @Override
@@ -212,6 +213,7 @@ public class UpdateWebservice {
                                 Timestamp modified = parseTimestamp(bibliographicItem.getModificationTimeStamp());
                                 String bibliographicRecordId = bibliographicItem.getBibliographicRecordId();
                                 String note = orEmptyString(bibliographicItem.getNote());
+                                updateNote(note, agencyId, bibliographicRecordId, modified);
                                 try (LogWith logWith = new LogWith()) {
                                     logWith.bibliographicRecordId(bibliographicRecordId);
 
@@ -234,6 +236,7 @@ public class UpdateWebservice {
      * @param req soap request
      * @return soap response
      */
+    @Timed
     public HoldingsItemsUpdateResult completeHoldingsItemsUpdate(final CompleteHoldingsItemsUpdateRequest req) {
         requestCompleteCounter.inc();
         if (req.getTrackingId() == null || req.getTrackingId().isEmpty()) {
@@ -251,6 +254,11 @@ public class UpdateWebservice {
                 @Override
                 public Authentication getAuthentication() {
                     return req.getAuthentication();
+                }
+
+                @Override
+                public String getAgencyId() {
+                    return req.getAgencyId();
                 }
 
                 @Override
@@ -278,6 +286,7 @@ public class UpdateWebservice {
                     Timestamp modified = parseTimestamp(bibliographicItem.getModificationTimeStamp());
                     String bibliographicRecordId = bibliographicItem.getBibliographicRecordId();
                     String note = orEmptyString(bibliographicItem.getNote());
+                    updateNote(note, agencyId, bibliographicRecordId, modified);
                     try (LogWith logWith = new LogWith()) {
                         logWith.bibliographicRecordId(bibliographicRecordId);
 
@@ -338,6 +347,7 @@ public class UpdateWebservice {
      * @param req soap request
      * @return soap response
      */
+    @Timed
     public HoldingsItemsUpdateResult onlineHoldingsItemsUpdate(final OnlineHoldingsItemsUpdateRequest req) {
         requestOnlineCounter.inc();
         if (req.getTrackingId() == null || req.getTrackingId().isEmpty()) {
@@ -355,6 +365,11 @@ public class UpdateWebservice {
                 @Override
                 public Authentication getAuthentication() {
                     return req.getAuthentication();
+                }
+
+                @Override
+                public String getAgencyId() {
+                    return req.getAgencyId();
                 }
 
                 @Override
@@ -454,7 +469,7 @@ public class UpdateWebservice {
         try (Connection connection = getUTCConnection()) {
             HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(connection, req.getTrakingId());
             req.setDao(dao);
-            userValidation(req.getAuthentication());
+            userValidation(req);
             try {
                 req.processBibliograhicItems();
                 req.queue();
@@ -464,27 +479,27 @@ public class UpdateWebservice {
             connection.commit();
             return buildReponse(HoldingsItemsUpdateStatusEnum.OK, "Success");
         } catch (HoldingsItemsException ex) {
-            requestSystemError.inc();
+            requestSystemErrorCounter.inc();
             log.error("HoldingsItemdsDAO exception: " + ex.getMessage());
             log.debug("HoldingsItemdsDAO exception:", ex);
             return buildReponse(HoldingsItemsUpdateStatusEnum.FAILED_UPDATE_INTERNAL_ERROR, "Database Error");
         } catch (SQLException ex) {
-            requestSystemError.inc();
+            requestSystemErrorCounter.inc();
             log.error("SQL exception: " + ex.getMessage());
             log.debug("SQL exception:", ex);
             return buildReponse(HoldingsItemsUpdateStatusEnum.FAILED_UPDATE_INTERNAL_ERROR, "Database Error");
         } catch (AuthenticationException ex) {
-            requestAuthenticationError.inc();
+            requestAuthenticationErrorCounter.inc();
             log.error("Authentication failed: " + ex.getMessage());
             log.debug("Authentication failed:", ex);
             return buildReponse(HoldingsItemsUpdateStatusEnum.AUTHENTICATION_ERROR, "Authentication failed");
         } catch (FailedUpdateInternalException | InvalidDeliveryDateException ex) {
-            requestSystemError.inc();
+            requestSystemErrorCounter.inc();
             log.error("Update Internal exception: " + ex.getMessage());
             log.debug("Update Internal exception:", ex);
             return buildReponse(HoldingsItemsUpdateStatusEnum.FAILED_UPDATE_INTERNAL_ERROR, ex.getMessage());
         } catch (Exception ex) {
-            requestSystemError.inc();
+            requestSystemErrorCounter.inc();
             log.error("Unknown exception: " + ex.getMessage());
             log.debug("Unknown exception:", ex);
             return buildReponse(HoldingsItemsUpdateStatusEnum.FAILED_UPDATE_INTERNAL_ERROR, "Internal Server Error");
@@ -554,53 +569,43 @@ public class UpdateWebservice {
     /**
      * Validate a user
      *
-     * @param authentication soap authentication element
+     * @param req the full request
      * @throws AuthenticationException       In case of bad access
      * @throws FailedUpdateInternalException in case of errors accessing the
      *                                       authentication service
      */
-    private void userValidation(Authentication authentication) throws AuthenticationException, FailedUpdateInternalException {
-        if (config.getDisableAuthentication()) {
-            return;
-        }
-        MessageContext mc = wsc.getMessageContext();
-        HttpServletRequest req = (HttpServletRequest) mc.get(MessageContext.SERVLET_REQUEST);
-        String ip = getIp(req);
+    void userValidation(UpdateRequest req) throws AuthenticationException, FailedUpdateInternalException {
+        Authentication authentication = req.getAuthentication();
         try {
-            if (!validator.validate(authentication, ip, config.getRightsGroup(), config.getRightsName())) {
-                String authText = "[Unknown]";
-                if (authentication != null) {
-                    authText = authentication.getUserIdAut() + "/" + authentication.getGroupIdAut();
+            if (authentication == null) {
+                log.error("No authentication supplied. Agency requested modified: {}", req.getAgencyId());
+                if (config.getDisableAuthentication()) {
+                    return;
                 }
-                log.error("Error validating {} from {}",
-                          authText, ip
-                );
-                throw new AuthenticationException("Unauthorized");
+                throw new AuthenticationException("No authentication supplied");
+            } else {
+                String validatedAgencyId = validator.validate(authentication, config.getRightsGroup(), config.getRightsName());
+                // Not validated
+                if (validatedAgencyId == null) {
+                    log.error("User not validated {}/{}/...", authentication.getUserIdAut(), authentication.getGroupIdAut());
+                    if (config.getDisableAuthentication()) {
+                        return;
+                    }
+                    throw new AuthenticationException("User not validated");
+                }
+                // Validated verify agency match
+                if (!validatedAgencyId.equalsIgnoreCase(req.getAgencyId())) {
+                    log.error("User validation ({}), record update mismatch ({})", validatedAgencyId, req.getAgencyId());
+                    if (config.getDisableAuthentication()) {
+                        return;
+                    }
+                    throw new AuthenticationException("User validation, record update mismatch");
+                }
             }
         } catch (ForsRightsException ex) {
             log.error("Cannot get rights: {}", ex.getMessage());
             throw new FailedUpdateInternalException("Authentication service unavailable");
         }
-    }
-
-    /**
-     * Get an ip number for the remote user
-     * <p>
-     * x-forwarded-for header is used if thre remote ip is known
-     *
-     * @param req Servlet context
-     * @return Ip number
-     */
-    private String getIp(HttpServletRequest req) {
-        String ip = req.getRemoteAddr();
-        if (config.getXForwardedFor().contains(ip)) {
-            String x = req.getHeader("x-forwarded-for");
-            if (x != null) {
-                String[] split = x.split(", ");
-                ip = split[split.length - 1];
-            }
-        }
-        return ip;
     }
 
     /**

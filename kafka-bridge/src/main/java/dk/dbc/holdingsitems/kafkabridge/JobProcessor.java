@@ -20,13 +20,13 @@ package dk.dbc.holdingsitems.kafkabridge;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import dk.dbc.ee.stats.Timed;
 import dk.dbc.holdingsitems.HoldingsItemsDAO;
 import dk.dbc.holdingsitems.HoldingsItemsException;
 import dk.dbc.holdingsitems.QueueJob;
 import dk.dbc.holdingsitems.Record;
 import dk.dbc.holdingsitems.RecordCollection;
 import dk.dbc.holdingsitems.StateChangeMetadata;
-import dk.dbc.holdingsitems.kafkabridge.monitor.Timed;
 import dk.dbc.kafka.producer.Producer;
 import dk.dbc.log.LogWith;
 import java.sql.Connection;

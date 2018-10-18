@@ -67,6 +67,14 @@ public abstract class UpdateRequest {
      */
     public abstract Authentication getAuthentication();
 
+
+    /**
+     * Retrieve agencyId from request as string
+     *
+     * @return agency id
+     */
+    public abstract String getAgencyId();
+
     /**
      * extract tracking id from incoming request
      *
@@ -116,6 +124,14 @@ public abstract class UpdateRequest {
      */
     public void setDao(HoldingsItemsDAO dao) {
         this.dao = dao;
+    }
+
+    public void updateNote(String note, int agencyId, String bibliographicRecordId, Timestamp modified) {
+        try {
+            dao.updateBibliographicItemNote(note, agencyId, bibliographicRecordId, modified);
+        } catch (HoldingsItemsException ex) {
+            throw new WrapperException(ex);
+        }
     }
 
     /**
@@ -302,10 +318,10 @@ public abstract class UpdateRequest {
                 if (status == StatusType.ONLINE) {
                     throw new FailedUpdateInternalException("Use endpoint onlineHoldingsItemsUpdate got status ONLINE");
                 }
-                rec.setStatus(status.value());
                 HashMap<String, StateChangeMetadata> metas = oldItemStatus.computeIfAbsent(collection.getBibliographicRecordId(), f -> new HashMap<>());
-                StateChangeMetadata meta = metas.computeIfAbsent(itemId, f -> new StateChangeMetadata(modified));
+                StateChangeMetadata meta = metas.computeIfAbsent(itemId, f -> new StateChangeMetadata(rec.isOriginal() ? "UNKNOWN" : rec.getStatus(), rec.getModified()));
                 meta.update(status.value(), modified);
+                rec.setStatus(status.value());
                 log.debug("meta = {}", meta);
             }
             copyValue(item::getBranch, rec::setBranch);

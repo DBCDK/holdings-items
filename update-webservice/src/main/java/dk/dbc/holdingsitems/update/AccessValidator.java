@@ -56,31 +56,29 @@ public class AccessValidator {
      * Check a user against access system
      *
      * @param auth        Authentication class from soap request
-     * @param ip          ip number from remote host
      * @param rightsGroup forsrights access group
      * @param rightsName  forsrights access name
-     * @return if the user has been validated
+     * @return The group user is validated to be or null if unvalidated
      * @throws ForsRightsException in case of communication errors with
      *                             forsrights.
      */
-    public boolean validate(Authentication auth, String ip, String rightsGroup, String rightsName) throws ForsRightsException {
+    public String validate(Authentication auth, String rightsGroup, String rightsName) throws ForsRightsException {
         try {
             if (auth != null) {
                 String user = auth.getUserIdAut();
                 String group = auth.getGroupIdAut();
                 String password = auth.getPasswordAut();
                 log.trace("validate user: {}, group: {}", user, group);
-                return forsRights.lookupRight(user, group, password, null)
-                        .hasRight(rightsGroup, rightsName);
-            } else {
-                log.trace("validate ip: {}", ip);
-                return forsRights.lookupRight(null, null, null, ip)
-                        .hasRight(rightsGroup, rightsName);
+                if (forsRights.lookupRight(user, group, password, null)
+                        .hasRight(rightsGroup, rightsName)) {
+                    return group;
+                }
             }
         } catch (RuntimeException ex) {
             log.trace("RuntimeException: {}", ex.getMessage());
             throw new ForsRightsException(ex);
         }
+        return null;
     }
 
 }
