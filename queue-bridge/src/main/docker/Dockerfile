@@ -1,4 +1,4 @@
-FROM docker.dbc.dk/payara-micro:LogAsJson
+FROM docker.dbc.dk/payara5-micro:os
 
 ENV THREADS=1 \
     RETRIES=5 \

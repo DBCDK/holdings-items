@@ -1,4 +1,4 @@
-FROM docker.dbc.dk/payara-micro:LogAsJson
+FROM docker.dbc.dk/payara5-micro:os
 
 ENV APPLICATION_NAME=HoldingsItemsMonitor \
     ADD_PAYARA_ARGS=--nocluster
