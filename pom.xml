@@ -28,6 +28,7 @@
     <properties>
         <dropwizard.version>1.2.2</dropwizard.version>
         <pg-queue.version>1.1-SNAPSHOT</pg-queue.version>
+        <jackson.version>2.9.7</jackson.version>
 
         <endorsed.dir>${project.build.directory}/endorsed</endorsed.dir>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
