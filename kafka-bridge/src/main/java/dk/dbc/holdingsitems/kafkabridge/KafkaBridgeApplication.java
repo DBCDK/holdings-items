@@ -19,7 +19,9 @@
 package dk.dbc.holdingsitems.kafkabridge;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import javax.ws.rs.ApplicationPath;
 import javax.ws.rs.core.Application;
@@ -38,6 +40,15 @@ public class KafkaBridgeApplication extends Application {
     @Override
     public Set<Class<?>> getClasses() {
         return CLASSES;
+    }
+
+    @Override
+    public Map<String, Object> getProperties() {
+        Map<String, Object> props = new HashMap<>();
+
+        props.put("jersey.config.server.disableMoxyJson", true);
+
+        return props;
     }
 
 }
