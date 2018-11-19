@@ -1,10 +1,11 @@
-FROM docker.dbc.dk/dbc-payara
+FROM docker.dbc.dk/dbc-payara5-full
 MAINTAINER os-team
 
 ENV KAFKA_LOG_APPNAME holdings-items-update-webservice
 
-ADD pre/* $PAYARA_CFG/pre/
-ADD post/* $PAYARA_CFG/post/
+USER root
+RUN sed -i 's@^\(exec.*\)$@\1 $( [ -e $HOME/postbootcommandfile.txt ] \&\& echo --postbootcommandfile $HOME/postbootcommandfile.txt )@' /startup.sh
+USER payara
 
 LABEL HOLDINGS_ITEMS_POSTGRES_URL="Url pointing at holdings items postgres (required). Ex.: 'user:pass@host:1234/dbname'" \
       SERVER_NAME="Name of server (hostname) (for wsdl)" \
@@ -22,5 +23,5 @@ LABEL HOLDINGS_ITEMS_POSTGRES_URL="Url pointing at holdings items postgres (requ
       STEADY_POOL_SIZE="JDBC connection pool parameter (optional, default is 2)" \
       DEBUG_XML_AGENCIES="List of agencies that should have logged requests"
 
-ADD holdings-items-update-webservice-*-SNAPSHOT.war $PAYARA_CFG/pre/holdings-items-update-webservice.war
-RUN payara-setup $PAYARA_CFG/pre/
+COPY --chown=payara:payara config/* $PAYARA_CFG_DIR/
+COPY --chown=payara:payara *.war $PAYARA_CFG_DIR/app.war

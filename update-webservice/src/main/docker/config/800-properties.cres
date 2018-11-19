@@ -1,4 +1,7 @@
-[holdingsitems-update]
+[props]
+
+"holdingsitems-update"
+
 updateQueueList=${UPDATE_QUEUE_LIST}
 completeQueueList=${COMPLETE_QUEUE_LIST}
 onlineQueueList=${ONLINE_QUEUE_LIST}
