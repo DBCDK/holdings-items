@@ -29,6 +29,7 @@ import dk.dbc.pgqueue.consumer.JobMetaData;
 import dk.dbc.pgqueue.consumer.QueueWorker;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -94,6 +95,10 @@ public class Worker {
     @PreDestroy
     public void destroy() {
         worker.stop();
+    }
+
+    public List<String> hungThreads() {
+        return worker.hungThreads();
     }
 
     public void work(Connection connection, QueueJob job, JobMetaData metaData) {
