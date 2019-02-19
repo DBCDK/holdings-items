@@ -1,10 +1,11 @@
-FROM docker.dbc.dk/payara5-micro:os
+FROM docker.dbc.dk/payara5-micro:latest
 
 ENV THREADS=1 \
     RETRIES=5 \
     APPLICATION_NAME=HoldingsItemsKafkaBridge
 
 LABEL HOLDINGS_ITEMS_POSTGRES_URL="Holdingsitems database url (required: user:pass@host:port/database)" \
+      MAX_POOL_SIZE="Max number of connections to the database, should be THREADS+1 (default: 2)" \
       THREADS="Number of threads (default 1)" \
       KAFKA_SERVER="Broker list for kafka (required)" \
       KAFKA_TOPIC="Where in kafka to put the messages (required)" \
@@ -18,5 +19,4 @@ LABEL HOLDINGS_ITEMS_POSTGRES_URL="Holdingsitems database url (required: user:pa
       RESCAN_EVERY="How often to rediscover start time when running (default: 500)" \
       MAX_TRIES="Now many times to try to process a queue entry (default: 3)"
 
-ADD config.d/* config.d
-ADD *.war wars/
+COPY *.war *.json deployments/

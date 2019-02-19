@@ -12,6 +12,7 @@ ENV MAX_AGE_MINUTES 480
 ENV MAX_POOL_SIZE 8
 ENV POOL_RESIZE_QUANTITY 2
 ENV STEADY_POOL_SIZE 2
+ENV LOG__dk_dbc INFO
 
 COPY holdings-items-update-webservice-1.1.3-SNAPSHOT.war holdings-items-update.json deployments/
 

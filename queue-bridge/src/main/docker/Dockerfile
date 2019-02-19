@@ -1,4 +1,4 @@
-FROM docker.dbc.dk/payara5-micro:os
+FROM docker.dbc.dk/payara5-micro:latest
 
 ENV THREADS=1 \
     RETRIES=5 \
@@ -6,6 +6,7 @@ ENV THREADS=1 \
 
 LABEL HOLDINGS_ITEMS_POSTGRES_URL="Holdingsitems database url (required: user:pass@host:port/database)" \
       RULES="worker pattern: Semicolon separated list of mqName=dbName (required)" \
+      MAX_POOL_SIZE="Max number of connections to the database, should be THREADS+1 (default: 2)" \
       THREADS="Number of threads (default 1)" \
       QUEUE_SERVER="Address og message queue server (required (ex. sds.example.com:7676))" \
       DATABASE_THROTTLE="Database connect error throttle (default: 1/5s,3/m,5/10m)" \
@@ -17,5 +18,4 @@ LABEL HOLDINGS_ITEMS_POSTGRES_URL="Holdingsitems database url (required: user:pa
       RESCAN_EVERY="How often to rediscover start time when running (default: 500)" \
       MAX_TRIES="Now many times to try to process a queue entry (default: 3)"
 
-ADD config.d/* config.d
-ADD *.war wars/
+COPY *.war *.json deployments/

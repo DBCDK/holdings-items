@@ -1,11 +1,13 @@
-FROM docker.dbc.dk/payara5-micro:os
+FROM docker.dbc.dk/payara5-micro:latest
 
 ENV THREADS=4 \
+    MAX_POOL_SIZE=5 \
     RETRIES=5 \
     APPLICATION_NAME=HoldingsItemsSolrDocStoreIndexer \
-    ADD_PAYARA_ARGS=--nocluster
+    LOG__dk_dbc=INFO
 
 LABEL HOLDINGS_ITEMS_POSTGRES_URL="Holdingsitems database url (required: user:pass@host:port/database)" \
+      MAX_POOL_SIZE="Max number of connections to the database, should be THREADS+1 (default: 5)" \
       QUEUES="Comma separated list og queue names in order to drain (required)" \
       THREADS="Number of threads (default 4)" \
       RETRIES="Now many times to try to process a queue entry (default: 5)" \
@@ -19,5 +21,4 @@ LABEL HOLDINGS_ITEMS_POSTGRES_URL="Holdingsitems database url (required: user:pa
       RESCAN_EVERY="How often to rediscover start time when running (default: 500)" \
       MAX_TRIES="Now many times to try to process a queue entry (default: 3)"
 
-ADD config.d/* config.d
-ADD *.war wars/
+COPY *.war *.json deployments/
