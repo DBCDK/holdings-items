@@ -1,5 +1,5 @@
 {
-    "appName": "${APPLICATION_NAME}",
+    "appName": "holdings-items-update-webservice",
     "jdbc": {
         "jdbc/holdingsitemsupdate/holdingsitems": {
             "xa": false,

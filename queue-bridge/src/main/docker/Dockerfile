@@ -2,7 +2,8 @@ FROM docker.dbc.dk/payara5-micro:latest
 
 ENV THREADS=1 \
     RETRIES=5 \
-    APPLICATION_NAME=HoldingsItemsQueueBridge
+    APPLICATION_NAME=HoldingsItemsQueueBridge \
+    LOG__dk_dbc=INFO
 
 LABEL HOLDINGS_ITEMS_POSTGRES_URL="Holdingsitems database url (required: user:pass@host:port/database)" \
       RULES="worker pattern: Semicolon separated list of mqName=dbName (required)" \

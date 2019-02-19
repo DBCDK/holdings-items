@@ -1,5 +1,5 @@
 {
-    "appName": "${APPLICATION_NAME}",
+    "appName": "HoldingsItemsQueueBridge",
     "jdbc": {
         "jdbc/holdings-items": {
             "url": "${HOLDINGS_ITEMS_POSTGRES_URL}",

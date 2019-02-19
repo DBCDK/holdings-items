@@ -2,7 +2,8 @@ FROM docker.dbc.dk/payara5-micro:latest
 
 ENV THREADS=1 \
     RETRIES=5 \
-    APPLICATION_NAME=HoldingsItemsKafkaBridge
+    APPLICATION_NAME=HoldingsItemsKafkaBridge \
+    LOG__dk_dbc=INFO
 
 LABEL HOLDINGS_ITEMS_POSTGRES_URL="Holdingsitems database url (required: user:pass@host:port/database)" \
       MAX_POOL_SIZE="Max number of connections to the database, should be THREADS+1 (default: 2)" \
