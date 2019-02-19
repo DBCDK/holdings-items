@@ -18,15 +18,12 @@
  */
 package dk.dbc.eeconfig;
 
-import dk.dbc.holdingsitems.update.C;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.Properties;
-import javax.annotation.Resource;
 import javax.ejb.EJBException;
 import javax.ejb.Singleton;
 import javax.enterprise.inject.Produces;
@@ -64,9 +61,6 @@ public class EEConfig {
 
         String value();
     }
-
-    @Resource(lookup = C.PROPERTIES_LOOKUP)
-    private Properties props;
 
     @Produces
     public String getString(InjectionPoint ip) {
@@ -149,7 +143,8 @@ public class EEConfig {
 
     private String getValue(InjectionPoint ip) throws EJBException {
         String name = getName(ip);
-        String value = props.getProperty(name);
+        String value = System.getenv(name);
+        
         if (value == null) {
             Default def = ip.getAnnotated().getAnnotation(Default.class);
             if (def != null) {

@@ -1,11 +1,19 @@
-FROM docker.dbc.dk/dbc-payara5-full
+FROM docker.dbc.dk/payara5-full:latest
 MAINTAINER os-team
 
+# Not needed now?
 ENV KAFKA_LOG_APPNAME holdings-items-update-webservice
 
-USER root
-RUN sed -i 's@^\(exec.*\)$@\1 $( [ -e $HOME/postbootcommandfile.txt ] \&\& echo --postbootcommandfile $HOME/postbootcommandfile.txt )@' /startup.sh
-USER payara
+ENV APPLICATION_NAME holdings-items-update-webservice
+ENV CONTEXT_ROOT /
+
+ENV MAX_AGE_MINUTES 480
+
+ENV MAX_POOL_SIZE 8
+ENV POOL_RESIZE_QUANTITY 2
+ENV STEADY_POOL_SIZE 2
+
+COPY holdings-items-update-webservice-1.1.3-SNAPSHOT.war holdings-items-update.json deployments/
 
 LABEL HOLDINGS_ITEMS_POSTGRES_URL="Url pointing at holdings items postgres (required). Ex.: 'user:pass@host:1234/dbname'" \
       SERVER_NAME="Name of server (hostname) (for wsdl)" \
@@ -18,10 +26,8 @@ LABEL HOLDINGS_ITEMS_POSTGRES_URL="Url pointing at holdings items postgres (requ
       FORS_RIGHTS_URL="Url of forsrights service (remember trailing slash) (required if authentication is enabled)" \
       RIGHTS_GROUP="Authentication group (required if authentication is enabled)" \
       RIGHTS_NAME="Authentication Name (required if authentication is enabled)" \
+      MAX_AGE_MINUTES="Forsrights cache duration (optional, default is 480 minutes / 8 hours)" \
       MAX_POOL_SIZE="JDBC connection pool parameter (optional, default is 8)" \
       POOL_RESIZE_QUANTITY="JDBC connection pool parameter (optional, default is 2)" \
       STEADY_POOL_SIZE="JDBC connection pool parameter (optional, default is 2)" \
       DEBUG_XML_AGENCIES="List of agencies that should have logged requests"
-
-COPY --chown=payara:payara config/* $PAYARA_CFG_DIR/
-COPY --chown=payara:payara *.war $PAYARA_CFG_DIR/app.war
