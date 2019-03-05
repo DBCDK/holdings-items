@@ -1,8 +1,9 @@
-FROM docker.dbc.dk/payara5-micro:os
+FROM docker.dbc.dk/payara5-micro:latest
 
 ENV THREADS=1 \
     RETRIES=5 \
-    APPLICATION_NAME=HoldingsItemsQueueBridge
+    APPLICATION_NAME=HoldingsItemsQueueBridge \
+    MAX_POOL_SIZE=2
 
 LABEL HOLDINGS_ITEMS_POSTGRES_URL="Holdingsitems database url (required: user:pass@host:port/database)" \
       RULES="worker pattern: Semicolon separated list of mqName=dbName (required)" \
@@ -15,7 +16,7 @@ LABEL HOLDINGS_ITEMS_POSTGRES_URL="Holdingsitems database url (required: user:pa
       MAX_QUERY_TIME="When query takes longer, recalc queryplan (default: 250ms)" \
       IDLE_RESCAN_EVERY="How often to rediscover start time when idling (default: 5)" \
       RESCAN_EVERY="How often to rediscover start time when running (default: 500)" \
-      MAX_TRIES="Now many times to try to process a queue entry (default: 3)"
+      MAX_TRIES="Now many times to try to process a queue entry (default: 3)" \
+      MAX_POOL_SIZE="Number of database connections to allocate (default: 2, atleast threads + 1)"
 
-ADD config.d/* config.d
-ADD *.war wars/
+ADD *.json *.war deployments/
