@@ -1,4 +1,4 @@
-FROM docker.dbc.dk/payara5-micro:os
+FROM docker.dbc.dk/payara5-micro:latest
 
 ENV THREADS=4 \
     RETRIES=5 \
