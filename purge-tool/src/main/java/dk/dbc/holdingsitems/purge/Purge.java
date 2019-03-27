@@ -23,7 +23,6 @@ import dk.dbc.holdingsitems.HoldingsItemsDAO;
 import dk.dbc.holdingsitems.HoldingsItemsException;
 import dk.dbc.holdingsitems.Record;
 import dk.dbc.holdingsitems.RecordCollection;
-import dk.dbc.openagency.client.OpenAgencyException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.HashMap;
@@ -85,7 +84,7 @@ public class Purge
         int recordsCount = bibliographicIds.size();
         int purgeCount = 0;
         log.info("Found {} Bibliographic Ids for agency {}", recordsCount, agencyId);
-        status(bibliographicIds);
+        statusReport(bibliographicIds);
 
         // Confirm agency to purge
         log.info("Agency: {}, Name: '{}'", agencyId, agencyName);
@@ -109,7 +108,7 @@ public class Purge
         long duration = (end - start)/1000;
         log.info( "Purged {} with {} live records in {} s.", recordsCount, purgeCount, duration );
         
-        status(bibliographicIds);
+        statusReport(bibliographicIds);
     }
 
     /**
@@ -117,7 +116,7 @@ public class Purge
      * @param bibliographicIds IDs to be processed
      * @throws HoldingsItemsException if DAO threw error
      */
-    private void status(Set<String> bibliographicIds) throws HoldingsItemsException {
+    private void statusReport(Set<String> bibliographicIds) throws HoldingsItemsException {
         Map<String, AtomicInteger> allStatus = new HashMap<>();
         
         for (String bibliographicId : bibliographicIds) {
