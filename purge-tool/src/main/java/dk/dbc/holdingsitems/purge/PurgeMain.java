@@ -18,10 +18,8 @@
  */
 package dk.dbc.holdingsitems.purge;
 
+import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
-import ch.qos.logback.classic.joran.JoranConfigurator;
-import ch.qos.logback.core.joran.spi.JoranException;
-import ch.qos.logback.core.util.StatusPrinter;
 import dk.dbc.commons.jdbc.util.DatabaseConnectionDetails;
 import dk.dbc.holdingsitems.HoldingsItemsDAO;
 import dk.dbc.holdingsitems.DatabaseMigrator;
@@ -29,7 +27,6 @@ import dk.dbc.holdingsitems.HoldingsItemsException;
 import dk.dbc.openagency.client.OpenAgencyException;
 import dk.dbc.openagency.client.OpenAgencyServiceFromURL;
 import dk.dbc.openagency.client.PickupAgency;
-import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.SQLException;
 import javax.sql.DataSource;
@@ -45,96 +42,66 @@ public class PurgeMain {
     private static final Logger log = LoggerFactory.getLogger(PurgeMain.class );
 
     public static void main( String[] args ) throws OpenAgencyException {
-        CommandLine commandLine = new IngestCommandLine();
-
         try {
-            commandLine.parse( args );
-            if ( commandLine.hasOption( "debug" ) ) {
-                log.info( "Loglevel: DEBUG");
-                setLogLevel( "logback-debug.xml" );
+            Arguments commandLine = new Arguments( args );
+            if (commandLine.hasVerbose()) {
+                System.out.println("Setting  level to debug");
+                LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
+                context.getLogger("dk.dbc.holdingsitems.purge").setLevel(Level.DEBUG);
             }
-            else {
-                log.info( "Loglevel: INFO");
-                setLogLevel( "logback-info.xml" );
+
+            int agencyId = commandLine.getAgencyId();
+            log.info( "Agency ID: {}", agencyId);
+
+            String agencyUrl = commandLine.getOpenAgencyUrl();
+
+            log.info( "OpenAgency URL: {}", agencyUrl);
+            OpenAgencyServiceFromURL openAgency = OpenAgencyServiceFromURL.builder().build(agencyUrl);
+            log.debug( "OpenAgency lookup agency {}", agencyId);
+
+            final PickupAgency agency = openAgency.findLibrary().findLibraryByAgency(agencyId);
+            String agencyName;
+            if (agency == null) {
+                log.warn( "OpenAgency agency {}: is unknown", agencyId);
+                agencyName = "<unknown>";
+            } else {
+                agencyName = agency.getAgencyName();
             }
-        }
-        catch ( IllegalStateException | NumberFormatException ex ) {
-            System.err.println( ex.getMessage() );
-            System.err.println( commandLine.usage() );
-            System.exit( 1 );
-            return;
-        }
-        catch ( JoranException ex ) {
-            log.error( "Exception", ex );
-            System.exit( 1 );
-            return;
-        }
 
+            log.info( "Agency agency {}: Name '{}'", agencyId, agencyName);
 
-        int agencyId = (int) commandLine.getOption( "agencyid" );
-        log.info( "Agency ID: {}", agencyId);
-       
-        String agencyUrl = (String) commandLine.getOption( "openagencyurl" );
-        
-        log.info( "OpenAgency URL: {}", agencyUrl);
-        OpenAgencyServiceFromURL openAgency = OpenAgencyServiceFromURL.builder().build(agencyUrl);
-        log.debug( "OpenAgency lookup agency {}", agencyId);
-        
-        final PickupAgency agency = openAgency.findLibrary().findLibraryByAgency(agencyId);
-        String agencyName;
-        if (agency == null) {
-            log.warn( "OpenAgency agency {}: is unknown", agencyId);
-            agencyName = "<unknown>";
-        } else {
-            agencyName = agency.getAgencyName();
-        }
-        
-        log.info( "Agency agency {}: Name '{}'", agencyId, agencyName);
-       
-        String db = (String) commandLine.getOption( "db" );
-        log.info( "DB: {}", db);
-        
-        String worker = (String) commandLine.getOption( "worker" );
-        log.info( "Worker: {}", worker);
-        
-        int commitEvery = commandLine.hasOption("commit") ? (Integer) commandLine.getOption( "commit" ) : 0;
-        log.info( "Commit every {} records per thread", commitEvery);
+            String db = commandLine.getDatabase();
+            log.info( "DB: {}", db);
 
-        boolean dryRun = commandLine.hasOption( "dry-run" );
-        if ( dryRun ) {
-            log.info( "Dry run. Data will be rolled back" );
-        }
-        
-        // Create database connection and process
-        DataSource dataSource = getDataSource(db);
-        try (Connection connection = dataSource.getConnection()) {
-            connection.setAutoCommit(false);
-            HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(connection, "PurgeTool");
+            String queue = commandLine.getQueue();
+            log.info( "Queue: {}", queue);
 
-            Purge execute = new Purge(connection, dao, worker, agencyName, agencyId, commitEvery, dryRun);
-            execute.process();
-        } catch (SQLException | HoldingsItemsException ex) {
-            log.error( "Exception", ex );
-            System.exit( 1 );
+            int commitEvery = commandLine.getCommit().orElse( 0 );
+            log.info( "Commit every {} records per thread", commitEvery);
+
+            boolean dryRun = commandLine.hasDryRun();
+            if ( dryRun ) {
+                log.info( "Dry run. Data will be rolled back" );
+            }
+
+            // Create database connection and process
+            DataSource dataSource = getDataSource(db);
+            try (Connection connection = dataSource.getConnection()) {
+                connection.setAutoCommit(false);
+                HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(connection, "PurgeTool");
+
+                Purge execute = new Purge(connection, dao, queue, agencyName, agencyId, commitEvery, dryRun);
+                execute.process();
+            } catch (SQLException | HoldingsItemsException ex) {
+                log.error( "Exception", ex );
+                System.exit( 1 );
+            }
+        } catch ( ExitException ex ) {
+            System.exit( ex.getStatus() );
         }
     }
 
-    /**
-     * Create log levels
-     * @param file log level configuration
-     * @throws JoranException In case log level file has errors
-     */
-    private static void setLogLevel( String file ) throws JoranException {
-        LoggerContext context = ( LoggerContext ) LoggerFactory.getILoggerFactory();
-        context.reset();
-        ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
-        InputStream stream = contextClassLoader.getResourceAsStream( file );
-        JoranConfigurator configurator = new JoranConfigurator();
-        configurator.setContext( context );
-        configurator.doConfigure( stream ); // loads logback file
-        StatusPrinter.printInCaseOfErrorsOrWarnings( context ); // Internal status data is printed in case of warnings or errors.
-    }
-    
+
     /**
      * Setup the database connection
      * @param url URL for holdings-items database
@@ -147,29 +114,10 @@ public class PurgeMain {
         dataSource.setUrl(details.getConnectString());
         dataSource.setUser(details.getCredentials().getProperty("user"));
         dataSource.setPassword(details.getCredentials().getProperty("password"));
-        
+
         DatabaseMigrator.migrate(dataSource);
-        
+
         return dataSource;
-    }
-    
-
-    private static class IngestCommandLine extends CommandLine {
-        @Override
-        void setOptions() {
-            addOption( "agencyid", "Agency ID to purge for", true, false, integer, null );
-            addOption( "openagencyurl", "OpenAgency URL to connect to. E.g. http://openagency.addi.dk/<version>/", true, false, string, null );
-            addOption( "db", "connectstring for database. E.g jdbc:postgresql://user:password@host:port/database", true, false, string, null );
-            addOption( "worker", "Worker to be enqueued to", true, false, string, null );
-            addOption( "debug", "turn on debug logging", false, false, null, yes );
-            addOption( "commit", "commit every n times. Default is 0 meaning commit only at end", false, false, integer, int0 );
-            addOption( "dry-run", "Do not commit anything", false, false, null, no );
-        }
-
-        @Override
-        String usageCommandLine() {
-            return "prog [ options ]";
-        }
     }
 
 }

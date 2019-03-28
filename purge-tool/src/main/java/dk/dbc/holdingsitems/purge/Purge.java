@@ -39,7 +39,7 @@ import org.slf4j.LoggerFactory;
 public class Purge
 {
     private static final Logger log = LoggerFactory.getLogger( Purge.class );
-    private final String worker;
+    private final String queue;
     private final String agencyName;
     private final int agencyId;
 
@@ -53,17 +53,17 @@ public class Purge
      * Create the purge request
      * @param connection DB connection
      * @param dao data access object for database
-     * @param worker Name of worker to put in queue
+     * @param queue Name of worker to put in queue
      * @param agencyName The name of the agency to verify against
-     * @param agencyId The agency ID to be processed 
+     * @param agencyId The agency ID to be processed
      * @param commitEvery Optionally commit in batches when purging large sets. 0 to disable option
      * @param dryRun Optionally check but does not commit anything
      */
-    public Purge(Connection connection, HoldingsItemsDAO dao, String worker, String agencyName, int agencyId, int commitEvery, boolean dryRun) {
-        log.debug("Purge for agency ID {} with Queue: '{}'", agencyId, worker);
+    public Purge(Connection connection, HoldingsItemsDAO dao, String queue, String agencyName, int agencyId, int commitEvery, boolean dryRun) {
+        log.debug("Purge for agency ID {} with Queue: '{}'", agencyId, queue);
         this.connection = connection;
         this.dao = dao;
-        this.worker = worker;
+        this.queue = queue;
         this.agencyName = agencyName;
         this.agencyId = agencyId;
         this.commitEvery = commitEvery;
@@ -79,7 +79,7 @@ public class Purge
         log.debug("Process");
 
         long start = System.currentTimeMillis();
-        
+
         Set<String> bibliographicIds = dao.getBibliographicIds(agencyId);
         int recordsCount = bibliographicIds.size();
         int purgeCount = 0;
@@ -88,26 +88,28 @@ public class Purge
 
         // Confirm agency to purge
         log.info("Agency: {}, Name: '{}'", agencyId, agencyName);
-        
+
         boolean acceptable = false;
         while (!acceptable) {
-            System.out.print("Enter Agency Name to confirm purge: ");
+            System.out.print("Enter Agency Name to confirm purge (Enter to abort): ");
             Scanner scanner = new Scanner(System.in);
-            String output = scanner.next();
+            String output = scanner.nextLine().trim();
+            if(output.isEmpty())
+                return;
             acceptable = agencyName.equals(output);
             log.debug("Response: {}", acceptable);
             if (! acceptable) {
                 log.info("Error on '{}' != '{}'", output, agencyName);
             }
         }
-        log.info("Purging {}: '{}' with queue worker: '{}'", agencyId, agencyName, worker);
-        
+        log.info("Purging {}: '{}' with queue worker: '{}'", agencyId, agencyName, queue);
+
         purgeCount = purge(bibliographicIds);
 
         long end = System.currentTimeMillis();
         long duration = (end - start)/1000;
         log.info( "Purged {} with {} live records in {} s.", recordsCount, purgeCount, duration );
-        
+
         statusReport(bibliographicIds);
     }
 
@@ -118,7 +120,7 @@ public class Purge
      */
     private void statusReport(Set<String> bibliographicIds) throws HoldingsItemsException {
         Map<String, AtomicInteger> allStatus = new HashMap<>();
-        
+
         for (String bibliographicId : bibliographicIds) {
             log.debug("Has {} - {}", agencyId, bibliographicId);
             Map<String, Integer> statusFor = dao.getStatusFor(bibliographicId, agencyId);
@@ -129,7 +131,7 @@ public class Purge
                 log.trace("Has agency {} - id {}: type {}, count: {}", agencyId, bibliographicId, key, entry.getValue());
             }
         }
-        
+
         int items = 0;
         for (Map.Entry<String, AtomicInteger> entry : allStatus.entrySet()) {
             String key = entry.getKey();
@@ -139,7 +141,7 @@ public class Purge
         }
         log.info("Total {} items", items);
     }
-    
+
     /**
      * Set records to 'decommissioned' and put on queue
      * @param bibliographicIds IDs to be processed
@@ -170,9 +172,9 @@ public class Purge
                 collection.save();
             }
             if (toQueue) {
-                dao.enqueue(bibliographicId, agencyId, Record.Decommissioned, worker);
+                dao.enqueue(bibliographicId, agencyId, Record.Decommissioned, queue);
             }
-            
+
             purge++;
             if (commitEvery > 0 && purge % commitEvery == 0) {
                 commit(purge);
@@ -185,12 +187,12 @@ public class Purge
     /**
      * Commit or rollback for database
      * @param count Count for log status
-     * @throws SQLException 
+     * @throws SQLException
      */
     private void commit(int count) throws SQLException {
         if (dryRun) {
             log.info("Rolled back at {}", count);
-            connection.rollback();            
+            connection.rollback();
         } else {
             log.info("Commit at {}", count);
             connection.commit();
