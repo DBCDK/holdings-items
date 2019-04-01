@@ -87,7 +87,7 @@ public class Purge
         statusReport(bibliographicIds);
 
         // Confirm agency to purge
-        log.info("Agency: {}, Name: '{}'", agencyId, agencyName);
+        System.out.printf("Agency: %s, Name: '%s'%n", agencyId, agencyName);
 
         boolean acceptable = false;
         while (!acceptable) {
@@ -102,7 +102,8 @@ public class Purge
                 log.info("Error on '{}' != '{}'", output, agencyName);
             }
         }
-        log.info("Purging {}: '{}' with queue worker: '{}'", agencyId, agencyName, queue);
+        log.debug("Purging {}: '{}' with queue worker: '{}'", agencyId, agencyName, queue);
+        System.out.printf("Purging %s: '%s' with queue worker: '%s'%n", agencyId, agencyName, queue);
 
         purgeCount = purge(bibliographicIds);
 
@@ -111,6 +112,7 @@ public class Purge
         log.info( "Purged {} with {} live records in {} s.", recordsCount, purgeCount, duration );
 
         statusReport(bibliographicIds);
+        System.out.println("Done.");
     }
 
     /**
@@ -120,6 +122,8 @@ public class Purge
      */
     private void statusReport(Set<String> bibliographicIds) throws HoldingsItemsException {
         Map<String, AtomicInteger> allStatus = new HashMap<>();
+        System.out.println("Status Repost");
+        System.out.printf("Found %9d Bibliographic Ids%n",  bibliographicIds.size());
 
         for (String bibliographicId : bibliographicIds) {
             log.debug("Has {} - {}", agencyId, bibliographicId);
@@ -136,10 +140,12 @@ public class Purge
         for (Map.Entry<String, AtomicInteger> entry : allStatus.entrySet()) {
             String key = entry.getKey();
             int value = entry.getValue().get();
-            log.info("Found {} items: {}", key, value);
+            log.debug("Found {} {} items", key, value);
+            System.out.printf("Found %9d %s items%n",  value, key );
+
             items += value;
         }
-        log.info("Total {} items", items);
+        System.out.printf("Found %9s total items%n", items);
     }
 
     /**
@@ -181,6 +187,7 @@ public class Purge
             }
         }
         commit(purge);
+
         return records;
     }
 
