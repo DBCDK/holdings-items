@@ -27,8 +27,12 @@ import dk.dbc.holdingsitems.HoldingsItemsException;
 import dk.dbc.openagency.client.OpenAgencyException;
 import dk.dbc.openagency.client.OpenAgencyServiceFromURL;
 import dk.dbc.openagency.client.PickupAgency;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import javax.sql.DataSource;
 import org.postgresql.ds.PGSimpleDataSource;
 import org.slf4j.Logger;
@@ -41,7 +45,7 @@ public class PurgeMain {
 
     private static final Logger log = LoggerFactory.getLogger(PurgeMain.class );
 
-    public static void main( String[] args ) throws OpenAgencyException {
+    public static void main( String[] args ) throws OpenAgencyException, IOException {
         try {
             Arguments commandLine = new Arguments( args );
             if (commandLine.hasVerbose()) {
@@ -84,11 +88,15 @@ public class PurgeMain {
                 log.info( "Dry run. Data will be rolled back" );
             }
 
+            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME);
+            String trackingId = String.format("PurgeTool-%s-%s", agencyId, timestamp);
+            log.info( "trackingId: {}", trackingId);
+
             // Create database connection and process
             DataSource dataSource = getDataSource(db);
             try (Connection connection = dataSource.getConnection()) {
                 connection.setAutoCommit(false);
-                HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(connection, "PurgeTool");
+                HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(connection, trackingId);
 
                 Purge execute = new Purge(connection, dao, queue, agencyName, agencyId, commitEvery, dryRun);
                 execute.process();

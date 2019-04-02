@@ -23,7 +23,10 @@ import dk.dbc.holdingsitems.HoldingsItemsDAO;
 import dk.dbc.holdingsitems.HoldingsItemsException;
 import dk.dbc.holdingsitems.Record;
 import dk.dbc.holdingsitems.RecordCollection;
+import java.io.IOException;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
@@ -75,7 +78,7 @@ public class Purge
      * @throws HoldingsItemsException if DAO threw error
      * @throws SQLException in case of rollback or commit error
      */
-    public void process() throws HoldingsItemsException, SQLException {
+    public void process() throws HoldingsItemsException, SQLException, IOException {
         log.debug("Process");
 
         long start = System.currentTimeMillis();
@@ -111,7 +114,8 @@ public class Purge
         long duration = (end - start)/1000;
         log.info( "Purged {} with {} live records in {} s.", recordsCount, purgeCount, duration );
 
-        statusReport(bibliographicIds);
+        waitForQueue();
+        statusReport(dao.getBibliographicIds(agencyId));
         System.out.println("Done.");
     }
 
@@ -122,7 +126,7 @@ public class Purge
      */
     private void statusReport(Set<String> bibliographicIds) throws HoldingsItemsException {
         Map<String, AtomicInteger> allStatus = new HashMap<>();
-        System.out.println("Status Repost");
+        System.out.println("Status Report");
         System.out.printf("Found %9d Bibliographic Ids%n",  bibliographicIds.size());
 
         for (String bibliographicId : bibliographicIds) {
@@ -203,6 +207,44 @@ public class Purge
         } else {
             log.info("Commit at {}", count);
             connection.commit();
+        }
+    }
+
+    private static final String QUEUE_SIZE = "SELECT COUNT (*) FROM queue WHERE trackingid=?";
+    private static final String PURGE_ITEMS = "DELETE FROM holdingsitemsitem WHERE agencyId=?";
+    private static final String PURGE_COLLECTIONS = "DELETE FROM holdingsitemscollection WHERE agencyId=?";
+
+    private void waitForQueue() throws SQLException, IOException {
+        System.out.println("Waiting for queue to be processed");
+        String trackingId = dao.getTrackingId();
+        int count = 1;
+        while (true) {
+            try (PreparedStatement stmt = connection.prepareStatement(QUEUE_SIZE)) {
+                stmt.setString(1, trackingId);
+                try (ResultSet resultSet = stmt.executeQuery()) {
+                    if (resultSet.next()) {
+                        count = resultSet.getInt(1);
+                        System.out.printf("Queue '%s' has %d items%n", trackingId, count);
+                    }
+                }
+            }
+            if (count == 0) {
+                System.out.printf("Delete items and collections for %d: %s%n", agencyId, agencyName);
+                try (PreparedStatement deleteItems = connection.prepareStatement(PURGE_ITEMS) ;
+                     PreparedStatement deleteCollections = connection.prepareStatement(PURGE_COLLECTIONS);) {
+                    deleteItems.setInt(1, agencyId);
+                    int itemCount = deleteItems.executeUpdate();
+
+                    deleteCollections.setInt(1, agencyId);
+                    int collectionsCount = deleteCollections.executeUpdate();
+                    System.out.printf("%d collections, %d items deleted from tables%n", collectionsCount, itemCount);
+                }
+
+                return;
+            } else {
+                System.out.println("Press enter to wait again.");
+                System.in.read();
+            }
         }
     }
 }
