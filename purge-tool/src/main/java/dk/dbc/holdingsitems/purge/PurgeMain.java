@@ -22,7 +22,6 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
 import dk.dbc.commons.jdbc.util.DatabaseConnectionDetails;
 import dk.dbc.holdingsitems.HoldingsItemsDAO;
-import dk.dbc.holdingsitems.DatabaseMigrator;
 import dk.dbc.holdingsitems.HoldingsItemsException;
 import dk.dbc.openagency.client.OpenAgencyException;
 import dk.dbc.openagency.client.OpenAgencyServiceFromURL;
@@ -30,7 +29,6 @@ import dk.dbc.openagency.client.PickupAgency;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import javax.sql.DataSource;
@@ -122,8 +120,6 @@ public class PurgeMain {
         dataSource.setUrl(details.getConnectString());
         dataSource.setUser(details.getCredentials().getProperty("user"));
         dataSource.setPassword(details.getCredentials().getProperty("password"));
-
-        DatabaseMigrator.migrate(dataSource);
 
         return dataSource;
     }

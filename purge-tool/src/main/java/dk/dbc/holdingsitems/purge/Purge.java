@@ -238,8 +238,8 @@ public class Purge
                     deleteCollections.setInt(1, agencyId);
                     int collectionsCount = deleteCollections.executeUpdate();
                     System.out.printf("%d collections, %d items deleted from tables%n", collectionsCount, itemCount);
+                    commit(collectionsCount);
                 }
-
                 return;
             } else {
                 System.out.println("Press enter to wait again.");
