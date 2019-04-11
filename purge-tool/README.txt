@@ -12,6 +12,9 @@ Udfører:
   Bekræft sletning med agency navn
   Marker alle items som 'Decommissioned'. Læg på kø
   Commit
+  Vent på at kø er behandlet
+  Slet items og collections for agency fra holdings items database
+  Commit
   Gentag statusrapport (Alle med 'Decommissioned')
 
 
@@ -36,14 +39,5 @@ usage: java -jar holdings-items-purge-tool.jar -a <AGENCY> [-c <NUM>] -d
     -v,--verbose                  Enable debug log
 
 
-java -jar target/holdings-items-purge-tool.jar --agency-id=133300 --open-agency-url=http://openagency.addi.dk/2.34/ --database=jdbc:postgresql://holdings:holdings@192.168.56.2:5432/holdings --queue=solr
-
-
-Udestående:
-==========
-  Skal poster, som allerede er 'Decommisioned', lægges på kø til indeksering?
-
-  Skal HoldingsItemsDAO.enqueue(..., long milliSeconds) felt bruges til kø ?
-
-  Skal værktøj tilbyde at slette records hele fra database, hvis alle records allerede er 'Decommisioned'. ( evt med check mod SOLR)
-
+java -jar target/holdings-items-purge-tool.jar --agency-id=133300 --open-agency-url=http://openagency.addi.dk/2.34/ --database=jdbc:postgresql://fbstest_holdings_items:<password>@db.holdingsitems.fbstest.prod.dbc.dk:5432/fbstest_holdings_items_db --queue=solr-doc-store-very-slow
+evt: --dry-run
