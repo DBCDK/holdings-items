@@ -436,7 +436,8 @@ public class UpdateWebserviceIT {
         when(validator.validate(anyObject(), anyString(), anyString()))
                 .then((invocation) -> {
                     Authentication auth = (Authentication) invocation.getArguments()[0];
-                    if(auth == null) return null;
+                    if (auth == null)
+                        return null;
                     return auth.getGroupIdAut();
                 });
         mock.wsc = mock(WebServiceContext.class);
@@ -491,13 +492,14 @@ public class UpdateWebserviceIT {
     }
 
     private Config mockConfig() {
-        Config mock = new Config();
-        mock.disableAuthentication = true;
-        mock.updateQueueListReal = "updateOld:old,update";
-        mock.completeQueueListReal = "completeOld:old,complete";
-        mock.onlineQueueListReal = "onlineOld:old,online";
-        mock.init();
-        return mock;
+        return  new Config("DISABLE_AUTHENTICATION=true",
+                                 "UPDATE_QUEUE_LIST=updateOld:old,update",
+                                 "COMPLETE_QUEUE_LIST=completeOld:old,complete",
+                                 "ONLINE_QUEUE_LIST=onlineOld:old,online",
+                                 "FORS_RIGHTS_URL=ANY",
+                                 "FORS_RIGHT_CACHE_AGE=8h",
+                                 "RIGHTS_NAME=any",
+                                 "RIGHTS_GROUP=common");
     }
 
     private HoldingsItemsUpdateRequest holdingsItemsUpdateRequest(String agencyId, Authentication authentication, String trackingId, BibliographicItem... bibliographicItems) {

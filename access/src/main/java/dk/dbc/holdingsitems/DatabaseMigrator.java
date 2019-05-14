@@ -34,12 +34,13 @@ public class DatabaseMigrator {
     private static final Logger log = LoggerFactory.getLogger(DatabaseMigrator.class);
 
     public static void migrate(DataSource dataSource) {
-        final Flyway flyway = new Flyway();
-        flyway.setTable("schema_version");
-        flyway.setBaselineOnMigrate(true);
-        flyway.setBaselineVersion(MigrationVersion.fromVersion("0"));
-        flyway.setDataSource(dataSource);
-        flyway.setLocations("holdingsitems/migration");
+        Flyway flyway = Flyway.configure()
+                .table("schema_version")
+                .baselineOnMigrate(true)
+                .baselineVersion(MigrationVersion.fromVersion("0"))
+                .dataSource(dataSource)
+                .locations("holdingsitems/migration")
+                .load();
         for (MigrationInfo i : flyway.info().all()) {
             log.info("db task {} : {} from file '{}'", i.getVersion(), i.getDescription(), i.getScript());
         }
