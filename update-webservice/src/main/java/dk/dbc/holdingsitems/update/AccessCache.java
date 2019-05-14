@@ -40,7 +40,7 @@ public class AccessCache {
 
     @PostConstruct
     public void setup() {
-        cache = new ForsRights.RightsCache((long)config.getMaxAgeMinutes() * 60 * 1000);
+        cache = new ForsRights.RightsCache(config.getMaxAgeMS());
     }
 
 }

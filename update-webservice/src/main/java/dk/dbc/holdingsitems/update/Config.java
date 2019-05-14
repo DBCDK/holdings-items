@@ -18,20 +18,21 @@
  */
 package dk.dbc.holdingsitems.update;
 
-import dk.dbc.eeconfig.EEConfig;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import javax.annotation.PostConstruct;
-import javax.annotation.Resource;
+import javax.ejb.EJBException;
 import javax.ejb.Lock;
 import javax.ejb.LockType;
 import javax.ejb.Singleton;
-import javax.inject.Inject;
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotNull;
+import javax.ejb.Startup;
+import javax.enterprise.context.ApplicationScoped;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,26 +41,69 @@ import org.slf4j.LoggerFactory;
  *
  * @author DBC {@literal <dbc.dk>}
  */
+@ApplicationScoped
 @Singleton
+@Startup
 @Lock(LockType.READ)
 public class Config {
 
     private static final Logger log = LoggerFactory.getLogger(Config.class);
 
+    private String updateQueueListOld;
+    private String updateQueueList;
+    private String completeQueueListOld;
+    private String completeQueueList;
+    private String onlineQueueListOld;
+    private String onlineQueueList;
+    private Set<String> shouldLogXmlAgenciesSet;
+    private boolean disableAuthentication;
+    private String forsRightsUrl;
+    private long maxAgeMs;
+    private String rightsName;
+    private String rightsGroup;
+
+    private final Map<String, String> env;
+
+    public Config() {
+        this.env = System.getenv();
+    }
+
+    public Config(String... strs) {
+        env = Arrays.stream(strs)
+                .map(s -> s.split("=", 2))
+                .collect(Collectors.toMap(a -> a[0], a -> a[1]));
+        configure();
+    }
+
     @PostConstruct
     public void init() {
-        splitQueue(updateQueueListReal, s -> updateQueueList = s, s -> updateQueueListOld = s);
-        splitQueue(completeQueueListReal, s -> completeQueueList = s, s -> completeQueueListOld = s);
-        splitQueue(onlineQueueListReal, s -> onlineQueueList = s, s -> onlineQueueListOld = s);
+        configure();
+    }
 
-        if (shouldLogXmlAgencies == null) {
-            shouldLogXmlAgencies = "";
-        }
-        shouldLogXmlAgenciesSet = Arrays.stream(shouldLogXmlAgencies.split(";"))
+    private void configure() {
+        splitQueue(get("UPDATE_QUEUE_LIST"), s -> updateQueueList = s, s -> updateQueueListOld = s);
+        splitQueue(get("COMPLETE_QUEUE_LIST"), s -> completeQueueList = s, s -> completeQueueListOld = s);
+        splitQueue(get("ONLINE_QUEUE_LIST"), s -> onlineQueueList = s, s -> onlineQueueListOld = s);
+        shouldLogXmlAgenciesSet = Arrays.stream(get("DEBUG_XML_AGENCIES", "").split(";"))
                 .filter(s -> !s.isEmpty())
                 .collect(Collectors.toSet());
-
         log.debug("shouldLogXmlAgenciesSet = {}", shouldLogXmlAgenciesSet);
+        disableAuthentication = Boolean.valueOf(get("DISABLE_AUTHENTICATION", "false"));
+        forsRightsUrl = get("FORS_RIGHTS_URL");
+        maxAgeMs = milliseconds(get("FORS_RIGHT_CACHE_AGE", "8h"));
+        rightsName = get("RIGHTS_NAME");
+        rightsGroup = get("RIGHTS_GROUP");
+    }
+
+    private String get(String var) {
+        String value = env.get(var);
+        if (value == null)
+            throw new EJBException("Missing required configuration: " + var);
+        return value;
+    }
+
+    private String get(String var, String defaultValue) {
+        return env.getOrDefault(var, defaultValue);
     }
 
     private static void splitQueue(String real, Consumer<String> queueByNew, Consumer<String> queueByOld) {
@@ -76,110 +120,74 @@ public class Config {
         queueByOld.accept(String.join(",", byOld));
     }
 
-    @Inject
-    @EEConfig.Name(C.UPDATE_QUEUE_LIST)
-    @EEConfig.Default(C.UPDATE_QUEUE_LIST_DEFAULT)
-    @NotNull
-    String updateQueueListReal;
-
-    String updateQueueListOld;
-
     public String getUpdateQueueList() {
         return updateQueueList;
     }
-
-    String updateQueueList;
 
     public String getUpdateQueueOldList() {
         return updateQueueListOld;
     }
 
-    @Inject
-    @EEConfig.Name(C.COMPLETE_QUEUE_LIST)
-    @EEConfig.Default(C.COMPLETE_QUEUE_LIST_DEFAULT)
-    @NotNull
-    String completeQueueListReal;
-
-    String completeQueueListOld;
-
     public String getCompleteQueueList() {
         return completeQueueList;
     }
-    String completeQueueList;
 
     public String getCompleteQueueOldList() {
         return completeQueueListOld;
     }
 
-    @Inject
-    @EEConfig.Name(C.ONLINE_QUEUE_LIST)
-    @EEConfig.Default(C.ONLINE_QUEUE_LIST_DEFAULT)
-    @NotNull
-    String onlineQueueListReal;
-
-    String onlineQueueListOld;
-
     public String getOnlineQueueList() {
         return onlineQueueList;
     }
-
-    String onlineQueueList;
 
     public String getOnlineQueueOldList() {
         return onlineQueueListOld;
     }
 
-    @Inject
-    @EEConfig.Name(C.DISABLE_AUTHENTICATION)
-    @EEConfig.Default(C.DISABLE_AUTHENTICATION_DEFAULT)
-    Boolean disableAuthentication;
-
     public boolean getDisableAuthentication() {
         return disableAuthentication;
     }
-
-    @Inject
-    @EEConfig.Name(C.FORS_RIGHTS_URL)
-    @Resource(name = "forsRightsUrl")
-    String forsRightsUrl;
 
     public String getForsRightsUrl() {
         return forsRightsUrl;
     }
 
-    @Inject
-    @EEConfig.Name(C.MAX_AGE_MINUTES)
-    @EEConfig.Default(C.MAX_AGE_MINUTES_DEFAULT)
-    @Min(1)
-    Integer maxAgeMinutes;
-
-    public Integer getMaxAgeMinutes() {
-        return maxAgeMinutes;
+    public long getMaxAgeMS() {
+        return maxAgeMs;
     }
-
-    @Inject
-    @EEConfig.Name(C.RIGHTS_GROUP)
-    String rightsGroup;
 
     public String getRightsGroup() {
         return rightsGroup;
     }
 
-    @Inject
-    @EEConfig.Name(C.RIGHTS_NAME)
-    String rightsName;
-
     public String getRightsName() {
         return rightsName;
     }
 
-    @Inject
-    @EEConfig.Name(C.DEBUG_XML_AGENCIES)
-    @EEConfig.Default(C.DEBUG_XML_AGENCIES_DEFAULT)
-    String shouldLogXmlAgencies;
-    Set<String> shouldLogXmlAgenciesSet;
-
     public boolean shouldLogXml(String agencyId) {
         return shouldLogXmlAgenciesSet.contains(agencyId);
     }
+
+    private static long milliseconds(String spec) {
+        String[] split = spec.split("(?<=\\d)(?=\\D)");
+        if (split.length == 2) {
+            long units = Long.parseUnsignedLong(split[0], 10);
+            switch (split[1].toLowerCase(Locale.ROOT).trim()) {
+                case "ms":
+                    return TimeUnit.MILLISECONDS.toMillis(units);
+                case "s":
+                    return TimeUnit.SECONDS.toMillis(units);
+                case "m":
+                    return TimeUnit.MINUTES.toMillis(units);
+                case "h":
+                    return TimeUnit.HOURS.toMillis(units);
+                case "d":
+                    return TimeUnit.DAYS.toMillis(units);
+                default:
+                    break;
+            }
+        }
+        throw new IllegalArgumentException("Invalid time spec: " + spec);
+    }
+
 }

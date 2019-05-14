@@ -1,3 +1,4 @@
+def dockerRepository = 'https://docker-os.dbc.dk'
 if (env.BRANCH_NAME == 'master') {
     properties([
         disableConcurrentBuilds(),
@@ -58,43 +59,36 @@ pipeline {
             steps {
                 script {
                     def allDockerFiles = findFiles glob: '**/Dockerfile'
-                    def dockerFiles = allDockerFiles.findAll { f -> f.path.endsWith("src/main/docker/Dockerfile") }
-                    def version = readMavenPom().version
+                    def dockerFiles = allDockerFiles.findAll { f -> f.path.endsWith("target/docker/Dockerfile") }
+                    def version = readMavenPom().version.replace('-SNAPSHOT', '')
 
                     for (def f : dockerFiles) {
-                        def dirName = f.path.take(f.path.length() - 11)
-
+                        def dirName = f.path.take(f.path.length() - "target/docker/Dockerfile".length())
+                        if ( dirName == '' )
+                            dirName = '.'
                         dir(dirName) {
-                            modulePom = readMavenPom file: '../../../pom.xml'
+                            modulePom = readMavenPom file: 'pom.xml'
                             def projectArtifactId = modulePom.getArtifactId()
-                            if( !projectArtifactId ) {
-                                throw new hudson.AbortException("Unable to find module ArtifactId in ${dirName}/../../../pom.xml remember to add a <ArtifactId> element")
-                            }
-
                             def imageName = "${projectArtifactId}-${version}".toLowerCase()
                             if (! env.CHANGE_BRANCH) {
-                                imageLabel = env.BRANCH_NAME
+                                imageLabel = env.BRANCH_NAME.toLowerCase()
                             } else {
-                                imageLabel = env.CHANGE_BRANCH
+                                imageLabel = env.CHANGE_BRANCH.toLowerCase()
                             }
                             if ( ! (imageLabel ==~ /master|trunk/) ) {
                                 println("Using branch_name ${imageLabel}")
                                 imageLabel = imageLabel.split(/\//)[-1]
-                                imageLabel = imageLabel.toLowerCase()
                             } else {
                                 println(" Using Master branch ${BRANCH_NAME}")
                                 imageLabel = env.BUILD_NUMBER
                             }
 
                             println("In ${dirName} build ${projectArtifactId} as ${imageName}:$imageLabel")
-                            if ( modulePom.getPackaging() == "war" ) {
-                                sh 'rm -f *.war ; cp  ../../../target/*.war .'
-                            }
-                            sh 'if [ -e prepare.sh ] ; then chmod +x prepare.sh ; ./prepare.sh ; fi'
-                            def app = docker.build("$imageName:${imageLabel}".toLowerCase(), '--pull --no-cache .')
+
+                            def app = docker.build("$imageName:${imageLabel}", '--pull --no-cache --file target/docker/Dockerfile .')
 
                             if (currentBuild.resultIsBetterOrEqualTo('SUCCESS')) {
-                                docker.withRegistry('https://docker-os.dbc.dk', 'docker') {
+                                docker.withRegistry(dockerRepository, 'docker') {
                                     app.push()
                                     if (env.BRANCH_NAME ==~ /master|trunk/) {
                                         app.push "latest"
@@ -104,7 +98,6 @@ pipeline {
                         }
                     }
                 }
-
             }
         }
     }

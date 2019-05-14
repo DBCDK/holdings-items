@@ -20,4 +20,4 @@ LABEL HOLDINGS_ITEMS_POSTGRES_URL="Holdingsitems database url (required: user:pa
       MAX_TRIES="Now many times to try to process a queue entry (default: 3)" \
       MAX_POOL_SIZE="Number of database connections to allocate (default: 2, atleast threads + 1)"
 
-ADD *.json *.war deployments/
+COPY target/${project.build.finalName}.war target/docker/app.json deployments/
