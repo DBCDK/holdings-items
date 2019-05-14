@@ -70,6 +70,7 @@
                 <artifactId>maven-javadoc-plugin</artifactId>
                 <version>3.1.0</version>
                 <configuration>
+                    <skip>true</skip>
                     <additionalparam>-Xdoclint:none</additionalparam>
                 </configuration>
             </plugin>
