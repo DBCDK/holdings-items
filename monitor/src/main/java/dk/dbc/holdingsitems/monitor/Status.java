@@ -55,12 +55,12 @@ public class Status {
         try (Connection connection = dataSource.getConnection() ;
              Statement stmt = connection.createStatement() ;
              ResultSet resultSet = stmt.executeQuery("SELECT 1")) {
-            if (!resultSet.next()) {
+            if (!resultSet.next())
                 throw new SQLException("No rows returned in `SELECT 1'");
-            }
             return Response.ok().entity(new Resp()).build();
         } catch (SQLException ex) {
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(new Resp(ex.getMessage())).build();
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity(new Resp(ex.getMessage())).build();
         }
     }
 
