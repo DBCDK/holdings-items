@@ -18,6 +18,8 @@
  */
 package dk.dbc.holdingsitems.kafkabridge;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import java.util.List;
 import javax.ejb.Stateless;
 import javax.inject.Inject;
 import javax.ws.rs.GET;
@@ -40,7 +42,30 @@ public class Status {
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public Response status() {
-        return Response.ok("{\"ok\":true}").build();
+        List<String> hungThreads = worker.hungThreads();
+        if (hungThreads.isEmpty()) {
+            return Response.ok().entity(new Resp()).build();
+        } else {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity(new Resp("hungThreads: " + hungThreads)).build();
+        }
+    }
+
+    @SuppressFBWarnings("URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD")
+    public static class Resp {
+
+        public boolean ok;
+        public String text;
+
+        public Resp() {
+            this.ok = true;
+            this.text = "Success";
+        }
+
+        public Resp(String diag) {
+            this.ok = false;
+            this.text = diag;
+        }
     }
 
 }
