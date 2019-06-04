@@ -101,4 +101,9 @@ pipeline {
             }
         }
     }
+    post {
+        success {
+            step([$class: 'JavadocArchiver', javadocDir: 'target/site/apidocs', keepAll: false])
+        }
+    }
 }
