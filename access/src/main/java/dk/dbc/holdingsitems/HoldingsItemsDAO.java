@@ -117,7 +117,7 @@ public class HoldingsItemsDAO {
 
     /**
      *
-     * @throws HoldingsItemsException if schema is compatible
+     * @throws HoldingsItemsException if schema is in-compatible
      */
     protected void validateConnection() throws HoldingsItemsException {
         try {
