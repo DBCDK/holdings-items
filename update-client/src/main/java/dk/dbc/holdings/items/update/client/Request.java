@@ -43,9 +43,9 @@ public class Request {
     /**
      * Converts holdingsXML to holdings items request.
      *
-     * @param xml
-     * @param trackingId
-     * @return  List of requests
+     * @param xml        holdings xml
+     * @param trackingId id for tracking
+     * @return List of requests
      */
     public static List<CompleteUpdateRequest> fromHoldingsXML(String xml, String trackingId) {
 
@@ -65,14 +65,14 @@ public class Request {
 
     /**
      * Converts single holding to a CompleteUpdateRequest.
-     *
+     * <p>
      * See http://wiki.dbc.dk/bin/view/Data/PhHoldingsItemTilHoldingsXml
      *
-     * @param holding
-     * @param trackingId
-     * @return
+     * @param holding    holdings data structure
+     * @param trackingId id for tracking
+     * @return a single request
      */
-    static CompleteUpdateRequest fromHolding(Holding holding, String trackingId){
+    static CompleteUpdateRequest fromHolding(Holding holding, String trackingId) {
 
         try {
             GregorianCalendar c = new GregorianCalendar();
@@ -104,7 +104,7 @@ public class Request {
             StatusType statusType = getStatusType(holding.getState(), holding.getCode());
             holdingsItem.setStatus(statusType);
 
-            if(statusType == StatusType.ON_LOAN || statusType == StatusType.ON_SHELF) {
+            if (statusType == StatusType.ON_LOAN || statusType == StatusType.ON_SHELF) {
                 h.setReadyForLoan(BigInteger.valueOf(Math.max(1, holding.getCount())));
             } else {
                 h.setReadyForLoan(BigInteger.ZERO);
@@ -121,22 +121,22 @@ public class Request {
 
     /**
      * Maps state and code of HoldingsXML to a holdings item status.
-     *
+     * <p>
      * See http://wiki.dbc.dk/bin/view/Data/PhHoldingsItemTilHoldingsXml
      *
-     * @param state
-     * @param code
-     * @return
+     * @param state deleted or alive
+     * @param code  lending rule
+     * @return status element
      */
-    static StatusType getStatusType(String state, String code){
-        if(state.equals("d")) {
+    static StatusType getStatusType(String state, String code) {
+        if (state.equals("d")) {
             return StatusType.DECOMMISSIONED;
         } else {
-            if(code == null) {
+            if (code == null) {
                 // Could be either ON_LOAN or ON_SHELF
                 return StatusType.ON_LOAN;
             } else {
-                switch(code) {
+                switch (code) {
                     case "a":
                         // Could be either NOT_FOR_LOAN or ONLINE
                         return StatusType.NOT_FOR_LOAN;
@@ -152,7 +152,7 @@ public class Request {
     static List<Holding> unmarshallHoldingsXML(String xml) throws JAXBException {
         JAXBContext jaxbContext = JAXBContext.newInstance(Holdings.class);
         Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
-        try(StringReader reader = new StringReader(xml)) {
+        try (StringReader reader = new StringReader(xml)) {
             Holdings res = (Holdings) jaxbUnmarshaller.unmarshal(reader);
             return res.getHoldings();
         }
@@ -163,16 +163,10 @@ public class Request {
 
         private List<Holding> holdings;
 
-        /**
-         * @return the holdings
-         */
         public List<Holding> getHoldings() {
             return holdings;
         }
 
-        /**
-         * @param holdings the holdings to set
-         */
         @XmlElement(name = "holding")
         public void setHoldings(List<Holding> holdings) {
             this.holdings = holdings;
@@ -180,6 +174,7 @@ public class Request {
     }
 
     public static class Holding {
+
         private String type;
         private String pid;
         private String dataOwner;
@@ -194,184 +189,109 @@ public class Request {
         private String note;
         private int count;
 
-
-
-
-        /**
-         * @return the type
-         */
         public String getType() {
             return type;
         }
 
-        /**
-         * @param type the type to set
-         */
         @XmlElement
         public void setType(String type) {
             this.type = type;
         }
 
-        /**
-         * @return the pid
-         */
         public String getPid() {
             return pid;
         }
 
-        /**
-         * @param pid the pid to set
-         */
         @XmlElement
         public void setPid(String pid) {
             this.pid = pid;
         }
 
-        /**
-         * @return the dataOwner
-         */
         public String getDataOwner() {
             return dataOwner;
         }
 
-        /**
-         * @param dataOwner the dataOwner to set
-         */
         @XmlElement
         public void setDataOwner(String dataOwner) {
             this.dataOwner = dataOwner;
         }
 
-        /**
-         * @return the format
-         */
         public String getFormat() {
             return format;
         }
 
-        /**
-         * @param format the format to set
-         */
         @XmlElement
         public void setFormat(String format) {
             this.format = format;
         }
 
-        /**
-         * @return the identifier
-         */
         public String getIdentifier() {
             return identifier;
         }
 
-        /**
-         * @param identifier the identifier to set
-         */
         @XmlElement
         public void setIdentifier(String identifier) {
             this.identifier = identifier;
         }
 
-        /**
-         * @return the materialOwner
-         */
         public String getMaterialOwner() {
             return materialOwner;
         }
 
-        /**
-         * @param materialOwner the materialOwner to set
-         */
         @XmlElement
         public void setMaterialOwner(String materialOwner) {
             this.materialOwner = materialOwner;
         }
 
-        /**
-         * @return the state
-         */
         public String getState() {
             return state;
         }
 
-        /**
-         * @param state the state to set
-         */
         @XmlElement
         public void setState(String state) {
             this.state = state;
         }
 
-        /**
-         * @return the orderId
-         */
         public String getOrderId() {
             return orderId;
         }
 
-        /**
-         * @param orderId the orderId to set
-         */
         @XmlElement
         public void setOrderId(String orderId) {
             this.orderId = orderId;
         }
 
-        /**
-         * @return the callNumber
-         */
         public String getCallNumber() {
             return callNumber;
         }
 
-        /**
-         * @param callNumber the callNumber to set
-         */
         @XmlElement
         public void setCallNumber(String callNumber) {
             this.callNumber = callNumber;
         }
 
-        /**
-         * @return the code
-         */
         public String getCode() {
             return code;
         }
 
-        /**
-         * @param code the code to set
-         */
         @XmlElement
         public void setCode(String code) {
             this.code = code;
         }
 
-        /**
-         * @return the note
-         */
         public String getNote() {
             return note;
         }
 
-        /**
-         * @param note the note to set
-         */
         @XmlElement
         public void setNote(String note) {
             this.note = note;
         }
 
-        /**
-         * @return the count
-         */
         public int getCount() {
             return count;
         }
 
-        /**
-         * @param count the count to set
-         */
         @XmlElement
         public void setCount(int count) {
             this.count = count;
@@ -379,6 +299,7 @@ public class Request {
     }
 
     public static class UpdateRequest {
+
         private final String agencyId;
         private final List<BibliographicItem> items;
         private final String trackingId;
@@ -389,23 +310,14 @@ public class Request {
             this.trackingId = trackingId;
         }
 
-        /**
-         * @return the agencyId
-         */
         public String getAgencyId() {
             return agencyId;
         }
 
-        /**
-         * @return the items
-         */
         public List<BibliographicItem> getItems() {
             return items;
         }
 
-        /**
-         * @return the trackingId
-         */
         public String getTrackingId() {
             return trackingId;
         }
@@ -413,6 +325,7 @@ public class Request {
     }
 
     public static class CompleteUpdateRequest {
+
         private final String agencyId;
         private final CompleteBibliographicItem item;
         private final String trackingId;
@@ -423,27 +336,16 @@ public class Request {
             this.trackingId = trackingId;
         }
 
-        /**
-         * @return the agencyId
-         */
         public String getAgencyId() {
             return agencyId;
         }
 
-        /**
-         * @return the item
-         */
         public CompleteBibliographicItem getItem() {
             return item;
         }
 
-        /**
-         * @return the trackingId
-         */
         public String getTrackingId() {
             return trackingId;
         }
     }
 }
-
-

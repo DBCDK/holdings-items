@@ -67,7 +67,7 @@ public class HoldingsItemsUpdateClient {
 
     /**
      * Configures connect timeout of client.
-     * @param timeout
+     * @param timeout timeout in milliseconds
      * @return the configured HoldingsItemsUpdateClient
      */
     public HoldingsItemsUpdateClient withConnectTimeout(int timeout){
@@ -77,7 +77,7 @@ public class HoldingsItemsUpdateClient {
 
     /**
      * Configures request timeout of client.
-     * @param timeout
+     * @param timeout timeout in milliseconds
      * @return the configured HoldingsItemsUpdateClient
      */
     public HoldingsItemsUpdateClient withRequestTimeout(int timeout){
@@ -89,7 +89,7 @@ public class HoldingsItemsUpdateClient {
      * Configures client to use a given MetricRegistry.
      * Will then use timers for service requests
      *
-     * @param metrics
+     * @param metrics registry to record metrics in
      * @return the configured HoldingsItemsUpdateClient
      */
     public HoldingsItemsUpdateClient withMetricsRegistry(MetricRegistry metrics){
@@ -101,7 +101,7 @@ public class HoldingsItemsUpdateClient {
     /**
      * Configures client to use Forsrights authentication.
      * Provided triple must be in format: user:group:pass
-     * @param forsrightsTriple
+     * @param forsrightsTriple authentication string
      * @return the configured HoldingsItemsUpdateClient
      */
     public HoldingsItemsUpdateClient withAuthentication(String forsrightsTriple) {

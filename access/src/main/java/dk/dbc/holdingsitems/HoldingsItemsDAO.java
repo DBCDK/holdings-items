@@ -104,6 +104,8 @@ public class HoldingsItemsDAO {
      * @param trackingId     tracking id for database updates
      * @param skipValidation don't validate the connection
      * @return a HoldingsItemsDAO for the connection
+     * @throws HoldingsItemsException if no database specific implementation
+     *                                could be found
      */
     public static HoldingsItemsDAO newInstance(Connection connection, String trackingId, boolean skipValidation) throws HoldingsItemsException {
         HoldingsItemsDAO dao = new HoldingsItemsDAO(connection, trackingId);

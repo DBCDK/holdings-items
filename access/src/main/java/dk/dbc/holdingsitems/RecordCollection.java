@@ -233,8 +233,8 @@ public class RecordCollection implements Iterable<Record> {
     /**
      * Save all the records
      *
-     * @param modified
-     * @throws HoldingsItemsException
+     * @param modified When the modified timestamp should be set to
+     * @throws HoldingsItemsException If database communication failed
      */
     public void save(Timestamp modified) throws HoldingsItemsException {
         dao.saveRecordCollection(this, modified);

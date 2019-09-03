@@ -260,12 +260,12 @@ public abstract class UpdateRequest {
     /**
      * Fetch a collection and record old item states
      *
-     * @param bibliographicRecordId
-     * @param agencyId
-     * @param issueId
-     * @param modified
-     * @return
-     * @throws HoldingsItemsException
+     * @param bibliographicRecordId part of the primary key
+     * @param agencyId              part of the primary key
+     * @param issueId               part of the primary key
+     * @param modified              set modification time on the collection
+     * @return Collection fetched from database or created
+     * @throws HoldingsItemsException if database communication fails
      */
     protected RecordCollection getRecordCollection(String bibliographicRecordId, int agencyId, String issueId, Timestamp modified) throws HoldingsItemsException {
         try (Timer.Context time = updateWebService.loadCollectionTimer.time()) {
@@ -302,6 +302,7 @@ public abstract class UpdateRequest {
      *
      * @param collection target collection
      * @param item       item to add
+     * @param modified   timestamp it has been modified
      */
     protected void addItemToCollection(RecordCollection collection, HoldingsItem item, Timestamp modified) {
         try (LogWith logWith = new LogWith()) {
