@@ -123,9 +123,9 @@ public class HoldingsItemsUpdateClient {
     /**
      * Performs an update request.
      *
-     * @param req
-     * @return
-     * @throws dk.dbc.holdings.items.update.client.HoldingsItemsUpdateClient.UpdateException
+     * @param req update request
+     * @return update result
+     * @throws UpdateException if communication fails
      */
     public HoldingsItemsUpdateResult holdingsItemsUpdate(Request.UpdateRequest req) throws UpdateException{
         try(Timer t = holdingsItemsUpdateTimer.time()) {
@@ -147,9 +147,9 @@ public class HoldingsItemsUpdateClient {
     /**
      * Performs a complete update request.
      *
-     * @param req
-     * @return
-     * @throws dk.dbc.holdings.items.update.client.HoldingsItemsUpdateClient.UpdateException
+     * @param req update request
+     * @return update result
+     * @throws UpdateException if communication fails
      */
     public HoldingsItemsUpdateResult completeHoldingsItemsUpdate(Request.CompleteUpdateRequest req) throws UpdateException{
         try(Timer t = completeHoldingsItemsUpdateTimer.time()) {
@@ -169,13 +169,6 @@ public class HoldingsItemsUpdateClient {
         }
     }
 
-    /**
-     * Get a port instance from service.
-     * The service object is thread safe, but the port object is not.
-     * Hence we create a port per request, which should be fast enough -
-     * if its found that this is not the case, we've gotta pool.
-     * @return
-     */
     private HoldingsItemsUpdatePortType getPort() {
         HoldingsItemsUpdatePortType port = service.getHoldingsItemsUpdatePort(); // This is thread safe
         BindingProvider bindingProvider = (BindingProvider) port;

@@ -19,6 +19,7 @@
 package dk.dbc.holdingsitems.monitor;
 
 import dk.dbc.ee.stats.Timed;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -64,6 +65,7 @@ public class Status {
         }
     }
 
+    @SuppressFBWarnings("URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD")
     public static class Resp {
 
         public boolean ok;

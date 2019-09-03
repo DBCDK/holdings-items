@@ -45,7 +45,7 @@ public class Request {
      *
      * @param xml
      * @param trackingId
-     * @return
+     * @return  List of requests
      */
     public static List<CompleteUpdateRequest> fromHoldingsXML(String xml, String trackingId) {
 

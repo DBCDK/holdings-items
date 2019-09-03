@@ -18,6 +18,7 @@
  */
 package dk.dbc.holdingsitems;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.sql.Timestamp;
 
 /**
@@ -38,12 +39,14 @@ public class StateChangeMetadata {
         this(oldStatus, oldStatus, when);
     }
 
+    @SuppressFBWarnings("EI_EXPOSE_REP2")
     public StateChangeMetadata(String newStatus, String oldStatus, Timestamp when) {
         this.newStatus = newStatus;
         this.oldStatus = oldStatus;
         this.when = when;
     }
 
+    @SuppressFBWarnings("EI_EXPOSE_REP2")
     public void update(String status, Timestamp when) {
         this.newStatus = status;
         this.when = when;

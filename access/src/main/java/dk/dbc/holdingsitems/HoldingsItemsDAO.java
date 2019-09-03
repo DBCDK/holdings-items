@@ -62,7 +62,7 @@ public class HoldingsItemsDAO {
      * Constructor
      *
      * @param connection Database connection
-     * @param trackingId
+     * @param trackingId tracking of updates
      */
     HoldingsItemsDAO(Connection connection, String trackingId) {
         this.connection = connection;
@@ -145,17 +145,20 @@ public class HoldingsItemsDAO {
     /**
      * Get the tracking id
      *
-     * @return
+     * @return The stored tracking id
      */
     public String getTrackingId() {
         return trackingId;
     }
 
     /**
+     * Find all bibliographicrecordids for a given agency
+     * <p>
+     * This will be slow
      *
-     * @param agencyId
-     * @return
-     * @throws HoldingsItemsException
+     * @param agencyId agency in question
+     * @return collection of bibliographicrecordids for the given agency
+     * @throws HoldingsItemsException When database communication fails
      */
     public Set<String> getBibliographicIds(int agencyId) throws HoldingsItemsException {
         Set<String> ret = new HashSet<>();
@@ -174,11 +177,12 @@ public class HoldingsItemsDAO {
     }
 
     /**
+     * Find all issueids for a given bibliographic record
      *
-     * @param bibliographicId
-     * @param agencyId
-     * @return
-     * @throws HoldingsItemsException
+     * @param bibliographicId the bibliographic record
+     * @param agencyId        the agency in question
+     * @return a collection of all the issueids for the record
+     * @throws HoldingsItemsException When database communication fails
      */
     public Set<String> getIssueIds(String bibliographicId, int agencyId) throws HoldingsItemsException {
         Set<String> ret = new HashSet<>();
@@ -200,11 +204,11 @@ public class HoldingsItemsDAO {
     /**
      * Create / Get a collection of items defined by id/library/orderId
      *
-     * @param bibliographicRecordId
-     * @param agencyId
-     * @param issueId
-     * @return
-     * @throws HoldingsItemsException
+     * @param bibliographicRecordId part of the primary key
+     * @param agencyId              part of the primary key
+     * @param issueId               part of the primary key
+     * @return record collection object
+     * @throws HoldingsItemsException When database communication fails
      */
     public RecordCollection getRecordCollection(String bibliographicRecordId, int agencyId, String issueId) throws HoldingsItemsException {
         try (PreparedStatement collectionStmt = connection.prepareStatement(SELECT_COLLECTION)) {
@@ -225,12 +229,12 @@ public class HoldingsItemsDAO {
     /**
      * Create (if required) a collection of items defined by id/library/orderId
      *
-     * @param bibliographicRecordId
-     * @param agencyId
-     * @param issueId
-     * @param modified
-     * @return
-     * @throws HoldingsItemsException
+     * @param bibliographicRecordId part of the primary key
+     * @param agencyId              part of the primary key
+     * @param issueId               part of the primary key
+     * @param modified              set modification time on the collection
+     * @return record collection object
+     * @throws HoldingsItemsException When database communication fails
      */
     public RecordCollection getRecordCollectionForUpdate(String bibliographicRecordId, int agencyId, String issueId, Timestamp modified) throws HoldingsItemsException {
         try {
@@ -271,7 +275,7 @@ public class HoldingsItemsDAO {
      *
      * @param bibliographicRecordId id of record
      * @return set of agencyId
-     * @throws HoldingsItemsException
+     * @throws HoldingsItemsException When database communication fails
      */
     public Set<Integer> getAgenciesThatHasHoldingsFor(String bibliographicRecordId) throws HoldingsItemsException {
         HashSet agencies = new HashSet();
@@ -292,12 +296,13 @@ public class HoldingsItemsDAO {
     }
 
     /**
-     * Update bibliographic item note - should be called before items are fetched
+     * Update bibliographic item note - should be called before items are
+     * fetched
      *
-     * @param note The text to apply to all issues
-     * @param agencyId owner
+     * @param note                  The text to apply to all issues
+     * @param agencyId              owner
      * @param bibliographicRecordId owner
-     * @param modified modified timestamp
+     * @param modified              modified timestamp
      * @throws HoldingsItemsException in case of a database error
      */
     public void updateBibliographicItemNote(String note, int agencyId, String bibliographicRecordId, Timestamp modified) throws HoldingsItemsException {
@@ -318,8 +323,9 @@ public class HoldingsItemsDAO {
     /**
      * Called by RecordCollection.save()
      *
-     * @param collection
-     * @throws HoldingsItemsException
+     * @param collection record collection to asve
+     * @param modified   modified timestamp
+     * @throws HoldingsItemsException in case of a database error
      */
     void saveRecordCollection(RecordCollection collection, Timestamp modified) throws HoldingsItemsException {
         updateOrInsertCollection(collection, modified);
@@ -389,10 +395,10 @@ public class HoldingsItemsDAO {
     /**
      * Create a map of status to number of items with said status
      *
-     * @param bibliographicRecordId
-     * @param agencyId
-     * @return
-     * @throws HoldingsItemsException
+     * @param bibliographicRecordId key
+     * @param agencyId              key
+     * @return key-value pairs with status and number of that status
+     * @throws HoldingsItemsException in case of a database error
      */
     public Map<String, Integer> getStatusFor(String bibliographicRecordId, int agencyId) throws HoldingsItemsException {
         HashMap<String, Integer> map = new HashMap<>();
@@ -414,10 +420,10 @@ public class HoldingsItemsDAO {
     /**
      * Has a holding that is not decommissioned
      *
-     * @param bibliographicRecordId
-     * @param agencyId
-     * @return
-     * @throws HoldingsItemsException
+     * @param bibliographicRecordId key
+     * @param agencyId              key
+     * @return if any holding is not 'decommissioned'
+     * @throws HoldingsItemsException in case of a database error
      */
     public boolean hasLiveHoldings(String bibliographicRecordId, int agencyId) throws HoldingsItemsException {
         try (PreparedStatement stmt = connection.prepareStatement(CHECK_LIVE_HOLDINGS)) {
@@ -443,7 +449,7 @@ public class HoldingsItemsDAO {
      * @param agencyId              part of job id
      * @param stateChange           part of a job
      * @param worker                Who's get the job
-     * @throws HoldingsItemsException
+     * @throws HoldingsItemsException in case of a database error
      */
     public void enqueue(String bibliographicRecordId, int agencyId, String stateChange, String worker) throws HoldingsItemsException {
         PreparedQueueSupplier supplier = getQueueSupplier();
@@ -464,7 +470,7 @@ public class HoldingsItemsDAO {
      * @param worker                Who's get the job
      * @param milliSeconds          How many milliseconds from now it should be
      *                              dequeued at the earliest
-     * @throws HoldingsItemsException
+     * @throws HoldingsItemsException in case of a database error
      */
     public void enqueue(String bibliographicRecordId, int agencyId, String stateChange, String worker, long milliSeconds) throws HoldingsItemsException {
         PreparedQueueSupplier supplier = getQueueSupplier();
@@ -482,10 +488,10 @@ public class HoldingsItemsDAO {
      * @param bibliographicRecordId part of job id
      * @param agencyId              part of job id
      * @param worker                Who's get the job
-     * @throws HoldingsItemsException
+     * @throws HoldingsItemsException in case of a database error
      */
     public void enqueueOld(String bibliographicRecordId, int agencyId, String worker) throws HoldingsItemsException {
-        HoldingsItemsDAO.this.enqueueOld(bibliographicRecordId, agencyId, worker, 0);
+        enqueueOld(bibliographicRecordId, agencyId, worker, 0);
     }
 
     /**
@@ -496,7 +502,7 @@ public class HoldingsItemsDAO {
      * @param worker                Who's get the job
      * @param milliSeconds          How many milliseconds from now it should be
      *                              dequeued at the earliest
-     * @throws HoldingsItemsException
+     * @throws HoldingsItemsException in case of a database error
      */
     public void enqueueOld(String bibliographicRecordId, int agencyId, String worker, long milliSeconds) throws HoldingsItemsException {
         enqueueOld(bibliographicRecordId, agencyId, "", worker, milliSeconds);
@@ -509,10 +515,10 @@ public class HoldingsItemsDAO {
      * @param agencyId              part of job id
      * @param additionalData        extra data for job
      * @param worker                Who's to get the job
-     * @throws HoldingsItemsException
+     * @throws HoldingsItemsException in case of a database error
      */
     public void enqueueOld(String bibliographicRecordId, int agencyId, String additionalData, String worker) throws HoldingsItemsException {
-        HoldingsItemsDAO.this.enqueueOld(bibliographicRecordId, agencyId, worker, 0);
+        enqueueOld(bibliographicRecordId, agencyId, worker, 0);
     }
 
     /**
@@ -524,7 +530,7 @@ public class HoldingsItemsDAO {
      * @param worker                Who's to get the job
      * @param milliSeconds          How many milliseconds from now it should be
      *                              dequeued at the earliest
-     * @throws HoldingsItemsException
+     * @throws HoldingsItemsException in case of a database error
      */
     public void enqueueOld(String bibliographicRecordId, int agencyId, String additionalData, String worker, long milliSeconds) throws HoldingsItemsException {
         try (PreparedStatement stmt = connection.prepareStatement(QUEUE_INSERT_SQL_OLD)) {
@@ -543,7 +549,7 @@ public class HoldingsItemsDAO {
     }
 
     private RecordCollection recordCollectionFromStatement(final PreparedStatement collectionStmt, String bibliographicRecordId, int agencyId, String issueId) throws SQLException {
-        try (final ResultSet collectionResultSet = collectionStmt.executeQuery()) {
+        try (ResultSet collectionResultSet = collectionStmt.executeQuery()) {
             if (collectionResultSet.next()) {
                 String issueText = collectionResultSet.getString(1);
                 Date expectedDelivery = collectionResultSet.getTimestamp(2);

@@ -23,6 +23,7 @@ import dk.dbc.holdingsitems.HoldingsItemsDAO;
 import dk.dbc.holdingsitems.HoldingsItemsException;
 import dk.dbc.holdingsitems.Record;
 import dk.dbc.holdingsitems.RecordCollection;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -35,6 +36,8 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  *
@@ -78,6 +81,7 @@ public class Purge
      * @throws HoldingsItemsException if DAO threw error
      * @throws SQLException in case of rollback or commit error
      */
+    @SuppressFBWarnings("DM_DEFAULT_ENCODING")
     public void process() throws HoldingsItemsException, SQLException, IOException {
         log.debug("Process");
 

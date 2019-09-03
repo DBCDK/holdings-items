@@ -248,7 +248,7 @@ public abstract class UpdateRequest {
             String oldStatus = record.getStatus();
             if (oldStatus.equals(StatusType.ONLINE.value())) {
                 continue;
-            };
+            }
             StateChangeMetadata metadata = statuses.computeIfAbsent(itemId, i -> new StateChangeMetadata(oldStatus, record.getModified()));
             metadata.update(StatusType.DECOMMISSIONED.value(), modified);
             record.setStatus(StatusType.DECOMMISSIONED.value());

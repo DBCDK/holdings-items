@@ -18,6 +18,7 @@
  */
 package dk.dbc.holdingsitems.queuebridge;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Locale;
@@ -94,6 +95,7 @@ public class Config {
         this.jmxDomain = getOrDefault("jmx-domain", "metrics");
     }
 
+    @SuppressFBWarnings("EI_EXPOSE_REP")
     public String[] getQueues() {
         return queues;
     }
