@@ -259,6 +259,7 @@ public class HoldingsItemsDAOIT extends DbBase {
 //              |_|
     private static final SimpleDateFormat DATE_PARSER = new SimpleDateFormat("YYYY-MM-DD");
 
+    @SuppressWarnings({"deprecation"})
     List<QueueJob> queue() throws SQLException {
         ArrayList<QueueJob> ret = new ArrayList<>();
         try (Connection connection = dataSource.getConnection() ;
