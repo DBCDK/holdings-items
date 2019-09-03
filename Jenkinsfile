@@ -38,57 +38,85 @@ pipeline {
                     } else {
                         println(" Building BRANCH_NAME == ${BRANCH_NAME}")
                     }
-                    if (env.BRANCH_NAME ==~ /master|trunk/) {
-                        sh """
-                            mvn -B clean
-                            mvn -B deploy pmd:pmd javadoc:aggregate
-                        """
-                    } else {
-                        sh """
-                            mvn -B clean
-                            mvn -B verify pmd:pmd javadoc:aggregate
-                        """
-                    }
                 }
 
-                //junit "**/target/surefire-reports/TEST-*.xml,**/target/failsafe-reports/TEST-*.xml"
+                sh """
+                    rm -rf \$WORKSPACE/.repo/dk/dbc
+                    mvn -B -Dmaven.repo.local=\$WORKSPACE/.repo clean
+                    mvn -B -Dmaven.repo.local=\$WORKSPACE/.repo org.jacoco:jacoco-maven-plugin:prepare-agent install javadoc:aggregate -Dsurefire.useFile=false
+                """
+                script {
+                    junit testResults: '**/target/surefire-reports/TEST-*.xml'
+
+                    def java = scanForIssues tool: [$class: 'Java']
+                    def javadoc = scanForIssues tool: [$class: 'JavaDoc']
+
+                    publishIssues issues:[java,javadoc], unstableTotalAll:1
+                }
+            }
+        }
+
+        stage("analysis") {
+            steps {
+                sh """
+                    mvn -B -Dmaven.repo.local=\$WORKSPACE/.repo -pl !gui pmd:pmd pmd:cpd findbugs:findbugs
+                """
+
+                script {
+                    def pmd = scanForIssues tool: [$class: 'Pmd'], pattern: '**/target/pmd.xml'
+                    publishIssues issues:[pmd], unstableTotalAll:1
+
+                    def cpd = scanForIssues tool: [$class: 'Cpd'], pattern: '**/target/cpd.xml'
+                    publishIssues issues:[cpd]
+
+                    def findbugs = scanForIssues tool: [$class: 'FindBugs'], pattern: '**/target/findbugsXml.xml'
+                    publishIssues issues:[findbugs], unstableTotalAll:1
+                }
+            }
+        }
+
+        stage("coverage") {
+            steps {
+                step([$class: 'JacocoPublisher', 
+                      execPattern: '**/target/*.exec',
+                      classPattern: '**/target/classes',
+                      sourcePattern: '**/src/main/java',
+                      exclusionPattern: '**/src/test*'
+                ])
             }
         }
 
         stage('Docker') {
             steps {
                 script {
-                    def allDockerFiles = findFiles glob: '**/Dockerfile'
-                    def dockerFiles = allDockerFiles.findAll { f -> f.path.endsWith("target/docker/Dockerfile") }
+                    if (! env.CHANGE_BRANCH) {
+                        imageLabel = env.BRANCH_NAME
+                    } else {
+                        imageLabel = env.CHANGE_BRANCH
+                    }
+                    if ( ! (imageLabel ==~ /master|trunk/) ) {
+                        println("Using branch_name ${imageLabel}")
+                        imageLabel = imageLabel.split(/\//)[-1]
+                        imageLabel = imageLabel.toLowerCase()
+                    } else {
+                        println(" Using Master branch ${BRANCH_NAME}")
+                        imageLabel = env.BUILD_NUMBER
+                    }
+
+                    def dockerFiles = findFiles(glob: '**/target/docker/Dockerfile')
                     def version = readMavenPom().version.replace('-SNAPSHOT', '')
 
-                    for (def f : dockerFiles) {
-                        def dirName = f.path.take(f.path.length() - "target/docker/Dockerfile".length())
-                        if ( dirName == '' )
-                            dirName = '.'
+                    for (def dockerFile : dockerFiles) {
+                        def dirName = dockerFile.path.replace('/target/docker/Dockerfile', '')
                         dir(dirName) {
-                            modulePom = readMavenPom file: 'pom.xml'
+                            def modulePom = readMavenPom file: 'pom.xml'
                             def projectArtifactId = modulePom.getArtifactId()
                             def imageName = "${projectArtifactId}-${version}".toLowerCase()
-                            if (! env.CHANGE_BRANCH) {
-                                imageLabel = env.BRANCH_NAME.toLowerCase()
-                            } else {
-                                imageLabel = env.CHANGE_BRANCH.toLowerCase()
-                            }
-                            if ( ! (imageLabel ==~ /master|trunk/) ) {
-                                println("Using branch_name ${imageLabel}")
-                                imageLabel = imageLabel.split(/\//)[-1]
-                            } else {
-                                println(" Using Master branch ${BRANCH_NAME}")
-                                imageLabel = env.BUILD_NUMBER
-                            }
-
                             println("In ${dirName} build ${projectArtifactId} as ${imageName}:$imageLabel")
-
-                            def app = docker.build("$imageName:${imageLabel}", '--pull --no-cache --file target/docker/Dockerfile .')
+                            def app = docker.build("$imageName:${imageLabel}", "--pull --file target/docker/Dockerfile .")
 
                             if (currentBuild.resultIsBetterOrEqualTo('SUCCESS')) {
-                                docker.withRegistry(dockerRepository, 'docker') {
+                                docker.withRegistry('https://docker-os.dbc.dk', 'docker') {
                                     app.push()
                                     if (env.BRANCH_NAME ==~ /master|trunk/) {
                                         app.push "latest"
@@ -96,6 +124,18 @@ pipeline {
                                 }
                             }
                         }
+                    }
+                }
+            }
+        }
+
+        stage("upload") {
+            steps {
+                script {
+                    if (env.BRANCH_NAME ==~ /master|trunk/) {
+                        sh """
+                            mvn -Dmaven.repo.local=\$WORKSPACE/.repo jar:jar deploy:deploy
+                        """
                     }
                 }
             }
