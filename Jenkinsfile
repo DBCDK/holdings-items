@@ -104,7 +104,7 @@ pipeline {
     post {
         success {
             println "no Doc's yet"
-            // NOT READY! step([$class: 'JavadocArchiver', javadocDir: 'target/site/apidocs', keepAll: false])
+            step([$class: 'JavadocArchiver', javadocDir: 'target/site/apidocs', keepAll: false])
         }
     }
 }
