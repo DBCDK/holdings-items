@@ -49,22 +49,6 @@ public class RecordCollection implements Iterable<Record> {
     boolean original;
     private final String trackingId;
 
-    /**
-     * From database, sets original false
-     *
-     * @param bibliographicRecordId
-     * @param agencyId
-     * @param issueId
-     * @param issueText
-     * @param expectedDelivery
-     * @param readyForLoan
-     * @param note
-     * @param completeTimestamp
-     * @param createdTimestamp
-     * @param modifiedTimestamp
-     * @param dao
-     * @param trackingId
-     */
     public RecordCollection(String bibliographicRecordId, int agencyId, String issueId, String issueText,
                             Date expectedDelivery, int readyForLoan, String note,
                             Timestamp completeTimestamp, Timestamp createdTimestamp, Timestamp modifiedTimestamp,
@@ -89,15 +73,6 @@ public class RecordCollection implements Iterable<Record> {
         this.trackingId = trackingId;
     }
 
-    /**
-     * newly created, sets original = true
-     *
-     * @param bibliographicRecordId
-     * @param agencyId
-     * @param issueId
-     * @param dao
-     * @param trackingId
-     */
     public RecordCollection(String bibliographicRecordId, int agencyId, String issueId, String trackingId, HoldingsItemsDAO dao) {
         this.bibliographicRecordId = bibliographicRecordId;
         this.AgencyId = agencyId;
@@ -239,7 +214,7 @@ public class RecordCollection implements Iterable<Record> {
     /**
      * Locate or create record in collection
      *
-     * @param itemId
+     * @param itemId find item in collection
      * @return record from set (or newly created record)
      */
     public Record findRecord(String itemId) {
@@ -268,17 +243,12 @@ public class RecordCollection implements Iterable<Record> {
     /**
      * Save all the records
      *
-     * @throws HoldingsItemsException
+     * @throws HoldingsItemsException in case of database errors
      */
     public void save() throws HoldingsItemsException {
         save(new Timestamp(new Date().getTime()));
     }
 
-    /**
-     * Iterator for records
-     *
-     * @return
-     */
     @Override
     public Iterator<Record> iterator() {
         return records.values().iterator();
