@@ -159,6 +159,8 @@ public class UpdateWebservice {
         }
     }
 
+    // CPD-OFF
+
     /**
      * Accept request for multiple bibliographic record ids
      * <p>
@@ -444,6 +446,8 @@ public class UpdateWebservice {
             });
         }
     }
+
+    // CPD-ON
 
     private void logXml(String agencyId, Object req, Authentication auth) {
         if (config.shouldLogXml(agencyId)) {

@@ -591,6 +591,7 @@ public class HoldingsItemsDAO {
         return null;
     }
 
+    // CPD-OFF
     private void updateOrInsertCollection(RecordCollection collection, Timestamp modified) throws HoldingsItemsException {
         if (collection.isComplete() || collection.isOriginal()) {
             collection.setCompleteTimestamp(modified);
@@ -629,7 +630,9 @@ public class HoldingsItemsDAO {
             }
         }
     }
+    // CPD-ON
 
+    // CPD-OFF
     private void insertCollection(RecordCollection collection, Timestamp modified) throws SQLException {
         try (PreparedStatement stmt = connection.prepareCall(INSERT_COLLECTION)) {
             int i = 1;
@@ -651,6 +654,7 @@ public class HoldingsItemsDAO {
             stmt.executeUpdate();
         }
     }
+    // CPD-ON
 
     private static final String DATABASE_ERROR = "Database error";
 
