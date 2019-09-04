@@ -169,6 +169,14 @@ public class HoldingsItemsUpdateClient {
         }
     }
 
+    /**
+     * Get a port instance from service.
+     * The service object is thread safe, but the port object is not.
+     * Hence we create a port per request, which should be fast enough -
+     * if its found that this is not the case, we've gotta pool.
+     *
+     * @return soap-connector
+     */
     private HoldingsItemsUpdatePortType getPort() {
         HoldingsItemsUpdatePortType port = service.getHoldingsItemsUpdatePort(); // This is thread safe
         BindingProvider bindingProvider = (BindingProvider) port;

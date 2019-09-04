@@ -1,4 +1,3 @@
-def dockerRepository = 'https://docker-os.dbc.dk'
 if (env.BRANCH_NAME == 'master') {
     properties([
         disableConcurrentBuilds(),
@@ -67,7 +66,7 @@ pipeline {
                     publishIssues issues:[pmd], unstableTotalAll:1
 
                     def cpd = scanForIssues tool: [$class: 'Cpd'], pattern: '**/target/cpd.xml'
-                    publishIssues issues:[cpd]
+                    publishIssues issues:[cpd], unstableTotalAll:10
 
                     def findbugs = scanForIssues tool: [$class: 'FindBugs'], pattern: '**/target/findbugsXml.xml'
                     publishIssues issues:[findbugs], unstableTotalAll:1
@@ -143,7 +142,6 @@ pipeline {
     }
     post {
         success {
-            println "no Doc's yet"
             step([$class: 'JavadocArchiver', javadocDir: 'target/site/apidocs', keepAll: false])
         }
     }

@@ -49,6 +49,22 @@ public class RecordCollection implements Iterable<Record> {
     boolean original;
     private final String trackingId;
 
+    /**
+     * From database, sets original false
+     *
+     * @param bibliographicRecordId primary key
+     * @param agencyId              primary key
+     * @param issueId               primary key
+     * @param issueText             data
+     * @param expectedDelivery      data
+     * @param readyForLoan          data
+     * @param note                  data
+     * @param completeTimestamp     data
+     * @param createdTimestamp      data
+     * @param modifiedTimestamp     data
+     * @param dao                   database abstraction
+     * @param trackingId            data
+     */
     public RecordCollection(String bibliographicRecordId, int agencyId, String issueId, String issueText,
                             Date expectedDelivery, int readyForLoan, String note,
                             Timestamp completeTimestamp, Timestamp createdTimestamp, Timestamp modifiedTimestamp,
@@ -73,6 +89,15 @@ public class RecordCollection implements Iterable<Record> {
         this.trackingId = trackingId;
     }
 
+    /**
+     * newly created, sets original = true
+     *
+     * @param bibliographicRecordId primary key
+     * @param agencyId              primary key
+     * @param issueId               primary key
+     * @param dao                   database abstraction
+     * @param trackingId            data
+     */
     public RecordCollection(String bibliographicRecordId, int agencyId, String issueId, String trackingId, HoldingsItemsDAO dao) {
         this.bibliographicRecordId = bibliographicRecordId;
         this.AgencyId = agencyId;

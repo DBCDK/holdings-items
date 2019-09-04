@@ -325,7 +325,7 @@ public class HoldingsItemsDAO {
     /**
      * Called by RecordCollection.save()
      *
-     * @param collection record collection to asve
+     * @param collection record collection to save
      * @param modified   modified timestamp
      * @throws HoldingsItemsException in case of a database error
      */
