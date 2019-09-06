@@ -47,10 +47,9 @@ public enum SolrFields {
     TRACKING_ID("rec.trackingId"),
     INDEXED_DATE("rec.indexedDate");
 
-
     private final String fieldName;
 
-    private SolrFields(final String fieldName) {
+    SolrFields(final String fieldName) {
         this.fieldName = fieldName;
     }
 

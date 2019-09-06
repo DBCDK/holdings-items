@@ -30,12 +30,20 @@ import dk.dbc.holdingsitems.Record;
 import dk.dbc.holdingsitems.RecordCollection;
 import dk.dbc.log.LogWith;
 import dk.dbc.oss.ns.holdingsitemsupdate.Authentication;
+import dk.dbc.oss.ns.holdingsitemsupdate.BibliographicItem;
 import dk.dbc.oss.ns.holdingsitemsupdate.CompleteBibliographicItem;
+import dk.dbc.oss.ns.holdingsitemsupdate.CompleteHoldingsItemsUpdate;
 import dk.dbc.oss.ns.holdingsitemsupdate.CompleteHoldingsItemsUpdateRequest;
+import dk.dbc.oss.ns.holdingsitemsupdate.Holding;
+import dk.dbc.oss.ns.holdingsitemsupdate.HoldingsItem;
+import dk.dbc.oss.ns.holdingsitemsupdate.HoldingsItemsUpdate;
 import dk.dbc.oss.ns.holdingsitemsupdate.HoldingsItemsUpdateRequest;
+import dk.dbc.oss.ns.holdingsitemsupdate.HoldingsItemsUpdateResponse;
 import dk.dbc.oss.ns.holdingsitemsupdate.HoldingsItemsUpdateResult;
 import dk.dbc.oss.ns.holdingsitemsupdate.HoldingsItemsUpdateStatusEnum;
+import dk.dbc.oss.ns.holdingsitemsupdate.ModificationTimeStamp;
 import dk.dbc.oss.ns.holdingsitemsupdate.OnlineBibliographicItem;
+import dk.dbc.oss.ns.holdingsitemsupdate.OnlineHoldingsItemsUpdate;
 import dk.dbc.oss.ns.holdingsitemsupdate.OnlineHoldingsItemsUpdateRequest;
 import dk.dbc.oss.ns.holdingsitemsupdate.StatusType;
 import java.io.StringWriter;
@@ -117,23 +125,23 @@ public class UpdateWebservice {
 
         try {
             JAXBContext jaxbContext = JAXBContext.newInstance(
-                    dk.dbc.oss.ns.holdingsitemsupdate.Authentication.class,
-                    dk.dbc.oss.ns.holdingsitemsupdate.BibliographicItem.class,
-                    dk.dbc.oss.ns.holdingsitemsupdate.CompleteBibliographicItem.class,
-                    dk.dbc.oss.ns.holdingsitemsupdate.CompleteHoldingsItemsUpdate.class,
-                    dk.dbc.oss.ns.holdingsitemsupdate.CompleteHoldingsItemsUpdateRequest.class,
-                    dk.dbc.oss.ns.holdingsitemsupdate.Holding.class,
-                    dk.dbc.oss.ns.holdingsitemsupdate.HoldingsItem.class,
-                    dk.dbc.oss.ns.holdingsitemsupdate.HoldingsItemsUpdate.class,
-                    dk.dbc.oss.ns.holdingsitemsupdate.HoldingsItemsUpdateRequest.class,
-                    dk.dbc.oss.ns.holdingsitemsupdate.HoldingsItemsUpdateResponse.class,
-                    dk.dbc.oss.ns.holdingsitemsupdate.HoldingsItemsUpdateResult.class,
-                    dk.dbc.oss.ns.holdingsitemsupdate.HoldingsItemsUpdateStatusEnum.class,
-                    dk.dbc.oss.ns.holdingsitemsupdate.ModificationTimeStamp.class,
-                    dk.dbc.oss.ns.holdingsitemsupdate.OnlineBibliographicItem.class,
-                    dk.dbc.oss.ns.holdingsitemsupdate.OnlineHoldingsItemsUpdate.class,
-                    dk.dbc.oss.ns.holdingsitemsupdate.OnlineHoldingsItemsUpdateRequest.class,
-                    dk.dbc.oss.ns.holdingsitemsupdate.StatusType.class);
+                    Authentication.class,
+                    BibliographicItem.class,
+                    CompleteBibliographicItem.class,
+                    CompleteHoldingsItemsUpdate.class,
+                    CompleteHoldingsItemsUpdateRequest.class,
+                    Holding.class,
+                    HoldingsItem.class,
+                    HoldingsItemsUpdate.class,
+                    HoldingsItemsUpdateRequest.class,
+                    HoldingsItemsUpdateResponse.class,
+                    HoldingsItemsUpdateResult.class,
+                    HoldingsItemsUpdateStatusEnum.class,
+                    ModificationTimeStamp.class,
+                    OnlineBibliographicItem.class,
+                    OnlineHoldingsItemsUpdate.class,
+                    OnlineHoldingsItemsUpdateRequest.class,
+                    StatusType.class);
             mapToXml = (o) -> {
                 try {
                     StringWriter sw = new StringWriter();
@@ -150,6 +158,8 @@ public class UpdateWebservice {
             mapToXml = (o) -> "[NO XML GENERATED " + ex.getMessage() + "]";
         }
     }
+
+    // CPD-OFF
 
     /**
      * Accept request for multiple bibliographic record ids
@@ -436,6 +446,8 @@ public class UpdateWebservice {
             });
         }
     }
+
+    // CPD-ON
 
     private void logXml(String agencyId, Object req, Authentication auth) {
         if (config.shouldLogXml(agencyId)) {

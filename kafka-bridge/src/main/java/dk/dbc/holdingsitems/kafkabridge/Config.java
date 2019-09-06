@@ -18,7 +18,6 @@
  */
 package dk.dbc.holdingsitems.kafkabridge;
 
-import java.util.Arrays;
 import java.util.Locale;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;

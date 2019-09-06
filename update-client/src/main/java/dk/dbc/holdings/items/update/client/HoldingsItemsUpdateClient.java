@@ -67,7 +67,7 @@ public class HoldingsItemsUpdateClient {
 
     /**
      * Configures connect timeout of client.
-     * @param timeout
+     * @param timeout timeout in milliseconds
      * @return the configured HoldingsItemsUpdateClient
      */
     public HoldingsItemsUpdateClient withConnectTimeout(int timeout){
@@ -77,7 +77,7 @@ public class HoldingsItemsUpdateClient {
 
     /**
      * Configures request timeout of client.
-     * @param timeout
+     * @param timeout timeout in milliseconds
      * @return the configured HoldingsItemsUpdateClient
      */
     public HoldingsItemsUpdateClient withRequestTimeout(int timeout){
@@ -89,7 +89,7 @@ public class HoldingsItemsUpdateClient {
      * Configures client to use a given MetricRegistry.
      * Will then use timers for service requests
      *
-     * @param metrics
+     * @param metrics registry to record metrics in
      * @return the configured HoldingsItemsUpdateClient
      */
     public HoldingsItemsUpdateClient withMetricsRegistry(MetricRegistry metrics){
@@ -101,7 +101,7 @@ public class HoldingsItemsUpdateClient {
     /**
      * Configures client to use Forsrights authentication.
      * Provided triple must be in format: user:group:pass
-     * @param forsrightsTriple
+     * @param forsrightsTriple authentication string
      * @return the configured HoldingsItemsUpdateClient
      */
     public HoldingsItemsUpdateClient withAuthentication(String forsrightsTriple) {
@@ -123,9 +123,9 @@ public class HoldingsItemsUpdateClient {
     /**
      * Performs an update request.
      *
-     * @param req
-     * @return
-     * @throws dk.dbc.holdings.items.update.client.HoldingsItemsUpdateClient.UpdateException
+     * @param req update request
+     * @return update result
+     * @throws UpdateException if communication fails
      */
     public HoldingsItemsUpdateResult holdingsItemsUpdate(Request.UpdateRequest req) throws UpdateException{
         try(Timer t = holdingsItemsUpdateTimer.time()) {
@@ -147,9 +147,9 @@ public class HoldingsItemsUpdateClient {
     /**
      * Performs a complete update request.
      *
-     * @param req
-     * @return
-     * @throws dk.dbc.holdings.items.update.client.HoldingsItemsUpdateClient.UpdateException
+     * @param req update request
+     * @return update result
+     * @throws UpdateException if communication fails
      */
     public HoldingsItemsUpdateResult completeHoldingsItemsUpdate(Request.CompleteUpdateRequest req) throws UpdateException{
         try(Timer t = completeHoldingsItemsUpdateTimer.time()) {
@@ -174,7 +174,8 @@ public class HoldingsItemsUpdateClient {
      * The service object is thread safe, but the port object is not.
      * Hence we create a port per request, which should be fast enough -
      * if its found that this is not the case, we've gotta pool.
-     * @return
+     *
+     * @return soap-connector
      */
     private HoldingsItemsUpdatePortType getPort() {
         HoldingsItemsUpdatePortType port = service.getHoldingsItemsUpdatePort(); // This is thread safe

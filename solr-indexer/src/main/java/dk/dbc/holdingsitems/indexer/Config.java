@@ -18,6 +18,7 @@
  */
 package dk.dbc.holdingsitems.indexer;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Locale;
@@ -81,6 +82,7 @@ public class Config {
         this.jmxDomain = getOrDefault("jmx-domain", "metrics");
     }
 
+    @SuppressFBWarnings("EI_EXPOSE_REP")
     public String[] getQueues() {
         return queues;
     }

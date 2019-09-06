@@ -15,14 +15,14 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with opensearch.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
+ */
 package dk.dbc.holdingsitems.purge;
 
 import dk.dbc.holdingsitems.HoldingsItemsDAO;
 import dk.dbc.holdingsitems.HoldingsItemsException;
 import dk.dbc.holdingsitems.Record;
 import dk.dbc.holdingsitems.RecordCollection;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -39,9 +39,9 @@ import org.slf4j.LoggerFactory;
 /**
  *
  */
-public class Purge
-{
-    private static final Logger log = LoggerFactory.getLogger( Purge.class );
+public class Purge {
+
+    private static final Logger log = LoggerFactory.getLogger(Purge.class);
     private final String queue;
     private final String agencyName;
     private final int agencyId;
@@ -54,13 +54,15 @@ public class Purge
 
     /**
      * Create the purge request
-     * @param connection DB connection
-     * @param dao data access object for database
-     * @param queue Name of worker to put in queue
-     * @param agencyName The name of the agency to verify against
-     * @param agencyId The agency ID to be processed
-     * @param commitEvery Optionally commit in batches when purging large sets. 0 to disable option
-     * @param dryRun Optionally check but does not commit anything
+     *
+     * @param connection  DB connection
+     * @param dao         data access object for database
+     * @param queue       Name of worker to put in queue
+     * @param agencyName  The name of the agency to verify against
+     * @param agencyId    The agency ID to be processed
+     * @param commitEvery Optionally commit in batches when purging large sets.
+     *                    0 to disable option
+     * @param dryRun      Optionally check but does not commit anything
      */
     public Purge(Connection connection, HoldingsItemsDAO dao, String queue, String agencyName, int agencyId, int commitEvery, boolean dryRun) {
         log.debug("Purge for agency ID {} with Queue: '{}'", agencyId, queue);
@@ -75,9 +77,12 @@ public class Purge
 
     /**
      * Process the purge
+     *
      * @throws HoldingsItemsException if DAO threw error
-     * @throws SQLException in case of rollback or commit error
+     * @throws SQLException           in case of rollback or commit error
+     * @throws IOException            when waiting for human interaction
      */
+    @SuppressFBWarnings("DM_DEFAULT_ENCODING")
     public void process() throws HoldingsItemsException, SQLException, IOException {
         log.debug("Process");
 
@@ -97,11 +102,11 @@ public class Purge
             System.out.print("Enter Agency Name to confirm purge (Enter to abort): ");
             Scanner scanner = new Scanner(System.in);
             String output = scanner.nextLine().trim();
-            if(output.isEmpty())
+            if (output.isEmpty())
                 return;
             acceptable = agencyName.equals(output);
             log.debug("Response: {}", acceptable);
-            if (! acceptable) {
+            if (!acceptable) {
                 log.info("Error on '{}' != '{}'", output, agencyName);
             }
         }
@@ -111,8 +116,8 @@ public class Purge
         purgeCount = purge(bibliographicIds);
 
         long end = System.currentTimeMillis();
-        long duration = (end - start)/1000;
-        log.info( "Purged {} with {} live records in {} s.", recordsCount, purgeCount, duration );
+        long duration = ( end - start ) / 1000;
+        log.info("Purged {} with {} live records in {} s.", recordsCount, purgeCount, duration);
 
         waitForQueue();
         statusReport(dao.getBibliographicIds(agencyId));
@@ -121,13 +126,14 @@ public class Purge
 
     /**
      * Print list statistics for agency. E.g. before and after purging
+     *
      * @param bibliographicIds IDs to be processed
      * @throws HoldingsItemsException if DAO threw error
      */
     private void statusReport(Set<String> bibliographicIds) throws HoldingsItemsException {
         Map<String, AtomicInteger> allStatus = new HashMap<>();
         System.out.println("Status Report");
-        System.out.printf("Found %9d Bibliographic Ids%n",  bibliographicIds.size());
+        System.out.printf("Found %9d Bibliographic Ids%n", bibliographicIds.size());
 
         for (String bibliographicId : bibliographicIds) {
             log.debug("Has {} - {}", agencyId, bibliographicId);
@@ -145,7 +151,7 @@ public class Purge
             String key = entry.getKey();
             int value = entry.getValue().get();
             log.debug("Found {} {} items", key, value);
-            System.out.printf("Found %9d %s items%n",  value, key );
+            System.out.printf("Found %9d %s items%n", value, key);
 
             items += value;
         }
@@ -154,10 +160,11 @@ public class Purge
 
     /**
      * Set records to 'decommissioned' and put on queue
+     *
      * @param bibliographicIds IDs to be processed
      * @return number of items that were processed
      * @throws HoldingsItemsException if DAO threw error
-     * @throws SQLException in case of rollback or commit error
+     * @throws SQLException           in case of rollback or commit error
      */
     private int purge(Set<String> bibliographicIds) throws HoldingsItemsException, SQLException {
         log.trace("Purging {} records", bibliographicIds.size());
@@ -197,6 +204,7 @@ public class Purge
 
     /**
      * Commit or rollback for database
+     *
      * @param count Count for log status
      * @throws SQLException
      */
