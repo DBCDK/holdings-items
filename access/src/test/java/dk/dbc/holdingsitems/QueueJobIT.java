@@ -37,7 +37,7 @@ import static org.junit.Assert.*;
  *
  * @author DBC {@literal <dbc.dk>}
  */
-public class QueueJobIT extends DbBase {
+public class QueueJobIT extends JpaBase {
 
     private static final Logger log = LoggerFactory.getLogger(QueueJobIT.class);
 
@@ -67,8 +67,8 @@ public class QueueJobIT extends DbBase {
                     .consume(QUEUE)
                     .dataSource(dataSource)
                     .build((JobConsumer<QueueJob>) (Connection connection1, QueueJob job, JobMetaData metaData) -> {
-                       list.add(job);
-                   });
+                        list.add(job);
+                    });
             worker.start();
 
             QueueJob actual1 = list.pollFirst(5, TimeUnit.SECONDS);

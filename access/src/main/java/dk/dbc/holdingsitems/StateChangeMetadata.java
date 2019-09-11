@@ -18,8 +18,9 @@
  */
 package dk.dbc.holdingsitems;
 
+import dk.dbc.holdingsitems.jpa.HoldingsItemsStatus;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import java.sql.Timestamp;
+import java.time.Instant;
 
 /**
  *
@@ -27,41 +28,37 @@ import java.sql.Timestamp;
  */
 public class StateChangeMetadata {
 
-    private String newStatus;
-    private final String oldStatus;
-    private Timestamp when;
+    private HoldingsItemsStatus newStatus;
+    private final HoldingsItemsStatus oldStatus;
+    private Instant when;
 
-    public StateChangeMetadata(Timestamp when) {
-        this(null, null, when);
-    }
-
-    public StateChangeMetadata(String oldStatus, Timestamp when) {
+    public StateChangeMetadata(HoldingsItemsStatus oldStatus, Instant when) {
         this(oldStatus, oldStatus, when);
     }
 
     @SuppressFBWarnings("EI_EXPOSE_REP2")
-    public StateChangeMetadata(String newStatus, String oldStatus, Timestamp when) {
+    public StateChangeMetadata(HoldingsItemsStatus newStatus, HoldingsItemsStatus oldStatus, Instant when) {
         this.newStatus = newStatus;
         this.oldStatus = oldStatus;
         this.when = when;
     }
 
     @SuppressFBWarnings("EI_EXPOSE_REP2")
-    public void update(String status, Timestamp when) {
+    public void update(HoldingsItemsStatus status, Instant when) {
         this.newStatus = status;
         this.when = when;
     }
 
     public String getNewStatus() {
-        return newStatus == null ? "UNKNOWN" : newStatus;
+        return newStatus == null ? "UNKNOWN" : newStatus.toString();
     }
 
     public String getOldStatus() {
-        return oldStatus == null ? "UNKNOWN" : oldStatus;
+        return oldStatus == null ? "UNKNOWN" : oldStatus.toString();
     }
 
     public String getWhen() {
-        return when.toInstant().toString();
+        return when.toString();
     }
 
     @Override
