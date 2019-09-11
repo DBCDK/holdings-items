@@ -21,20 +21,16 @@ package dk.dbc.holdingsitems.indexer;
 import com.codahale.metrics.MetricRegistry;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import dk.dbc.holdingsitems.HoldingsItemsDAO;
-import dk.dbc.holdingsitems.HoldingsItemsException;
 import dk.dbc.holdingsitems.QueueJob;
 import dk.dbc.holdingsitems.indexer.logic.JobProcessor;
 import dk.dbc.pgqueue.consumer.JobMetaData;
 import dk.dbc.pgqueue.consumer.QueueWorker;
 import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
-import javax.ejb.EJBException;
 import javax.ejb.Singleton;
 import javax.ejb.Startup;
 import javax.enterprise.concurrent.ManagedExecutorService;
@@ -74,13 +70,6 @@ public class Worker {
     public void init() {
         log.info("Staring worker");
 
-        log.debug("Validating DAO version");
-        try (Connection connection = dataSource.getConnection()) {
-            HoldingsItemsDAO.newInstance(connection);
-        } catch (HoldingsItemsException | SQLException ex) {
-            throw new EJBException("Error validating dao version", ex);
-        }
-
         worker = QueueWorker.builder(QueueJob.STORAGE_ABSTRACTION)
                 .skipDuplicateJobs(QueueJob.DEDUPLICATION_ABSTRACTION_IGNORE_STATECHANGE)
                 .consume(config.getQueues())
@@ -104,7 +93,7 @@ public class Worker {
     public void work(Connection connection, QueueJob job, JobMetaData metaData) {
         log.info("Processing job: {}:{}", job.getAgencyId(), job.getBibliographicRecordId());
         try {
-            ObjectNode json = jobProcessor.buildRequestJson(connection, job);
+            ObjectNode json = jobProcessor.buildRequestJson(job);
             JsonNode response = jobProcessor.sendToSolrDocStore(json);
             if (response.get("status").asInt(-1) != 200) {
                 String status = response.get("status-text").asText("Unknown response code");

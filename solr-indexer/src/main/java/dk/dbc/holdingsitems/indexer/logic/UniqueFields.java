@@ -19,10 +19,9 @@
 package dk.dbc.holdingsitems.indexer.logic;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import dk.dbc.holdingsitems.Record;
-import dk.dbc.holdingsitems.RecordCollection;
-import java.time.format.DateTimeFormatter;
-import java.util.Date;
+import dk.dbc.holdingsitems.jpa.HoldingsItemsCollectionEntity;
+import dk.dbc.holdingsitems.jpa.HoldingsItemsItemEntity;
+import java.time.LocalDate;
 import java.util.Objects;
 
 /**
@@ -35,7 +34,7 @@ public class UniqueFields {
     private final String bibliographicRecordId;
     private final String issueId;
     private final String issueText;
-    private final Date expectedDelivery;
+    private final LocalDate expectedDelivery;
     private final int readyForLoan;
     private final String note;
     private final String branch;
@@ -43,9 +42,9 @@ public class UniqueFields {
     private final String location;
     private final String subLocation;
     private final String circulationRule;
-    private final Date accessionDate;
+    private final LocalDate accessionDate;
 
-    public UniqueFields(RecordCollection collection, Record record) {
+    public UniqueFields(HoldingsItemsCollectionEntity collection, HoldingsItemsItemEntity record) {
         this.agencyId = collection.getAgencyId();
         this.bibliographicRecordId = collection.getBibliographicRecordId();
         this.issueId = collection.getIssueId();
@@ -68,7 +67,7 @@ public class UniqueFields {
         node.putArray(SolrFields.ISSUE_ID.getFieldName()).add(issueId);
         node.putArray(SolrFields.ISSUE_TEXT.getFieldName()).add(issueText);
         if (expectedDelivery != null) {
-            node.putArray(SolrFields.EXPECTED_DELIVERY.getFieldName()).add(isoDate(expectedDelivery));
+            node.putArray(SolrFields.EXPECTED_DELIVERY.getFieldName()).add(expectedDelivery.toString());
         }
         node.putArray(SolrFields.READY_FOR_LOAN.getFieldName()).add(String.valueOf(readyForLoan));
         node.putArray(SolrFields.NOTE.getFieldName()).add(note);
@@ -79,10 +78,6 @@ public class UniqueFields {
         node.putArray(SolrFields.CIRCULATION_RULE.getFieldName()).add(circulationRule);
         node.putArray(SolrFields.ACCESSION_DATE.getFieldName()).add(String.valueOf(accessionDate) + "T00:00:00.000Z");
         node.putArray(SolrFields.COLLECTION_ID.getFieldName()).add(String.valueOf(agencyId) + "-" + bibliographicRecordId.replaceAll("[^0-9a-zA-Z]", "_"));
-    }
-
-    private static String isoDate(Date expectedDelivery) {
-        return DateTimeFormatter.ISO_INSTANT.format(expectedDelivery.toInstant());
     }
 
     @Override
