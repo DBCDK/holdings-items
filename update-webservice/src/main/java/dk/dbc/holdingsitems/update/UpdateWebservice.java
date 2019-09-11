@@ -26,8 +26,9 @@ import dk.dbc.ee.stats.Timed;
 import dk.dbc.forsrights.client.ForsRightsException;
 import dk.dbc.holdingsitems.HoldingsItemsDAO;
 import dk.dbc.holdingsitems.HoldingsItemsException;
-import dk.dbc.holdingsitems.Record;
-import dk.dbc.holdingsitems.RecordCollection;
+import dk.dbc.holdingsitems.jpa.HoldingsItemsCollectionEntity;
+import dk.dbc.holdingsitems.jpa.HoldingsItemsItemEntity;
+import dk.dbc.holdingsitems.jpa.HoldingsItemsStatus;
 import dk.dbc.log.LogWith;
 import dk.dbc.oss.ns.holdingsitemsupdate.Authentication;
 import dk.dbc.oss.ns.holdingsitemsupdate.BibliographicItem;
@@ -47,11 +48,9 @@ import dk.dbc.oss.ns.holdingsitemsupdate.OnlineHoldingsItemsUpdate;
 import dk.dbc.oss.ns.holdingsitemsupdate.OnlineHoldingsItemsUpdateRequest;
 import dk.dbc.oss.ns.holdingsitemsupdate.StatusType;
 import java.io.StringWriter;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.util.Date;
+import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
@@ -60,7 +59,7 @@ import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import javax.inject.Inject;
 import javax.jws.WebService;
-import javax.sql.DataSource;
+import javax.persistence.EntityManager;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.ws.WebServiceContext;
@@ -90,8 +89,11 @@ public class UpdateWebservice {
     @Inject
     AccessValidator validator;
 
-    @Resource(lookup = C.DATASOURCE)
-    DataSource dataSource;
+//    @Resource(lookup = C.DATASOURCE)
+//    DataSource dataSource;
+
+    @Inject
+    EntityManager em;
 
     @Resource
     WebServiceContext wsc;
@@ -220,7 +222,7 @@ public class UpdateWebservice {
                     req.getBibliographicItems().stream()
                             .sorted(BIBLIOGRAPHICITEM_SORT_COMPARE)
                             .forEachOrdered(bibliographicItem -> {
-                                Timestamp modified = parseTimestamp(bibliographicItem.getModificationTimeStamp());
+                                Instant modified = parseTimestamp(bibliographicItem.getModificationTimeStamp());
                                 String bibliographicRecordId = bibliographicItem.getBibliographicRecordId();
                                 String note = orEmptyString(bibliographicItem.getNote());
                                 updateNote(note, agencyId, bibliographicRecordId, modified);
@@ -293,7 +295,7 @@ public class UpdateWebservice {
                 public void processBibliograhicItems() {
                     log.debug("complete");
                     CompleteBibliographicItem bibliographicItem = req.getCompleteBibliographicItem();
-                    Timestamp modified = parseTimestamp(bibliographicItem.getModificationTimeStamp());
+                    Instant modified = parseTimestamp(bibliographicItem.getModificationTimeStamp());
                     String bibliographicRecordId = bibliographicItem.getBibliographicRecordId();
                     String note = orEmptyString(bibliographicItem.getNote());
                     updateNote(note, agencyId, bibliographicRecordId, modified);
@@ -317,7 +319,7 @@ public class UpdateWebservice {
                  * @throws WrapperException for holding exceptions through
                  *                          .stream()
                  */
-                public void decommissionExistingRecords(String bibliographicRecordId, int agencyId, Timestamp modified, Set<String> handledIssues) throws WrapperException {
+                public void decommissionExistingRecords(String bibliographicRecordId, int agencyId, Instant modified, Set<String> handledIssues) throws WrapperException {
                     try (LogWith logWith = new LogWith()) {
                         logWith.bibliographicRecordId(bibliographicRecordId);
                         Set<String> issueIds = dao.getIssueIds(bibliographicRecordId, agencyId);
@@ -328,14 +330,14 @@ public class UpdateWebservice {
                             logWith.with("issueId", issueId);
                             log.info("Decommissioning");
                             log.debug("agencyId = " + agencyId + "; bibliographicRecordId = " + bibliographicRecordId + "; issueId = " + issueId + "; wipe");
-                            RecordCollection collection;
+                            HoldingsItemsCollectionEntity collection;
                             try (Timer.Context time = loadCollectionTimer.time()) {
-                                collection = dao.getRecordCollection(bibliographicRecordId, agencyId, issueId);
+                                collection = dao.getRecordCollection(bibliographicRecordId, agencyId, issueId, modified);
                             }
-                            if (!collection.getCompleteTimestamp().after(modified)) {
+                            if (!collection.getComplete().isAfter(modified)) {
                                 decommissionEntireHolding(collection, modified);
                             } else {
-                                log.info("Got older modified {} from last complete {}", modified, collection.getCompleteTimestamp());
+                                log.info("Got older modified {} from last complete {}", modified, collection.getComplete());
                             }
                             log.debug("collection = {}", collection);
                             saveCollection(collection, modified);
@@ -410,33 +412,31 @@ public class UpdateWebservice {
                  * @param bibliographicItem soap structure
                  */
                 private void processBibliograhicItem(OnlineBibliographicItem bibliographicItem) {
-                    Timestamp modified = parseTimestamp(bibliographicItem.getModificationTimeStamp());
+                    Instant modified = parseTimestamp(bibliographicItem.getModificationTimeStamp());
                     String bibliographicRecordId = bibliographicItem.getBibliographicRecordId();
                     try (LogWith logWith = new LogWith()) {
                         logWith.bibliographicRecordId(bibliographicRecordId);
                         log.info("OnlineItem");
-                        RecordCollection collection;
+                        HoldingsItemsCollectionEntity collection;
                         try (Timer.Context time = loadCollectionTimer.time()) {
-                            collection = dao.getRecordCollection(bibliographicRecordId, agencyId, "");
+                            collection = dao.getRecordCollection(bibliographicRecordId, agencyId, "", modified);
                         }
-                        if (collection.isOriginal()) {
-                            collection.setNote("");
-                            collection.setReadyForLoan(0);
-                        }
-                        Record rec = collection.findRecord(""); // Empty issueId = ONLINE
+                        collection.setTrackingId(getTrakingId());
+                        HoldingsItemsItemEntity rec = collection.item("", modified); // Empty issueId = ONLINE
                         if (bibliographicItem.isHasOnlineHolding()) {
-                            rec.setStatus(StatusType.ONLINE.value());
+                            rec.setStatus(HoldingsItemsStatus.ONLINE);
                         } else {
-                            rec.setStatus(StatusType.DECOMMISSIONED.value());
+                            rec.setStatus(HoldingsItemsStatus.DECOMMISSIONED);
                         }
-                        if (rec.isOriginal()) {
+                        if (rec.isNew()) {
                             rec.setBranch("");
                             rec.setDepartment("");
                             rec.setLocation("");
                             rec.setSubLocation("");
                             rec.setCirculationRule("");
-                            rec.setAccessionDate(new Date());
+                            rec.setAccessionDate(LocalDate.now());
                         }
+                        rec.setTrackingId(getTrakingId());
                         addQueueJob(bibliographicRecordId, agencyId);
                         saveCollection(collection, modified);
                     } catch (HoldingsItemsException ex) {
@@ -478,8 +478,8 @@ public class UpdateWebservice {
             log.debug("Soap Error:", ex);
             return buildReponse(HoldingsItemsUpdateStatusEnum.FAILED_UPDATE_INTERNAL_ERROR, "Soap Error: " + ex.getMessage());
         }
-        try (Connection connection = getUTCConnection()) {
-            HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(connection, req.getTrakingId());
+        try {
+            HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, req.getTrakingId());
             req.setDao(dao);
             userValidation(req);
             try {
@@ -488,7 +488,6 @@ public class UpdateWebservice {
             } catch (WrapperException ex) {
                 ex.rethrow();
             }
-            connection.commit();
             return buildReponse(HoldingsItemsUpdateStatusEnum.OK, "Success");
         } catch (HoldingsItemsException ex) {
             requestSystemErrorCounter.inc();
@@ -516,21 +515,6 @@ public class UpdateWebservice {
             log.debug("Unknown exception:", ex);
             return buildReponse(HoldingsItemsUpdateStatusEnum.FAILED_UPDATE_INTERNAL_ERROR, "Internal Server Error");
         }
-    }
-
-    /**
-     * Aquire a connection to the database with UTC time zone
-     *
-     * @return new connection in transaction mode
-     * @throws SQLException in case of access error
-     */
-    public Connection getUTCConnection() throws SQLException {
-        Connection connection = dataSource.getConnection();
-        try (PreparedStatement stmt = connection.prepareStatement("SET TIME ZONE 'UTC'")) {
-            stmt.executeUpdate();
-        }
-        connection.setAutoCommit(false);
-        return connection;
     }
 
     /**

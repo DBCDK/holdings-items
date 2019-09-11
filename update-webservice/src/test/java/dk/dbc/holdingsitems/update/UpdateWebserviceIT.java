@@ -22,9 +22,7 @@ import com.codahale.metrics.Counter;
 import com.codahale.metrics.Timer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import dk.dbc.commons.testutils.postgres.connection.PostgresITDataSource;
 import dk.dbc.forsrights.client.ForsRightsException;
-import dk.dbc.holdingsitems.DatabaseMigrator;
 import dk.dbc.oss.ns.holdingsitemsupdate.Authentication;
 import dk.dbc.oss.ns.holdingsitemsupdate.BibliographicItem;
 import dk.dbc.oss.ns.holdingsitemsupdate.CompleteBibliographicItem;
@@ -52,13 +50,12 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-import javax.sql.DataSource;
+import javax.persistence.EntityManager;
 import javax.xml.datatype.DatatypeConfigurationException;
 import javax.xml.datatype.DatatypeFactory;
 import javax.xml.datatype.XMLGregorianCalendar;
 import javax.xml.ws.WebServiceContext;
 import javax.xml.ws.handler.MessageContext;
-import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
@@ -69,10 +66,7 @@ import static org.mockito.Mockito.*;
  *
  * @author DBC {@literal <dbc.dk>}
  */
-public class UpdateWebserviceIT {
-
-    private PostgresITDataSource pgds;
-    private DataSource dataSource;
+public class UpdateWebserviceIT extends JpaBase {
 
     String branch = "My Branch";
     String department = "My Department";
@@ -80,24 +74,13 @@ public class UpdateWebserviceIT {
     String subLocation = "My SubLocation";
     String circulationRule = "2Weeks";
 
-    @Before
-    public void setUp() throws SQLException {
-        pgds = new PostgresITDataSource("holdingsitems");
-        dataSource = pgds.getDataSource();
-
-        try (Connection connection = dataSource.getConnection() ;
-             Statement stmt = connection.createStatement()) {
-            stmt.executeUpdate("DROP SCHEMA public CASCADE");
-            stmt.executeUpdate("CREATE SCHEMA public");
-        }
-        DatabaseMigrator.migrate(dataSource);
-    }
-
     @Test
     public void testHoldingsItemsUpdate() throws Exception {
         System.out.println("testHoldingsItemsUpdate");
-        HoldingsItemsUpdateResult resp = mockUpdateWebservice()
-                .holdingsItemsUpdate(updateReq1());
+        HoldingsItemsUpdateResult resp = jpa(em -> {
+            return mockUpdateWebservice(em)
+                    .holdingsItemsUpdate(updateReq1());
+        });
         System.out.println("status = " + resp.getHoldingsItemsUpdateStatusMessage());
         assertEquals("Expedcted success from request", HoldingsItemsUpdateStatusEnum.OK, resp.getHoldingsItemsUpdateStatus());
         assertEquals("Expected collections", 2, countAllCollections());
@@ -113,8 +96,10 @@ public class UpdateWebserviceIT {
     @Test
     public void testHoldingsItemsUpdateQueue() throws Exception {
         System.out.println("testHoldingsItemsUpdateQueue");
-        mockUpdateWebservice()
-                .holdingsItemsUpdate(updateReq1());
+        jpa(em -> {
+            mockUpdateWebservice(em)
+                    .holdingsItemsUpdate(updateReq1());
+        });
         HashMap<String, Set<String>> queue = getQueue();
         assertEquals("queue size", 1, queue.get("updateOld").size());
         assertEquals("queue size", 1, queue.get("update").size());
@@ -124,12 +109,16 @@ public class UpdateWebserviceIT {
     @Test
     public void testOnlineHoldingsItemsUpdate() throws Exception {
         System.out.println("testOnlineHoldingsItemsUpdate");
-        HoldingsItemsUpdateResult respSetup = mockUpdateWebservice()
-                .holdingsItemsUpdate(updateReq1());
+        HoldingsItemsUpdateResult respSetup = jpa(em -> {
+            return mockUpdateWebservice(em)
+                    .holdingsItemsUpdate(updateReq1());
+        });
         System.out.println("status = " + respSetup.getHoldingsItemsUpdateStatusMessage());
         assertEquals("Expedcted success from request", HoldingsItemsUpdateStatusEnum.OK, respSetup.getHoldingsItemsUpdateStatus());
-        HoldingsItemsUpdateResult respCreate = mockUpdateWebservice()
-                .onlineHoldingsItemsUpdate(onlineReqCreate());
+        HoldingsItemsUpdateResult respCreate = jpa(em -> {
+            return mockUpdateWebservice(em)
+                    .onlineHoldingsItemsUpdate(onlineReqCreate());
+        });
         System.out.println("status = " + respCreate.getHoldingsItemsUpdateStatusMessage());
         assertEquals("Expedcted success from request", HoldingsItemsUpdateStatusEnum.OK, respCreate.getHoldingsItemsUpdateStatus());
         assertEquals("Expected collections", 3, countAllCollections());
@@ -137,18 +126,22 @@ public class UpdateWebserviceIT {
         assertEquals("Expected online items", 1, countItems(StatusType.ONLINE));
         assertEquals("Expected online items", 0, countItems(StatusType.DECOMMISSIONED));
         System.out.println("OK");
-        HoldingsItemsUpdateResult Delete = mockUpdateWebservice()
-                .onlineHoldingsItemsUpdate(onlineReqDelete());
-        System.out.println("status = " + Delete.getHoldingsItemsUpdateStatusMessage());
-        assertEquals("Expedcted success from request", HoldingsItemsUpdateStatusEnum.OK, Delete.getHoldingsItemsUpdateStatus());
+        HoldingsItemsUpdateResult delete = jpa(em -> {
+            return mockUpdateWebservice(em)
+                    .onlineHoldingsItemsUpdate(onlineReqDelete());
+        });
+        System.out.println("status = " + delete.getHoldingsItemsUpdateStatusMessage());
+        assertEquals("Expedcted success from request", HoldingsItemsUpdateStatusEnum.OK, delete.getHoldingsItemsUpdateStatus());
         System.out.println("OK");
     }
 
     @Test
     public void testOnlineHoldingsItemsUpdateQueue() throws Exception {
         System.out.println("testOnlineHoldingsItemsUpdateQueue");
-        mockUpdateWebservice()
-                .onlineHoldingsItemsUpdate(onlineReqCreate());
+        jpa(em -> {
+            mockUpdateWebservice(em)
+                    .onlineHoldingsItemsUpdate(onlineReqCreate());
+        });
         HashMap<String, Set<String>> queue = getQueue();
         assertEquals("queue size", 1, queue.get("onlineOld").size());
         assertEquals("queue size", 1, queue.get("online").size());
@@ -158,8 +151,10 @@ public class UpdateWebserviceIT {
     @Test
     public void testCompleteHoldingsItemsUpdateQueue() throws Exception {
         System.out.println("testCompleteHoldingsItemsUpdateQueue");
-        mockUpdateWebservice()
-                .completeHoldingsItemsUpdate(completeReq2());
+        jpa(em -> {
+            mockUpdateWebservice(em)
+                    .completeHoldingsItemsUpdate(completeReq2());
+        });
         HashMap<String, Set<String>> queue = getQueue();
         assertEquals("queue size", 1, queue.get("completeOld").size());
         assertEquals("queue size", 1, queue.get("complete").size());
@@ -169,8 +164,10 @@ public class UpdateWebserviceIT {
     @Test
     public void testUpdateHoldingsItemsCreateAndUpdateQueue() throws Exception {
         System.out.println("testCompleteHoldingsItemsUpdateQueue");
-        mockUpdateWebservice()
-                .holdingsItemsUpdate(updateReq1());
+        jpa(em -> {
+            mockUpdateWebservice(em)
+                    .holdingsItemsUpdate(updateReq1());
+        });
         getQueue(); // Just for logging
 
         try (Connection connection = dataSource.getConnection() ;
@@ -179,8 +176,10 @@ public class UpdateWebserviceIT {
             stmt.executeUpdate("TRUNCATE queue");
         }
 
-        mockUpdateWebservice()
-                .holdingsItemsUpdate(updateReq2());
+        jpa(em -> {
+            mockUpdateWebservice(em)
+                    .holdingsItemsUpdate(updateReq2());
+        });
         HashMap<String, Set<String>> queue = getQueue();
         assertEquals("queue size", 2, queue.get("updateOld").size());
         assertEquals("queue size", 2, queue.get("update").size());
@@ -204,8 +203,10 @@ public class UpdateWebserviceIT {
     @Test
     public void testCompleteHoldingsItemsCreateAndUpdateQueue() throws Exception {
         System.out.println("testCompleteHoldingsItemsUpdateQueue");
-        mockUpdateWebservice()
-                .completeHoldingsItemsUpdate(completeReq1());
+        jpa(em -> {
+            mockUpdateWebservice(em)
+                    .completeHoldingsItemsUpdate(completeReq1());
+        });
         getQueue(); // Just for logging
 
         try (Connection connection = dataSource.getConnection() ;
@@ -214,8 +215,10 @@ public class UpdateWebserviceIT {
             stmt.executeUpdate("TRUNCATE queue");
         }
 
-        mockUpdateWebservice()
-                .completeHoldingsItemsUpdate(completeReq3());
+        jpa(em -> {
+            mockUpdateWebservice(em)
+                    .completeHoldingsItemsUpdate(completeReq3());
+        });
         HashMap<String, Set<String>> queue = getQueue();
         assertEquals("queue size", 1, queue.get("completeOld").size());
         assertEquals("queue size", 1, queue.get("complete").size());
@@ -237,8 +240,10 @@ public class UpdateWebserviceIT {
     @Test
     public void testCompleteHoldingsItemsCreateEmptyJson() throws Exception {
         System.out.println("testCompleteHoldingsItemsCreateEmptyJson");
-        mockUpdateWebservice()
-                .completeHoldingsItemsUpdate(completeReq1());
+        jpa(em -> {
+            mockUpdateWebservice(em)
+                    .completeHoldingsItemsUpdate(completeReq1());
+        });
         getQueue(); // Just for logging
 
         try (Connection connection = dataSource.getConnection() ;
@@ -247,8 +252,10 @@ public class UpdateWebserviceIT {
             stmt.executeUpdate("TRUNCATE queue");
         }
 
-        mockUpdateWebservice()
-                .completeHoldingsItemsUpdate(completeReqEmpty());
+        jpa(em -> {
+            mockUpdateWebservice(em)
+                    .completeHoldingsItemsUpdate(completeReqEmpty());
+        });
         HashMap<String, Set<String>> queue = getQueue();
         assertEquals("queue size", 1, queue.get("completeOld").size());
         assertEquals("queue size", 1, queue.get("complete").size());
@@ -272,16 +279,23 @@ public class UpdateWebserviceIT {
     @Test
     public void testCompleteDecommissions() throws Exception {
         System.out.println("testCompleteDecommissions");
-        HoldingsItemsUpdateResult respSetup = mockUpdateWebservice()
-                .holdingsItemsUpdate(updateReq1());
+        HoldingsItemsUpdateResult respSetup =
+                jpa(em -> {
+                    return mockUpdateWebservice(em)
+                            .holdingsItemsUpdate(updateReq1());
+                });
         System.out.println("status = " + respSetup.getHoldingsItemsUpdateStatusMessage());
         assertEquals("Expedcted success from request", HoldingsItemsUpdateStatusEnum.OK, respSetup.getHoldingsItemsUpdateStatus());
-        HoldingsItemsUpdateResult resp = mockUpdateWebservice()
-                .completeHoldingsItemsUpdate(completeReq1());
+        HoldingsItemsUpdateResult resp = jpa(em -> {
+            return mockUpdateWebservice(em)
+                    .completeHoldingsItemsUpdate(completeReq1());
+        });
         System.out.println("status = " + resp.getHoldingsItemsUpdateStatusMessage());
         assertEquals("Expedcted success from request", HoldingsItemsUpdateStatusEnum.OK, resp.getHoldingsItemsUpdateStatus());
-        HoldingsItemsUpdateResult respOnline = mockUpdateWebservice()
-                .onlineHoldingsItemsUpdate(onlineReqCreate());
+        HoldingsItemsUpdateResult respOnline = jpa(em -> {
+            return mockUpdateWebservice(em)
+                    .onlineHoldingsItemsUpdate(onlineReqCreate());
+        });
         System.out.println("status = " + respOnline.getHoldingsItemsUpdateStatusMessage());
         assertEquals("Expedcted success from request", HoldingsItemsUpdateStatusEnum.OK, respOnline.getHoldingsItemsUpdateStatus());
         assertEquals("Expected collections", 4, countAllCollections());
@@ -296,11 +310,14 @@ public class UpdateWebserviceIT {
     @Test(timeout = 2_000L)
     public void testNoteGetsUpdated() throws Exception {
         System.out.println("testNoteGetsUpdated");
-
-        mockUpdateWebservice().holdingsItemsUpdate(updateReqNote1());
+        jpa(em -> {
+            mockUpdateWebservice(em).holdingsItemsUpdate(updateReqNote1());
+        });
         String noteBefore = checkRow("101010", "12345678", "I1", "it1-1").getOrDefault("c.note", "N/A");
         assertEquals("Original Note", noteBefore);
-        mockUpdateWebservice().holdingsItemsUpdate(updateReqNote2());
+        jpa(em -> {
+            mockUpdateWebservice(em).holdingsItemsUpdate(updateReqNote2());
+        });
         String noteAfter = checkRow("101010", "12345678", "I1", "it1-1").getOrDefault("c.note", "N/A");
         assertEquals("Updated Note", noteAfter);
     }
@@ -419,9 +436,10 @@ public class UpdateWebserviceIT {
                 ));
     }
 
-    private UpdateWebservice mockUpdateWebservice() throws SQLException, ForsRightsException {
+    private UpdateWebservice mockUpdateWebservice(EntityManager em) throws SQLException, ForsRightsException {
         UpdateWebservice mock = mock(UpdateWebservice.class);
         mock.config = mockConfig();
+        mock.em = em;
         mock.requestCounter = mock(Counter.class);
         mock.requestUpdateCounter = mock(Counter.class);
         mock.requestCompleteCounter = mock(Counter.class);
@@ -446,17 +464,7 @@ public class UpdateWebserviceIT {
         doCallRealMethod().when(mock).holdingsItemsUpdate(anyObject());
         doCallRealMethod().when(mock).completeHoldingsItemsUpdate(anyObject());
         doCallRealMethod().when(mock).onlineHoldingsItemsUpdate(anyObject());
-        when(mock.getUTCConnection()).then(i -> getExtraConnection());
         return mock;
-    }
-
-    private Connection getExtraConnection() throws SQLException {
-        Connection connection = dataSource.getConnection();
-        try (PreparedStatement stmt = connection.prepareStatement("SET TIME ZONE 'UTC'")) {
-            stmt.executeUpdate();
-        }
-        connection.setAutoCommit(false);
-        return connection;
     }
 
     private HashMap<String, Set<String>> getQueue() throws SQLException {
@@ -492,14 +500,14 @@ public class UpdateWebserviceIT {
     }
 
     private Config mockConfig() {
-        return  new Config("DISABLE_AUTHENTICATION=true",
-                                 "UPDATE_QUEUE_LIST=updateOld:old,update",
-                                 "COMPLETE_QUEUE_LIST=completeOld:old,complete",
-                                 "ONLINE_QUEUE_LIST=onlineOld:old,online",
-                                 "FORS_RIGHTS_URL=ANY",
-                                 "FORS_RIGHT_CACHE_AGE=8h",
-                                 "RIGHTS_NAME=any",
-                                 "RIGHTS_GROUP=common");
+        return new Config("DISABLE_AUTHENTICATION=true",
+                          "UPDATE_QUEUE_LIST=updateOld:old,update",
+                          "COMPLETE_QUEUE_LIST=completeOld:old,complete",
+                          "ONLINE_QUEUE_LIST=onlineOld:old,online",
+                          "FORS_RIGHTS_URL=ANY",
+                          "FORS_RIGHT_CACHE_AGE=8h",
+                          "RIGHTS_NAME=any",
+                          "RIGHTS_GROUP=common");
     }
 
     private HoldingsItemsUpdateRequest holdingsItemsUpdateRequest(String agencyId, Authentication authentication, String trackingId, BibliographicItem... bibliographicItems) {
@@ -730,9 +738,6 @@ public class UpdateWebserviceIT {
     private void setTimestamp(String key, ResultSet resultSet, AtomicInteger i, HashMap<String, String> ret) throws SQLException {
         ret.put(key, resultSet.getTimestamp(i.incrementAndGet())
                 .toInstant()
-                .atZone(ZoneId.systemDefault())
-                .toLocalDateTime()
-                .toInstant(ZoneOffset.UTC)
                 .toString());
     }
 
