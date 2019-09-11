@@ -22,7 +22,7 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
 import dk.dbc.commons.jdbc.util.DatabaseConnectionDetails;
 import dk.dbc.holdingsitems.HoldingsItemsDAO;
-import dk.dbc.holdingsitems.HoldingsItemsException;
+import dk.dbc.holdingsitems.jpa.JpaByDbUrl;
 import dk.dbc.openagency.client.OpenAgencyException;
 import dk.dbc.openagency.client.OpenAgencyServiceFromURL;
 import dk.dbc.openagency.client.PickupAgency;
@@ -41,11 +41,11 @@ import org.slf4j.LoggerFactory;
  */
 public class PurgeMain {
 
-    private static final Logger log = LoggerFactory.getLogger(PurgeMain.class );
+    private static final Logger log = LoggerFactory.getLogger(PurgeMain.class);
 
-    public static void main( String[] args ) throws OpenAgencyException, IOException {
+    public static void main(String[] args) throws OpenAgencyException, IOException {
         try {
-            Arguments commandLine = new Arguments( args );
+            Arguments commandLine = new Arguments(args);
             if (commandLine.hasVerbose()) {
                 System.out.println("Setting  level to debug");
                 LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
@@ -53,68 +53,85 @@ public class PurgeMain {
             }
 
             int agencyId = commandLine.getAgencyId();
-            log.info( "Agency ID: {}", agencyId);
+            log.info("Agency ID: {}", agencyId);
 
             String agencyUrl = commandLine.getOpenAgencyUrl();
 
-            log.info( "OpenAgency URL: {}", agencyUrl);
+            log.info("OpenAgency URL: {}", agencyUrl);
             OpenAgencyServiceFromURL openAgency = OpenAgencyServiceFromURL.builder().build(agencyUrl);
-            log.debug( "OpenAgency lookup agency {}", agencyId);
+            log.debug("OpenAgency lookup agency {}", agencyId);
 
             final PickupAgency agency = openAgency.findLibrary().findLibraryByAgency(agencyId);
             String agencyName;
             if (agency == null) {
-                log.warn( "OpenAgency agency {}: is unknown", agencyId);
+                log.warn("OpenAgency agency {}: is unknown", agencyId);
                 agencyName = "<unknown>";
             } else {
                 agencyName = agency.getAgencyName();
             }
 
-            log.info( "Agency agency {}: Name '{}'", agencyId, agencyName);
+            log.info("Agency agency {}: Name '{}'", agencyId, agencyName);
 
             String db = commandLine.getDatabase();
-            log.info( "DB: {}", db);
+            log.info("DB: {}", db);
 
             String queue = commandLine.getQueue();
-            log.info( "Queue: {}", queue);
-
-            int commitEvery = commandLine.getCommit().orElse( 0 );
-            log.info( "Commit every {} records per thread", commitEvery);
+            log.info("Queue: {}", queue);
 
             boolean dryRun = commandLine.hasDryRun();
-            if ( dryRun ) {
-                log.info( "Dry run. Data will be rolled back" );
+            if (dryRun) {
+                log.info("Dry run. Data will be rolled back");
             }
 
             String timestamp = LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME);
             String trackingId = String.format("PurgeTool-%s-%s", agencyId, timestamp);
-            log.info( "trackingId: {}", trackingId);
+            log.info("trackingId: {}", trackingId);
 
             // Create database connection and process
             DataSource dataSource = getDataSource(db);
+            JpaByDbUrl jpa = new JpaByDbUrl(db, "purge-tool");
+
             try (Connection connection = dataSource.getConnection()) {
                 connection.setAutoCommit(false);
-                HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(connection, trackingId);
 
-                Purge execute = new Purge(connection, dao, queue, agencyName, agencyId, commitEvery, dryRun);
-                execute.process();
-            } catch (SQLException | HoldingsItemsException ex) {
-                log.error( "Exception", ex );
-                System.exit( 1 );
+                jpa.run(em -> {
+                    HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em);
+                    PurgeReport purgeReport = new PurgeReport(dao, agencyId);
+                    purgeReport.statusReport();
+                });
+
+                jpa.run(em -> {
+                    HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, trackingId);
+                    Purge purge = new Purge(dao, queue, agencyName, agencyId, dryRun);
+                    purge.process();
+                });
+
+                PurgeWait purgeWait = new PurgeWait(connection, agencyName, agencyId, trackingId, dryRun);
+                purgeWait.waitForQueue();
+
+                jpa.run(em -> {
+                    HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em);
+                    PurgeReport purgeReport = new PurgeReport(dao, agencyId);
+                    purgeReport.statusReport();
+                });
+
+            } catch (SQLException | RuntimeException ex) {
+                log.error("Exception", ex);
+                System.exit(1);
             }
-        } catch ( ExitException ex ) {
-            System.exit( ex.getStatus() );
+        } catch (ExitException ex) {
+            System.exit(ex.getStatus());
         }
     }
 
-
     /**
      * Setup the database connection
+     *
      * @param url URL for holdings-items database
      * @return The data source
      */
     private static DataSource getDataSource(String url) {
-        log.info( "Create Data Source for {}", url );
+        log.info("Create Data Source for {}", url);
         DatabaseConnectionDetails details = DatabaseConnectionDetails.parse(url);
         PGSimpleDataSource dataSource = new PGSimpleDataSource();
         dataSource.setUrl(details.getConnectString());

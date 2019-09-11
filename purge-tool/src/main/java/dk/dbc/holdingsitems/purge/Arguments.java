@@ -25,7 +25,6 @@ import java.io.PrintWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.OptionalInt;
 import java.util.stream.Collectors;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
@@ -82,13 +81,6 @@ public final class Arguments {
                     .longOpt("help")
                     .desc("This help")
                     .build();
-    private final Option commit =
-            Option.builder("c")
-                    .longOpt("commit-every")
-                    .hasArg()
-                    .argName("NUM")
-                    .desc("How often to commit")
-                    .build();
     private final Option dryRun =
             Option.builder("n")
                     .longOpt("dry-run")
@@ -101,8 +93,7 @@ public final class Arguments {
             .addOption(queue)
             .addOption(verbose)
             .addOption(dryRun)
-            .addOption(help)
-            .addOption(commit);
+            .addOption(help);
 
     private final CommandLine commandLine;
 
@@ -189,12 +180,6 @@ public final class Arguments {
         } catch (NumberFormatException ex) {
             throw new ExitException(usage("Invalid number in agency-id"));
         }
-    }
-
-    OptionalInt getCommit() {
-        if (commandLine.hasOption(commit.getOpt()))
-            return OptionalInt.of(Integer.parseInt(commandLine.getOptionValue(commit.getOpt())));
-        return OptionalInt.empty();
     }
 
     public String getDatabase() {
