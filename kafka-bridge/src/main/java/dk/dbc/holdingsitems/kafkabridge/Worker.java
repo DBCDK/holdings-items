@@ -19,19 +19,15 @@
 package dk.dbc.holdingsitems.kafkabridge;
 
 import com.codahale.metrics.MetricRegistry;
-import dk.dbc.holdingsitems.HoldingsItemsDAO;
-import dk.dbc.holdingsitems.HoldingsItemsException;
 import dk.dbc.holdingsitems.QueueJob;
 import dk.dbc.pgqueue.consumer.JobMetaData;
 import dk.dbc.pgqueue.consumer.QueueWorker;
 import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
-import javax.ejb.EJBException;
 import javax.ejb.Singleton;
 import javax.ejb.Startup;
 import javax.enterprise.concurrent.ManagedExecutorService;
@@ -71,13 +67,6 @@ public class Worker {
     public void init() {
         log.info("Staring worker");
 
-        log.debug("Validating DAO version");
-        try (Connection connection = dataSource.getConnection()) {
-            HoldingsItemsDAO.newInstance(connection);
-        } catch (HoldingsItemsException | SQLException ex) {
-            throw new EJBException("Error validating dao version", ex);
-        }
-
         worker = QueueWorker.builder(QueueJob.STORAGE_ABSTRACTION)
                 .skipDuplicateJobs(QueueJob.DEDUPLICATION_ABSTRACTION_IGNORE_STATECHANGE)
                 .fromEnvWithDefaults()
@@ -96,7 +85,7 @@ public class Worker {
     public void work(Connection connection, QueueJob job, JobMetaData metaData) {
         log.info("Processing job: {}:{}", job.getAgencyId(), job.getBibliographicRecordId());
         try {
-            kafkaBridge.transferJob(connection, job);
+            kafkaBridge.transferJob(job);
         } catch (RuntimeException ex) {
             throw ex;
         } catch (Exception ex) {

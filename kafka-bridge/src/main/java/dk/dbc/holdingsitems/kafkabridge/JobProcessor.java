@@ -24,15 +24,15 @@ import dk.dbc.ee.stats.Timed;
 import dk.dbc.holdingsitems.HoldingsItemsDAO;
 import dk.dbc.holdingsitems.HoldingsItemsException;
 import dk.dbc.holdingsitems.QueueJob;
-import dk.dbc.holdingsitems.Record;
-import dk.dbc.holdingsitems.RecordCollection;
 import dk.dbc.holdingsitems.StateChangeMetadata;
+import dk.dbc.holdingsitems.jpa.HoldingsItemsCollectionEntity;
 import dk.dbc.kafka.producer.Producer;
 import dk.dbc.log.LogWith;
-import java.sql.Connection;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Set;
 import javax.inject.Inject;
+import javax.persistence.EntityManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,8 +49,11 @@ public class JobProcessor {
     @Inject
     Config config;
 
+    @Inject
+    EntityManager em;
+
     @Timed
-    public void transferJob(Connection connection, QueueJob job) throws Exception {
+    public void transferJob(QueueJob job) throws Exception {
         try (Producer messageTarget = makeKafkaTarget() ;
              LogWith logWith = new LogWith(job.getTrackingId())) {
             String stateChange = job.getStateChange();
@@ -63,7 +66,7 @@ public class JobProcessor {
                 stateChange.charAt(0) != '{' ||
                 stateChange.startsWith("{}")) {
                 message.put("complete", true);
-                ObjectNode obj = buildFullStatus(connection, job);
+                ObjectNode obj = buildFullStatus(job);
                 message.set("items", obj);
             } else {
                 message.put("complete", false);
@@ -83,8 +86,8 @@ public class JobProcessor {
                 .build();
     }
 
-    private ObjectNode buildFullStatus(Connection connection, QueueJob job) throws HoldingsItemsException {
-        HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(connection, job.getTrackingId());
+    private ObjectNode buildFullStatus(QueueJob job) throws HoldingsItemsException {
+        HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, job.getTrackingId());
         String bibliographicRecordId = job.getBibliographicRecordId();
         int agencyId = job.getAgencyId();
         Set<String> issueIds = dao.getIssueIds(bibliographicRecordId, agencyId);
@@ -92,10 +95,9 @@ public class JobProcessor {
         HashMap<String, StateChangeMetadata> stateChange = new HashMap<>();
 
         for (String issueId : issueIds) {
-            RecordCollection collection = dao.getRecordCollection(bibliographicRecordId, agencyId, issueId);
-            for (Record record : collection) {
-                stateChange.put(record.getItemId(), new StateChangeMetadata(record.getStatus(), record.getModified()));
-            }
+            HoldingsItemsCollectionEntity collection = dao.getRecordCollection(bibliographicRecordId, agencyId, issueId, Instant.MIN);
+            collection.stream()
+                    .forEach(record -> stateChange.put(record.getItemId(), new StateChangeMetadata(record.getStatus(), record.getModified())));
         }
         return O.valueToTree(stateChange);
     }

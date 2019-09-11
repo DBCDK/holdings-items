@@ -22,21 +22,14 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.salesforce.kafka.test.KafkaTestServer;
 import com.salesforce.kafka.test.junit.SharedKafkaTestResource;
-import dk.dbc.commons.testutils.postgres.connection.PostgresITDataSource;
-import dk.dbc.holdingsitems.DatabaseMigrator;
 import dk.dbc.holdingsitems.HoldingsItemsDAO;
 import dk.dbc.holdingsitems.QueueJob;
-import dk.dbc.holdingsitems.Record;
-import dk.dbc.holdingsitems.RecordCollection;
 import dk.dbc.holdingsitems.StateChangeMetadata;
+import dk.dbc.holdingsitems.jpa.HoldingsItemsCollectionEntity;
+import dk.dbc.holdingsitems.jpa.HoldingsItemsStatus;
 import dk.dbc.kafka.consumer.SimpleConsumer;
-import java.sql.Connection;
-import java.sql.Statement;
-import java.sql.Timestamp;
 import java.time.Instant;
-import java.util.Date;
 import java.util.HashMap;
-import javax.sql.DataSource;
 
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -50,7 +43,7 @@ import static org.junit.Assert.*;
  *
  * @author DBC {@literal <dbc.dk>}
  */
-public class WorkerIT {
+public class WorkerIT extends JpaBase {
 
     private static final Logger log = LoggerFactory.getLogger(WorkerIT.class);
     private static final ObjectMapper O = new ObjectMapper();
@@ -61,66 +54,60 @@ public class WorkerIT {
     public static final SharedKafkaTestResource KAFKA = new SharedKafkaTestResource();
 
     private String brokers;
-    private PostgresITDataSource pg;
-    private DataSource dataSource;
 
     @Before
     public void setUp() throws Exception {
         KafkaTestServer kafkaTestServer = KAFKA.getKafkaTestServer();
         brokers = kafkaTestServer.getKafkaConnectString();
         kafkaTestServer.createTopic(TOPIC, 2);
-
-        pg = new PostgresITDataSource("holdingsitems");
-        dataSource = pg.getDataSource();
-        try (Connection connection = dataSource.getConnection() ;
-             Statement stmt = connection.createStatement()) {
-            stmt.executeUpdate("DROP SCHEMA public CASCADE");
-            stmt.executeUpdate("CREATE SCHEMA public");
-        }
-        DatabaseMigrator.migrate(dataSource);
     }
 
     @Test(timeout = 30_000L)
     public void test() throws Exception {
         System.out.println("TESTING");
 
-        try (Connection connection = dataSource.getConnection()) {
-            HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(connection, "track1", true);
-            RecordCollection issue1 = dao.getRecordCollection("12345678", 654321, "Issue#1");
+        jpa(em -> {
+            HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, "track1");
+            HoldingsItemsCollectionEntity issue1 = fill(dao.getRecordCollection("12345678", 654321, "Issue#1", Instant.MIN));
             issue1.setIssueText("#1");
             issue1.setNote("");
             issue1.setReadyForLoan(1);
-            record(issue1, "1234", "OnShelf");
-            record(issue1, "2345", "OnLoan");
-            issue1.save(Timestamp.from(Instant.now()));
-            RecordCollection issue2 = dao.getRecordCollection("12345678", 654321, "Issue#2");
-            issue1.setIssueText("#2");
-            issue1.setNote("");
-            issue1.setReadyForLoan(1);
-            record(issue2, "5432", "OnShelf");
-            record(issue2, "4321", "OnOrder");
-            issue2.save(Timestamp.from(Instant.now()));
-        }
+            fill(issue1.item("1234", Instant.MIN))
+                    .setStatus(HoldingsItemsStatus.ON_SHELF);
+            fill(issue1.item("2345", Instant.MIN))
+                    .setStatus(HoldingsItemsStatus.ON_LOAN);
+            issue1.save();
+            HoldingsItemsCollectionEntity issue2 = fill(dao.getRecordCollection("12345678", 654321, "Issue#2", Instant.MIN));
+            issue2.setIssueText("#2");
+            issue2.setNote("");
+            issue2.setReadyForLoan(1);
+            fill(issue2.item("5432", Instant.MIN))
+                    .setStatus(HoldingsItemsStatus.ON_SHELF);
+            fill(issue2.item("4321", Instant.MIN))
+                    .setStatus(HoldingsItemsStatus.ON_ORDER);
+            issue2.save();
+        });
 
-        JobProcessor kafkaWorker = new JobProcessor();
-        kafkaWorker.config = new Config() {
-            @Override
-            public String getKafkaServers() {
-                return brokers;
-            }
+        jpa(em -> {
+            JobProcessor kafkaWorker = new JobProcessor();
+            kafkaWorker.config = new Config() {
+                @Override
+                public String getKafkaServers() {
+                    return brokers;
+                }
 
-            @Override
-            public String getKafkaTopic() {
-                return TOPIC;
-            }
-        };
-        HashMap<String, StateChangeMetadata> stateChange = new HashMap<>();
-        stateChange.put("1234", new StateChangeMetadata("OnLoan", "OnShelf", Timestamp.valueOf("2018-01-01 12:34:56")));
+                @Override
+                public String getKafkaTopic() {
+                    return TOPIC;
+                }
+            };
+            kafkaWorker.em = em;
+            HashMap<String, StateChangeMetadata> stateChange = new HashMap<>();
+            stateChange.put("1234", new StateChangeMetadata(HoldingsItemsStatus.ON_LOAN, HoldingsItemsStatus.ON_SHELF, Instant.parse("2018-01-01T12:34:56Z")));
 
-        try (Connection connection = dataSource.getConnection()) {
-            kafkaWorker.transferJob(connection, new QueueJob(654321, "12345678", "", "t1"));
-            kafkaWorker.transferJob(connection, new QueueJob(123456, "87654321", O.writeValueAsString(stateChange), "t1"));
-        }
+            kafkaWorker.transferJob(new QueueJob(654321, "12345678", "", "t1"));
+            kafkaWorker.transferJob(new QueueJob(123456, "87654321", O.writeValueAsString(stateChange), "t1"));
+        });
 
         try (SimpleConsumer consumer = SimpleConsumer.builder()
                 .withServers(brokers)
@@ -160,14 +147,4 @@ public class WorkerIT {
         }
     }
 
-    private void record(RecordCollection collection, String itemId, String status) {
-        Record rec = collection.findRecord(itemId);
-        rec.setAccessionDate(new Date());
-        rec.setStatus(status);
-        rec.setBranch("branch");
-        rec.setDepartment("department");
-        rec.setLocation("location");
-        rec.setSubLocation("suplocation");
-        rec.setCirculationRule("");
-    }
 }
