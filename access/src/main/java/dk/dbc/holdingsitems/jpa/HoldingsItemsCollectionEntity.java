@@ -106,7 +106,7 @@ public class HoldingsItemsCollectionEntity implements Serializable {
     private String trackingId;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "owner", orphanRemoval = true, cascade = CascadeType.ALL)
-    private Set<HoldingsItemsItemEntity> items;
+    private transient Set<HoldingsItemsItemEntity> items;
 
     @Transient
     private transient boolean persist;
@@ -340,16 +340,15 @@ public class HoldingsItemsCollectionEntity implements Serializable {
         return this.agencyId == other.agencyId &&
                Objects.equals(this.bibliographicRecordId, other.bibliographicRecordId) &&
                Objects.equals(this.issueId, other.issueId) &&
-               this.readyForLoan == other.readyForLoan &&
                Objects.equals(this.issueText, other.issueText) &&
-               Objects.equals(this.note, other.note) &&
-               Objects.equals(this.trackingId, other.trackingId) &&
                Objects.equals(this.expectedDelivery, other.expectedDelivery) &&
+               this.readyForLoan == other.readyForLoan &&
+               Objects.equals(this.note, other.note) &&
                Objects.equals(this.complete, other.complete) &&
                Objects.equals(this.modified, other.modified) &&
                Objects.equals(this.created, other.created) &&
                Objects.equals(this.updated, other.updated) &&
-               Objects.equals(this.items, other.items);
+               Objects.equals(this.trackingId, other.trackingId);
     }
 
     @Override

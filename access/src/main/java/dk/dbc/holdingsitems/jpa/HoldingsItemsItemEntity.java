@@ -107,10 +107,10 @@ public class HoldingsItemsItemEntity implements Serializable {
                     insertable = false, updatable = false)
     })
     @ManyToOne
-    public HoldingsItemsCollectionEntity owner;
+    public transient HoldingsItemsCollectionEntity owner;
 
     @Transient
-    boolean persist;
+    transient boolean persist;
 
     public HoldingsItemsItemEntity() {
         this.pk = new HoldingsItemsItemKey();
@@ -279,11 +279,11 @@ public class HoldingsItemsItemEntity implements Serializable {
                Objects.equals(this.location, other.location) &&
                Objects.equals(this.subLocation, other.subLocation) &&
                Objects.equals(this.circulationRule, other.circulationRule) &&
-               Objects.equals(this.status, other.status) &&
-               Objects.equals(this.trackingId, other.trackingId) &&
                Objects.equals(this.accessionDate, other.accessionDate) &&
+               Objects.equals(this.status, other.status) &&
                Objects.equals(this.modified, other.modified) &&
-               Objects.equals(this.created, other.created);
+               Objects.equals(this.created, other.created) &&
+               Objects.equals(this.trackingId, other.trackingId);
     }
 
     @Override
