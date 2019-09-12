@@ -106,7 +106,7 @@ public class HoldingsItemsCollectionEntity implements Serializable {
     private String trackingId;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "owner", orphanRemoval = true, cascade = CascadeType.ALL)
-    private transient Set<HoldingsItemsItemEntity> items;
+    private Set<HoldingsItemsItemEntity> items;
 
     @Transient
     private transient boolean persist;

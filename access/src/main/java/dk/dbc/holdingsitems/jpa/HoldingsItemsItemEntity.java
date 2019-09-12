@@ -107,7 +107,7 @@ public class HoldingsItemsItemEntity implements Serializable {
                     insertable = false, updatable = false)
     })
     @ManyToOne
-    public transient HoldingsItemsCollectionEntity owner;
+    public HoldingsItemsCollectionEntity owner;
 
     @Transient
     transient boolean persist;
