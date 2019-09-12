@@ -109,10 +109,10 @@ public class HoldingsItemsCollectionEntity implements Serializable {
     private Set<HoldingsItemsItemEntity> items;
 
     @Transient
-    private boolean persist;
+    private transient boolean persist;
 
     @Transient
-    private EntityManager em;
+    private transient EntityManager em;
 
     public static HoldingsItemsCollectionEntity from(EntityManager em, int agencyId, String bibliographicRecordId, String issueId, Instant modified) {
         return from(em, new HoldingsItemsCollectionKey(agencyId, bibliographicRecordId, issueId), modified);
@@ -159,6 +159,8 @@ public class HoldingsItemsCollectionEntity implements Serializable {
     public void save() {
         if (persist) {
             em.persist(this);
+            if (items != null)
+                items.forEach(i -> i.persist = false);
             persist = false;
         } else {
             em.merge(this);
@@ -189,7 +191,7 @@ public class HoldingsItemsCollectionEntity implements Serializable {
      * Acquire a Item from the database cache, or create one and attach it to
      * this collection.
      *
-     * @param itemId name of the item
+     * @param itemId   name of the item
      * @param modified if created use this for timestamp
      * @return related item (remember to set all values, there's no defaults if
      *         it is newly created)

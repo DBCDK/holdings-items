@@ -110,7 +110,7 @@ public class HoldingsItemsItemEntity implements Serializable {
     public HoldingsItemsCollectionEntity owner;
 
     @Transient
-    private boolean persist;
+    boolean persist;
 
     public HoldingsItemsItemEntity() {
         this.pk = new HoldingsItemsItemKey();
