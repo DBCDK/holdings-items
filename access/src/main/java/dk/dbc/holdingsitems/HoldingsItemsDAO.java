@@ -98,10 +98,8 @@ public class HoldingsItemsDAO {
      *
      * @param em database connection
      * @return a HoldingsItemsDAO for the connection
-     * @throws HoldingsItemsException if no database specific implementation
-     *                                could be found
      */
-    public static HoldingsItemsDAO newInstance(EntityManager em) throws HoldingsItemsException {
+    public static HoldingsItemsDAO newInstance(EntityManager em) {
         return newInstance(em, "");
     }
 
@@ -112,10 +110,8 @@ public class HoldingsItemsDAO {
      * @param em         database connection
      * @param trackingId tracking id for database updates
      * @return a HoldingsItemsDAO for the connection
-     * @throws HoldingsItemsException if no database specific implementation
-     *                                could be found
      */
-    public static HoldingsItemsDAO newInstance(EntityManager em, String trackingId) throws HoldingsItemsException {
+    public static HoldingsItemsDAO newInstance(EntityManager em, String trackingId) {
         return new HoldingsItemsDAO(em, trackingId);
     }
 
@@ -136,7 +132,7 @@ public class HoldingsItemsDAO {
      * @param agencyId agency in question
      * @return collection of bibliographicrecordids for the given agency
      */
-    public Set<String> getBibliographicIds(int agencyId) throws HoldingsItemsException {
+    public Set<String> getBibliographicIds(int agencyId) {
         return new HashSet<>(em.createQuery("SELECT h.bibliographicRecordId" + " FROM HoldingsItemsItemEntity h" + " WHERE h.agencyId = :agencyId" + "  AND h.status != :status" + " GROUP BY h.agencyId, h.bibliographicRecordId", String.class).setParameter("agencyId", agencyId).setParameter("status", HoldingsItemsStatus.DECOMMISSIONED).getResultList());
     }
 
@@ -167,6 +163,8 @@ public class HoldingsItemsDAO {
      * @param bibliographicRecordId part of the primary key
      * @param agencyId              part of the primary key
      * @param issueId               part of the primary key
+     * @param modified              timestamp to use for created/complete if a
+     *                              new record is created
      * @return record collection object
      * @throws HoldingsItemsException When database communication fails
      */
