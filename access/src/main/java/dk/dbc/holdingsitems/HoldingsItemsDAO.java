@@ -222,16 +222,37 @@ public class HoldingsItemsDAO {
      */
     public Map<HoldingsItemsStatus, Long> getStatusFor(String bibliographicRecordId, int agencyId) throws HoldingsItemsException {
         return (Map<HoldingsItemsStatus, Long>) em.createQuery(
-                "SELECT h.status, COUNT(h.status)" +
+                "SELECT new " + StatusDTO.class.getCanonicalName() + "(h.status, COUNT(h.status))" +
                 " FROM HoldingsItemsItemEntity h" +
                 " WHERE h.agencyId = :agencyId" +
                 "  AND h.bibliographicRecordId = :bibliographicRecordId" +
-                " GROUP BY h.status")
+                " GROUP BY h.status",
+                StatusDTO.class)
                 .setParameter("agencyId", agencyId)
                 .setParameter("bibliographicRecordId", bibliographicRecordId)
                 .getResultStream()
-                .collect(Collectors.toMap(o -> nthAs(o, 0, HoldingsItemsStatus.class),
-                                          o -> nthAs(o, 1, Long.class)));
+                .collect(Collectors.toMap(StatusDTO::getStatus,
+                                          StatusDTO::getCount));
+    }
+
+    private static class StatusDTO {
+
+        private final HoldingsItemsStatus status;
+        private final long count;
+
+        public StatusDTO(HoldingsItemsStatus status, long count) {
+            this.status = status;
+            this.count = count;
+        }
+
+        public HoldingsItemsStatus getStatus() {
+            return status;
+        }
+
+        public long getCount() {
+            return count;
+        }
+
     }
 
     /**
@@ -361,11 +382,6 @@ public class HoldingsItemsDAO {
             log.error(DATABASE_ERROR, ex);
             throw new HoldingsItemsException(DATABASE_ERROR, ex);
         }
-    }
-
-    @SuppressWarnings("PMD.UnusedFormalParameter")
-    private static <T> T nthAs(Object o, int n, Class<T> clazz) {
-        return (T) ( (Object[]) o )[n];
     }
 
     private static final String DATABASE_ERROR = "Database error";
