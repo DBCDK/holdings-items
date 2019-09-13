@@ -82,7 +82,7 @@ public class HoldingsItemsDAO {
     /**
      * Constructor
      *
-     * @param connection Database connection
+     * @param em EntityManager
      * @param trackingId tracking of updates
      */
     HoldingsItemsDAO(EntityManager em, String trackingId) {
@@ -133,7 +133,15 @@ public class HoldingsItemsDAO {
      * @return collection of bibliographicrecordids for the given agency
      */
     public Set<String> getBibliographicIds(int agencyId) {
-        return new HashSet<>(em.createQuery("SELECT h.bibliographicRecordId" + " FROM HoldingsItemsItemEntity h" + " WHERE h.agencyId = :agencyId" + "  AND h.status != :status" + " GROUP BY h.agencyId, h.bibliographicRecordId", String.class).setParameter("agencyId", agencyId).setParameter("status", HoldingsItemsStatus.DECOMMISSIONED).getResultList());
+        return new HashSet<>(em.createQuery("SELECT h.bibliographicRecordId" +
+                                            " FROM HoldingsItemsItemEntity h" +
+                                            " WHERE h.agencyId = :agencyId" +
+                                            "  AND h.status != :status" +
+                                            " GROUP BY h.agencyId, h.bibliographicRecordId",
+                                            String.class)
+                .setParameter("agencyId", agencyId)
+                .setParameter("status", HoldingsItemsStatus.DECOMMISSIONED)
+                .getResultList());
     }
 
     /**
