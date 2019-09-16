@@ -41,6 +41,7 @@
         <module>queue-bridge</module>
         <module>monitor</module>
         <module>postgres</module>
+        <module>postgres-content</module>
         <module>kafka-bridge</module>
         <module>purge-tool</module>
     </modules>
