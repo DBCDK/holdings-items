@@ -24,8 +24,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dk.dbc.holdingsitems.HoldingsItemsDAO;
 import dk.dbc.holdingsitems.HoldingsItemsException;
-import dk.dbc.holdingsitems.Record;
-import dk.dbc.holdingsitems.RecordCollection;
+import dk.dbc.holdingsitems.jpa.HoldingsItemsCollectionEntity;
+import dk.dbc.holdingsitems.jpa.HoldingsItemsItemEntity;
+import dk.dbc.holdingsitems.jpa.HoldingsItemsStatus;
 import dk.dbc.log.LogWith;
 import dk.dbc.oss.ns.holdingsitemsupdate.Authentication;
 import dk.dbc.oss.ns.holdingsitemsupdate.BibliographicItem;
@@ -34,12 +35,11 @@ import dk.dbc.oss.ns.holdingsitemsupdate.HoldingsItem;
 import dk.dbc.oss.ns.holdingsitemsupdate.ModificationTimeStamp;
 import dk.dbc.oss.ns.holdingsitemsupdate.OnlineBibliographicItem;
 import dk.dbc.oss.ns.holdingsitemsupdate.StatusType;
-import java.sql.Timestamp;
 import java.time.Instant;
-import java.time.ZoneOffset;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -49,6 +49,8 @@ import java.util.function.Supplier;
 import javax.xml.datatype.XMLGregorianCalendar;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static java.time.ZoneOffset.UTC;
 
 /**
  *
@@ -66,7 +68,6 @@ public abstract class UpdateRequest {
      * @return authentication class
      */
     public abstract Authentication getAuthentication();
-
 
     /**
      * Retrieve agencyId from request as string
@@ -126,7 +127,7 @@ public abstract class UpdateRequest {
         this.dao = dao;
     }
 
-    public void updateNote(String note, int agencyId, String bibliographicRecordId, Timestamp modified) {
+    public void updateNote(String note, int agencyId, String bibliographicRecordId, Instant modified) {
         try {
             dao.updateBibliographicItemNote(note, agencyId, bibliographicRecordId, modified);
         } catch (HoldingsItemsException ex) {
@@ -201,18 +202,17 @@ public abstract class UpdateRequest {
      * @param bibliographicRecordId id
      * @param note                  note about content
      * @param holding               holding describing an issue
-     * @param complete              is this a complete og an update request
+     * @param complete              is this a complete or an update request
      * @throws WrapperException RuntimeException for wrapping Exceptions in
      *                          (useful for using .stream())
      */
-    protected void processHolding(Timestamp modified, int agencyId, String bibliographicRecordId, String note, boolean complete, Holding holding) throws WrapperException {
+    protected void processHolding(Instant modified, int agencyId, String bibliographicRecordId, String note, boolean complete, Holding holding) throws WrapperException {
         try (LogWith logWith = new LogWith()) {
             String issueId = holding.getIssueId();
             logWith.with("issueId", issueId);
             log.info("agencyId = " + agencyId + "; bibliographicRecordId = " + bibliographicRecordId + "; issueId = " + issueId + "; trackingId = " + getTrakingId());
-            RecordCollection collection = getRecordCollection(bibliographicRecordId, agencyId, issueId, modified);
-            collection.setComplete(complete);
-            if (complete && !collection.getCompleteTimestamp().after(modified)) {
+            HoldingsItemsCollectionEntity collection = getRecordCollection(bibliographicRecordId, agencyId, issueId, modified);
+            if (complete && !collection.getComplete().isAfter(modified)) {
                 decommissionEntireHolding(collection, modified);
             }
             collection.setNote(note);
@@ -239,22 +239,28 @@ public abstract class UpdateRequest {
      * @param collection the collection (bibid/agency/issue)
      * @param modified   then data has been changed
      */
-    public void decommissionEntireHolding(RecordCollection collection, Timestamp modified) {
-        collection.setCompleteTimestamp(modified);
+    public void decommissionEntireHolding(HoldingsItemsCollectionEntity collection, Instant modified) {
+        collection.setComplete(modified);
         String bibliographicRecordId = collection.getBibliographicRecordId();
         HashMap<String, StateChangeMetadata> statuses = oldItemStatus.computeIfAbsent(bibliographicRecordId, f -> new HashMap<>());
-        for (Record record : collection) {
-            String itemId = record.getItemId();
-            String oldStatus = record.getStatus();
-            if (oldStatus.equals(StatusType.ONLINE.value())) {
-                continue;
-            }
-            StateChangeMetadata metadata = statuses.computeIfAbsent(itemId, i -> new StateChangeMetadata(oldStatus, record.getModified()));
-            metadata.update(StatusType.DECOMMISSIONED.value(), modified);
-            record.setStatus(StatusType.DECOMMISSIONED.value());
-            log.debug("record = {}", record);
-            log.debug("metadata = {}", metadata);
-        }
+        collection.stream()
+                .forEach(record -> {
+                    String itemId = record.getItemId();
+                    HoldingsItemsStatus oldStatus = record.getStatus();
+                    if (oldStatus == HoldingsItemsStatus.ONLINE)
+                        return;
+                    if (record.getModified().isAfter(modified)) // This is modified after complete - keep it
+                        return;
+
+                    StateChangeMetadata metadata = statuses.computeIfAbsent(itemId, i -> new StateChangeMetadata(oldStatus, record.getModified()));
+                    metadata.update(HoldingsItemsStatus.DECOMMISSIONED, modified);
+                    record.setStatus(HoldingsItemsStatus.DECOMMISSIONED);
+                    record.setModified(modified);
+                    record.setTrackingId(getTrakingId());
+
+                    log.debug("record = {}", record);
+                    log.debug("metadata = {}", metadata);
+                });
     }
 
     /**
@@ -267,18 +273,17 @@ public abstract class UpdateRequest {
      * @return Collection fetched from database or created
      * @throws HoldingsItemsException if database communication fails
      */
-    protected RecordCollection getRecordCollection(String bibliographicRecordId, int agencyId, String issueId, Timestamp modified) throws HoldingsItemsException {
+    protected HoldingsItemsCollectionEntity getRecordCollection(String bibliographicRecordId, int agencyId, String issueId, Instant modified) throws HoldingsItemsException {
         try (Timer.Context time = updateWebService.loadCollectionTimer.time()) {
-            RecordCollection collection = dao.getRecordCollectionForUpdate(
-                    bibliographicRecordId,
+            HoldingsItemsCollectionEntity collection = dao.getRecordCollection(bibliographicRecordId,
                     agencyId,
                     issueId,
                     modified);
             HashMap<String, StateChangeMetadata> biblItemStatus = oldItemStatus.computeIfAbsent(bibliographicRecordId, b -> new HashMap<>());
-            for (Record record : collection) {
-                biblItemStatus.putIfAbsent(record.getItemId(), new StateChangeMetadata(record.getStatus(), modified));
-            }
+            collection.stream()
+                    .forEach(record -> biblItemStatus.putIfAbsent(record.getItemId(), new StateChangeMetadata(record.getStatus(), modified)));
             log.debug("oldItemStatus = {}", oldItemStatus);
+            collection.setTrackingId(getTrakingId());
             return collection;
         }
     }
@@ -290,10 +295,13 @@ public abstract class UpdateRequest {
      * @param modified   timestamp it has been modified
      * @throws HoldingsItemsException save (database) error
      */
-    protected void saveCollection(RecordCollection collection, Timestamp modified) throws HoldingsItemsException {
+    protected void saveCollection(HoldingsItemsCollectionEntity collection, Instant modified) throws HoldingsItemsException {
         log.debug("saveCollection {}", collection);
         try (Timer.Context time = updateWebService.saveCollectionTimer.time()) {
-            collection.save(modified);
+            collection.setModified(modified);
+            collection.setUpdated(modified);
+            collection.save();
+            System.out.println("collection = " + collection + " <--------------------------------------------");
         }
     }
 
@@ -304,12 +312,13 @@ public abstract class UpdateRequest {
      * @param item       item to add
      * @param modified   timestamp it has been modified
      */
-    protected void addItemToCollection(RecordCollection collection, HoldingsItem item, Timestamp modified) {
+    protected void addItemToCollection(HoldingsItemsCollectionEntity collection, HoldingsItem item, Instant modified) {
         try (LogWith logWith = new LogWith()) {
             String itemId = item.getItemId();
             logWith.with("itemId", itemId);
             log.info("Adding item: {}", itemId);
-            Record rec = collection.findRecord(itemId);
+            HoldingsItemsItemEntity rec = collection.item(itemId, modified);
+            rec.setTrackingId(getTrakingId());
             XMLGregorianCalendar accessionDate = item.getAccessionDate();
             if (accessionDate != null) {
                 rec.setAccessionDate(toDate(accessionDate, false));
@@ -320,9 +329,10 @@ public abstract class UpdateRequest {
                     throw new FailedUpdateInternalException("Use endpoint onlineHoldingsItemsUpdate got status ONLINE");
                 }
                 HashMap<String, StateChangeMetadata> metas = oldItemStatus.computeIfAbsent(collection.getBibliographicRecordId(), f -> new HashMap<>());
-                StateChangeMetadata meta = metas.computeIfAbsent(itemId, f -> new StateChangeMetadata(rec.isOriginal() ? "UNKNOWN" : rec.getStatus(), rec.getModified()));
-                meta.update(status.value(), modified);
-                rec.setStatus(status.value());
+                StateChangeMetadata meta = metas.computeIfAbsent(itemId, f -> new StateChangeMetadata(rec.isNew() ? HoldingsItemsStatus.UNKNOWN : rec.getStatus(), rec.getModified()));
+                HoldingsItemsStatus newStatus = HoldingsItemsStatus.getHoldingsItemsStatus(status.value());
+                meta.update(newStatus, modified);
+                rec.setStatus(newStatus);
                 log.debug("meta = {}", meta);
             }
             copyValue(item::getBranch, rec::setBranch);
@@ -354,15 +364,12 @@ public abstract class UpdateRequest {
      * @param timestamp request element
      * @return sql type timestamp in UTC
      */
-    protected Timestamp parseTimestamp(ModificationTimeStamp timestamp) {
-        return Timestamp.valueOf(timestamp
+    protected Instant parseTimestamp(ModificationTimeStamp timestamp) {
+        return timestamp
                 .getModificationDateTime()
                 .toGregorianCalendar()
                 .toInstant()
-                .plus(timestamp.getModificationMilliSeconds(),
-                      ChronoUnit.MILLIS)
-                .atOffset(ZoneOffset.UTC)
-                .toLocalDateTime());
+                .plusMillis(timestamp.getModificationMilliSeconds());
     }
 
     /**
@@ -373,7 +380,7 @@ public abstract class UpdateRequest {
      *                        the past
      * @return Java date object
      */
-    protected Date toDate(XMLGregorianCalendar date, boolean failIfInThePast) {
+    protected LocalDate toDate(XMLGregorianCalendar date, boolean failIfInThePast) {
         GregorianCalendar gregorianCalendar = date.toGregorianCalendar();
         Instant instant = gregorianCalendar.toInstant().plusMillis(gregorianCalendar.getTimeZone().getRawOffset()).truncatedTo(ChronoUnit.DAYS);
         if (failIfInThePast) {
@@ -382,7 +389,7 @@ public abstract class UpdateRequest {
                 throw new InvalidDeliveryDateException("expected delivery date in the past");
             }
         }
-        return Date.from(instant);
+        return LocalDateTime.ofInstant(instant, UTC).toLocalDate();
     }
 
     /**

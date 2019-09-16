@@ -6,7 +6,7 @@
     <parent>
         <artifactId>holdings-items</artifactId>
         <groupId>dk.dbc</groupId>
-        <version>1.1.4-SNAPSHOT</version>
+        <version>1.2-SNAPSHOT</version>
     </parent>
 
     <artifactId>holdings-items-purge-tool</artifactId>
@@ -80,25 +80,25 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-            <version>${slf4j.version}</version>
+            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-ext</artifactId>
-            <version>${slf4j.version}</version>
+            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
-            <version>${logback.version}</version>
+            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-core</artifactId>
-            <version>${logback.version}</version>
+            <scope>compile</scope>
         </dependency>
         <dependency>
-            <groupId>dk.dbc</groupId>
+            <groupId>${project.groupId}</groupId>
             <artifactId>holdings-items-access</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -110,8 +110,25 @@
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
-            <type>jar</type>
+            <scope>compile</scope>
         </dependency>
+        <dependency>
+            <groupId>org.eclipse.persistence</groupId>
+            <artifactId>javax.persistence</artifactId>
+            <version>2.2.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.persistence</groupId>
+            <artifactId>eclipselink</artifactId>
+            <scope>provided</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.eclipse.persistence</groupId>
+                    <artifactId>jakarta.persistence</artifactId>
+                </exclusion>
+            </exclusions>        
+        </dependency>
+
         <dependency>
             <groupId>dk.dbc</groupId>
             <artifactId>dbc-commons-jdbc-util</artifactId>
@@ -136,4 +153,54 @@
             <type>jar</type>
         </dependency>
     </dependencies>
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-api</artifactId>
+                <version>${slf4j.version}</version>
+
+                <scope>compile</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-ext</artifactId>
+                <version>${slf4j.version}</version>
+                <scope>compile</scope>
+            </dependency>
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-classic</artifactId>
+                <version>${logback.version}</version>
+                <scope>compile</scope>
+            </dependency>
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-core</artifactId>
+                <version>${logback.version}</version>
+                <scope>compile</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.postgresql</groupId>
+                <artifactId>postgresql</artifactId>
+                <version>${postgresql-driver.version}</version>
+                <scope>compile</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.eclipse.persistence</groupId>
+                <artifactId>javax.persistence</artifactId>
+                <version>2.2.1</version>
+                <scope>compile</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.persistence</groupId>
+                <artifactId>eclipselink</artifactId>
+                <version>${eclipselink.version}</version>
+                <scope>compile</scope>
+            </dependency>
+
+        </dependencies>
+    </dependencyManagement>
 </project>

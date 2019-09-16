@@ -28,7 +28,6 @@ import static org.junit.Assert.*;
  */
 public class QueueJobTest {
 
-
     /**
      * Test of getWorker method, of class QueueJob.
      */

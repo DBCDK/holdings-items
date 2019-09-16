@@ -20,18 +20,15 @@ package dk.dbc.holdingsitems.purge;
 
 import dk.dbc.holdingsitems.HoldingsItemsDAO;
 import dk.dbc.holdingsitems.HoldingsItemsException;
-import dk.dbc.holdingsitems.Record;
-import dk.dbc.holdingsitems.RecordCollection;
+import dk.dbc.holdingsitems.jpa.HoldingsItemsCollectionEntity;
+import dk.dbc.holdingsitems.jpa.HoldingsItemsStatus;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.Map;
+import java.time.Instant;
 import java.util.Scanner;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,32 +43,25 @@ public class Purge {
     private final String agencyName;
     private final int agencyId;
 
-    private final int commitEvery;
     private final boolean dryRun;
 
-    private final Connection connection;
     private final HoldingsItemsDAO dao;
 
     /**
      * Create the purge request
      *
-     * @param connection  DB connection
-     * @param dao         data access object for database
-     * @param queue       Name of worker to put in queue
-     * @param agencyName  The name of the agency to verify against
-     * @param agencyId    The agency ID to be processed
-     * @param commitEvery Optionally commit in batches when purging large sets.
-     *                    0 to disable option
-     * @param dryRun      Optionally check but does not commit anything
+     * @param dao        data access object for database
+     * @param queue      Name of worker to put in queue
+     * @param agencyName The name of the agency to verify against
+     * @param agencyId   The agency ID to be processed
+     * @param dryRun     Optionally check but does not commit anything
      */
-    public Purge(Connection connection, HoldingsItemsDAO dao, String queue, String agencyName, int agencyId, int commitEvery, boolean dryRun) {
+    public Purge(HoldingsItemsDAO dao, String queue, String agencyName, int agencyId, boolean dryRun) {
         log.debug("Purge for agency ID {} with Queue: '{}'", agencyId, queue);
-        this.connection = connection;
         this.dao = dao;
         this.queue = queue;
         this.agencyName = agencyName;
         this.agencyId = agencyId;
-        this.commitEvery = commitEvery;
         this.dryRun = dryRun;
     }
 
@@ -92,7 +82,6 @@ public class Purge {
         int recordsCount = bibliographicIds.size();
         int purgeCount = 0;
         log.info("Found {} Bibliographic Ids for agency {}", recordsCount, agencyId);
-        statusReport(bibliographicIds);
 
         // Confirm agency to purge
         System.out.printf("Agency: %s, Name: '%s'%n", agencyId, agencyName);
@@ -119,43 +108,6 @@ public class Purge {
         long duration = ( end - start ) / 1000;
         log.info("Purged {} with {} live records in {} s.", recordsCount, purgeCount, duration);
 
-        waitForQueue();
-        statusReport(dao.getBibliographicIds(agencyId));
-        System.out.println("Done.");
-    }
-
-    /**
-     * Print list statistics for agency. E.g. before and after purging
-     *
-     * @param bibliographicIds IDs to be processed
-     * @throws HoldingsItemsException if DAO threw error
-     */
-    private void statusReport(Set<String> bibliographicIds) throws HoldingsItemsException {
-        Map<String, AtomicInteger> allStatus = new HashMap<>();
-        System.out.println("Status Report");
-        System.out.printf("Found %9d Bibliographic Ids%n", bibliographicIds.size());
-
-        for (String bibliographicId : bibliographicIds) {
-            log.debug("Has {} - {}", agencyId, bibliographicId);
-            Map<String, Integer> statusFor = dao.getStatusFor(bibliographicId, agencyId);
-            for (Map.Entry<String, Integer> entry : statusFor.entrySet()) {
-                String key = entry.getKey();
-                allStatus.computeIfAbsent(key, k -> new AtomicInteger(0));
-                allStatus.get(key).addAndGet(entry.getValue());
-                log.trace("Has agency {} - id {}: type {}, count: {}", agencyId, bibliographicId, key, entry.getValue());
-            }
-        }
-
-        int items = 0;
-        for (Map.Entry<String, AtomicInteger> entry : allStatus.entrySet()) {
-            String key = entry.getKey();
-            int value = entry.getValue().get();
-            log.debug("Found {} {} items", key, value);
-            System.out.printf("Found %9d %s items%n", value, key);
-
-            items += value;
-        }
-        System.out.printf("Found %9s total items%n", items);
     }
 
     /**
@@ -168,91 +120,34 @@ public class Purge {
      */
     private int purge(Set<String> bibliographicIds) throws HoldingsItemsException, SQLException {
         log.trace("Purging {} records", bibliographicIds.size());
-        int purge = 0;
-        int records = 0;
+        AtomicInteger records = new AtomicInteger(0);
         for (String bibliographicId : bibliographicIds) {
             log.trace("Bibliographic Id '{}'", bibliographicId);
             Set<String> issues = dao.getIssueIds(bibliographicId, agencyId);
-            boolean toQueue = false;
+            AtomicBoolean toQueue = new AtomicBoolean(false);
             for (String issue : issues) {
                 log.trace("Issue '{}'", issue);
-                RecordCollection collection = dao.getRecordCollection(bibliographicId, agencyId, issue);
-                for (Record record : collection) {
-                    if (!record.getStatus().equals(Record.Decommissioned)) {
-                        log.trace("Record {}", record);
-                        record.setStatus(Record.Decommissioned);
-                        records++;
-                        toQueue = true;
-                    }
-                }
+                HoldingsItemsCollectionEntity collection = dao.getRecordCollection(bibliographicId, agencyId, issue, Instant.MIN);
+                collection.stream()
+                        .forEach(record -> {
+                            if (record.getStatus() != HoldingsItemsStatus.DECOMMISSIONED) {
+                                log.trace("Record {}", record);
+                                if (!dryRun) {
+                                    record.setStatus(HoldingsItemsStatus.DECOMMISSIONED);
+                                }
+                                records.incrementAndGet();
+                                toQueue.set(true);
+                            }
+                        });
                 // Save if any records were decommissioned
-                collection.save();
+                if (!dryRun)
+                    collection.save();
             }
-            if (toQueue) {
-                dao.enqueue(bibliographicId, agencyId, Record.Decommissioned, queue);
-            }
-
-            purge++;
-            if (commitEvery > 0 && purge % commitEvery == 0) {
-                commit(purge);
+            if (!dryRun && toQueue.get()) {
+                dao.enqueue(bibliographicId, agencyId, "{}", queue);
             }
         }
-        commit(purge);
 
-        return records;
-    }
-
-    /**
-     * Commit or rollback for database
-     *
-     * @param count Count for log status
-     * @throws SQLException
-     */
-    private void commit(int count) throws SQLException {
-        if (dryRun) {
-            log.info("Rolled back at {}", count);
-            connection.rollback();
-        } else {
-            log.info("Commit at {}", count);
-            connection.commit();
-        }
-    }
-
-    private static final String QUEUE_SIZE = "SELECT COUNT (*) FROM queue WHERE trackingid=?";
-    private static final String PURGE_ITEMS = "DELETE FROM holdingsitemsitem WHERE agencyId=?";
-    private static final String PURGE_COLLECTIONS = "DELETE FROM holdingsitemscollection WHERE agencyId=?";
-
-    private void waitForQueue() throws SQLException, IOException {
-        System.out.println("Waiting for queue to be processed");
-        String trackingId = dao.getTrackingId();
-        int count = 1;
-        while (true) {
-            try (PreparedStatement stmt = connection.prepareStatement(QUEUE_SIZE)) {
-                stmt.setString(1, trackingId);
-                try (ResultSet resultSet = stmt.executeQuery()) {
-                    if (resultSet.next()) {
-                        count = resultSet.getInt(1);
-                        System.out.printf("Queue '%s' has %d items%n", trackingId, count);
-                    }
-                }
-            }
-            if (count == 0) {
-                System.out.printf("Delete items and collections for %d: %s%n", agencyId, agencyName);
-                try (PreparedStatement deleteItems = connection.prepareStatement(PURGE_ITEMS) ;
-                     PreparedStatement deleteCollections = connection.prepareStatement(PURGE_COLLECTIONS);) {
-                    deleteItems.setInt(1, agencyId);
-                    int itemCount = deleteItems.executeUpdate();
-
-                    deleteCollections.setInt(1, agencyId);
-                    int collectionsCount = deleteCollections.executeUpdate();
-                    System.out.printf("%d collections, %d items deleted from tables%n", collectionsCount, itemCount);
-                    commit(collectionsCount);
-                }
-                return;
-            } else {
-                System.out.println("Press enter to wait again.");
-                System.in.read();
-            }
-        }
+        return records.get();
     }
 }

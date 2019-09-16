@@ -18,20 +18,22 @@
  */
 package dk.dbc.holdingsitems;
 
+import dk.dbc.holdingsitems.jpa.HoldingsItemsCollectionEntity;
+import dk.dbc.holdingsitems.jpa.HoldingsItemsStatus;
 import dk.dbc.pgqueue.PreparedQueueSupplier;
 import dk.dbc.pgqueue.QueueSupplier;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Savepoint;
-import java.sql.Timestamp;
-import java.sql.Types;
-import java.util.Date;
-import java.util.HashMap;
+import java.time.Instant;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import javax.persistence.EntityManager;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -40,32 +42,53 @@ import org.slf4j.LoggerFactory;
  */
 public class HoldingsItemsDAO {
 
-    private static final org.slf4j.Logger log = LoggerFactory.getLogger(HoldingsItemsDAO.class);
+    private static final Logger log = LoggerFactory.getLogger(HoldingsItemsDAO.class);
 
     private static final QueueSupplier QUEUE_SUPPLIER = new QueueSupplier(QueueJob.STORAGE_ABSTRACTION);
 
-    private static final int SCHEMA_VERSION = 14;
-
-    private final Connection connection;
+    private final EntityManager em;
+    private final LazyObject<Connection> connection;
     private final String trackingId;
 
-    private PreparedQueueSupplier queueSupplier = null;
+    private final LazyObject<PreparedQueueSupplier> queueSupplier;
 
-    private PreparedQueueSupplier getQueueSupplier() {
-        if (queueSupplier == null) {
-            queueSupplier = QUEUE_SUPPLIER.preparedSupplier(connection);
+    private static class LazyObject<T> {
+
+        private final Supplier<T> supplier;
+        private T value;
+
+        public LazyObject(Supplier<T> supplier) {
+            this.supplier = supplier;
         }
-        return queueSupplier;
+
+        public synchronized T get() {
+            if (value == null) {
+                value = supplier.get();
+                if (value == null)
+                    throw new IllegalStateException("Got null value from supplier");
+            }
+            return value;
+        }
+    }
+
+    private Connection supplyConnection() {
+        return em.unwrap(Connection.class);
+    }
+
+    private PreparedQueueSupplier supplyQueueSupplier() {
+        return QUEUE_SUPPLIER.preparedSupplier(connection.get());
     }
 
     /**
      * Constructor
      *
-     * @param connection Database connection
+     * @param em EntityManager
      * @param trackingId tracking of updates
      */
-    HoldingsItemsDAO(Connection connection, String trackingId) {
-        this.connection = connection;
+    HoldingsItemsDAO(EntityManager em, String trackingId) {
+        this.em = em;
+        this.connection = new LazyObject<>(this::supplyConnection);
+        this.queueSupplier = new LazyObject<>(this::supplyQueueSupplier);
         this.trackingId = trackingId;
     }
 
@@ -73,75 +96,23 @@ public class HoldingsItemsDAO {
      * Load a class and instantiate it based on the driver name from the
      * supplied connection
      *
-     * @param connection database connection
+     * @param em database connection
      * @return a HoldingsItemsDAO for the connection
-     * @throws HoldingsItemsException if no database specific implementation
-     *                                could be found
      */
-    public static HoldingsItemsDAO newInstance(Connection connection) throws HoldingsItemsException {
-        return newInstance(connection, "");
+    public static HoldingsItemsDAO newInstance(EntityManager em) {
+        return newInstance(em, "");
     }
 
     /**
      * Load a class and instantiate it based on the driver name from the
      * supplied connection
      *
-     * @param connection database connection
+     * @param em         database connection
      * @param trackingId tracking id for database updates
      * @return a HoldingsItemsDAO for the connection
-     * @throws HoldingsItemsException if no database specific implementation
-     *                                could be found
      */
-    public static HoldingsItemsDAO newInstance(Connection connection, String trackingId) throws HoldingsItemsException {
-        return newInstance(connection, trackingId, false);
-    }
-
-    /**
-     * Load a class and instantiate it based on the driver name from the
-     * supplied connection
-     *
-     * @param connection     database connection
-     * @param trackingId     tracking id for database updates
-     * @param skipValidation don't validate the connection
-     * @return a HoldingsItemsDAO for the connection
-     * @throws HoldingsItemsException if no database specific implementation
-     *                                could be found
-     */
-    public static HoldingsItemsDAO newInstance(Connection connection, String trackingId, boolean skipValidation) throws HoldingsItemsException {
-        HoldingsItemsDAO dao = new HoldingsItemsDAO(connection, trackingId);
-        if (!skipValidation) {
-            dao.validateConnection();
-        }
-        return dao;
-    }
-
-    /**
-     *
-     * @throws HoldingsItemsException if schema is in-compatible
-     */
-    protected void validateConnection() throws HoldingsItemsException {
-        try {
-            try (PreparedStatement stmt = connection.prepareStatement(VALIDATE_SCHEMA)) {
-                stmt.setInt(1, SCHEMA_VERSION);
-                try (ResultSet resultSet = stmt.executeQuery()) {
-                    if (resultSet.next()) {
-                        String warning = resultSet.getString(1);
-                        if (warning != null) {
-                            logValidationError(warning);
-                        }
-                        return;
-                    }
-                }
-            }
-        } catch (SQLException ex) {
-            log.error("Validating schema", ex);
-        }
-        log.error("Incompatible database schema software=" + SCHEMA_VERSION);
-        throw new HoldingsItemsException("Incompatible database schema");
-    }
-
-    void logValidationError(String warning) {
-        log.warn(warning);
+    public static HoldingsItemsDAO newInstance(EntityManager em, String trackingId) {
+        return new HoldingsItemsDAO(em, trackingId);
     }
 
     /**
@@ -160,22 +131,17 @@ public class HoldingsItemsDAO {
      *
      * @param agencyId agency in question
      * @return collection of bibliographicrecordids for the given agency
-     * @throws HoldingsItemsException When database communication fails
      */
-    public Set<String> getBibliographicIds(int agencyId) throws HoldingsItemsException {
-        Set<String> ret = new HashSet<>();
-        try (PreparedStatement stmt = connection.prepareStatement(BIBLIOGRAPHICIDS_FOR_AGENCY)) {
-            stmt.setInt(1, agencyId);
-            try (ResultSet resultSet = stmt.executeQuery()) {
-                while (resultSet.next()) {
-                    ret.add(resultSet.getString(1));
-                }
-            }
-        } catch (SQLException ex) {
-            log.error(DATABASE_ERROR, ex);
-            throw new HoldingsItemsException(DATABASE_ERROR, ex);
-        }
-        return ret;
+    public Set<String> getBibliographicIds(int agencyId) {
+        return new HashSet<>(em.createQuery("SELECT h.bibliographicRecordId" +
+                                            " FROM HoldingsItemsItemEntity h" +
+                                            " WHERE h.agencyId = :agencyId" +
+                                            "  AND h.status != :status" +
+                                            " GROUP BY h.agencyId, h.bibliographicRecordId",
+                                            String.class)
+                .setParameter("agencyId", agencyId)
+                .setParameter("status", HoldingsItemsStatus.DECOMMISSIONED)
+                .getResultList());
     }
 
     /**
@@ -187,20 +153,16 @@ public class HoldingsItemsDAO {
      * @throws HoldingsItemsException When database communication fails
      */
     public Set<String> getIssueIds(String bibliographicId, int agencyId) throws HoldingsItemsException {
-        Set<String> ret = new HashSet<>();
-        try (PreparedStatement stmt = connection.prepareStatement(ISSUEIDS_FOR_RECORD)) {
-            stmt.setInt(1, agencyId);
-            stmt.setString(2, bibliographicId);
-            try (ResultSet resultSet = stmt.executeQuery()) {
-                while (resultSet.next()) {
-                    ret.add(resultSet.getString(1));
-                }
-            }
-        } catch (SQLException ex) {
-            log.error(DATABASE_ERROR, ex);
-            throw new HoldingsItemsException(DATABASE_ERROR, ex);
-        }
-        return ret;
+        List<String> list = em.createQuery(
+                "SELECT h.issueId" +
+                " FROM HoldingsItemsCollectionEntity h" +
+                " WHERE h.agencyId = :agencyId" +
+                "  AND h.bibliographicRecordId = :bibliographicRecordId",
+                String.class)
+                .setParameter("agencyId", agencyId)
+                .setParameter("bibliographicRecordId", bibliographicId)
+                .getResultList();
+        return new HashSet<>(list);
     }
 
     /**
@@ -209,67 +171,13 @@ public class HoldingsItemsDAO {
      * @param bibliographicRecordId part of the primary key
      * @param agencyId              part of the primary key
      * @param issueId               part of the primary key
+     * @param modified              timestamp to use for created/complete if a
+     *                              new record is created
      * @return record collection object
      * @throws HoldingsItemsException When database communication fails
      */
-    public RecordCollection getRecordCollection(String bibliographicRecordId, int agencyId, String issueId) throws HoldingsItemsException {
-        try (PreparedStatement collectionStmt = connection.prepareStatement(SELECT_COLLECTION)) {
-            collectionStmt.setInt(1, agencyId);
-            collectionStmt.setString(2, bibliographicRecordId);
-            collectionStmt.setString(3, issueId);
-            RecordCollection collection = recordCollectionFromStatement(collectionStmt, bibliographicRecordId, agencyId, issueId);
-            if (collection != null) {
-                return collection;
-            }
-        } catch (SQLException ex) {
-            log.error(DATABASE_ERROR, ex);
-            throw new HoldingsItemsException(DATABASE_ERROR, ex);
-        }
-        return new RecordCollection(bibliographicRecordId, agencyId, issueId, this.getTrackingId(), this);
-    }
-
-    /**
-     * Create (if required) a collection of items defined by id/library/orderId
-     *
-     * @param bibliographicRecordId part of the primary key
-     * @param agencyId              part of the primary key
-     * @param issueId               part of the primary key
-     * @param modified              set modification time on the collection
-     * @return record collection object
-     * @throws HoldingsItemsException When database communication fails
-     */
-    public RecordCollection getRecordCollectionForUpdate(String bibliographicRecordId, int agencyId, String issueId, Timestamp modified) throws HoldingsItemsException {
-        try {
-            Savepoint savepoint = connection.setSavepoint();
-            try (PreparedStatement collectionStmt = connection.prepareStatement(SELECT_COLLECTION_FOR_UPDATE)) {
-                collectionStmt.setInt(1, agencyId);
-                collectionStmt.setString(2, bibliographicRecordId);
-                collectionStmt.setString(3, issueId);
-                RecordCollection collection = recordCollectionFromStatement(collectionStmt, bibliographicRecordId, agencyId, issueId);
-                if (collection != null) {
-                    return collection;
-                }
-                collection = new RecordCollection(bibliographicRecordId, agencyId, issueId, this.getTrackingId(), this);
-                collection.setCompleteTimestamp(modified);
-                collection.setCreatedTimestamp(modified);
-                insertCollection(collection, modified);
-                connection.releaseSavepoint(savepoint);
-                return collection;
-            } catch (SQLException ex) {
-                log.warn(DATABASE_ERROR + " Trying to premtively create/lock collection: " + ex.getMessage());
-                connection.rollback(savepoint);
-            }
-            RecordCollection collection = getRecordCollection(bibliographicRecordId, agencyId, issueId);
-            if (collection.isOriginal()) {
-                log.error("Could not fetch existing, tried to create new could not fetch new.. Midt-transaction-collition weirdness");
-                throw new HoldingsItemsException(DATABASE_ERROR);
-            }
-            return collection;
-        } catch (SQLException ex) {
-            log.error(DATABASE_ERROR + " Savepoint error: " + ex.getMessage());
-            log.debug(DATABASE_ERROR, ex);
-            throw new HoldingsItemsException(DATABASE_ERROR);
-        }
+    public HoldingsItemsCollectionEntity getRecordCollection(String bibliographicRecordId, int agencyId, String issueId, Instant modified) throws HoldingsItemsException {
+        return HoldingsItemsCollectionEntity.from(em, agencyId, bibliographicRecordId, issueId, modified);
     }
 
     /**
@@ -280,21 +188,16 @@ public class HoldingsItemsDAO {
      * @throws HoldingsItemsException When database communication fails
      */
     public Set<Integer> getAgenciesThatHasHoldingsFor(String bibliographicRecordId) throws HoldingsItemsException {
-        HashSet agencies = new HashSet();
-
-        try (PreparedStatement stmt = connection.prepareStatement(AGENCIES_WITH_BIBLIOGRAPHICRECORDID)) {
-            stmt.setString(1, bibliographicRecordId);
-            try (ResultSet resultSet = stmt.executeQuery()) {
-                while (resultSet.next()) {
-                    int agency = resultSet.getInt(1);
-                    agencies.add(agency);
-                }
-            }
-        } catch (SQLException ex) {
-            log.error(DATABASE_ERROR, ex);
-            throw new HoldingsItemsException(DATABASE_ERROR, ex);
-        }
-        return agencies;
+        List<Integer> list = em.createQuery(
+                "SELECT h.agencyId FROM HoldingsItemsItemEntity h" +
+                " WHERE h.bibliographicRecordId = :bibId" +
+                "  AND h.status != :status" +
+                " GROUP BY h.agencyId",
+                Integer.class)
+                .setParameter("bibId", bibliographicRecordId)
+                .setParameter("status", HoldingsItemsStatus.DECOMMISSIONED)
+                .getResultList();
+        return new HashSet<>(list);
     }
 
     /**
@@ -307,91 +210,14 @@ public class HoldingsItemsDAO {
      * @param modified              modified timestamp
      * @throws HoldingsItemsException in case of a database error
      */
-    public void updateBibliographicItemNote(String note, int agencyId, String bibliographicRecordId, Timestamp modified) throws HoldingsItemsException {
-        try (PreparedStatement stmt = connection.prepareCall(UPDATE_COLLECTION_NOTE)) {
-            int i = 1;
-            stmt.setString(i++, note);
-            stmt.setInt(i++, agencyId);
-            stmt.setString(i++, bibliographicRecordId);
-            stmt.setTimestamp(i++, modified);
-            stmt.executeUpdate();
-        } catch (SQLException ex) {
-            log.error(DATABASE_ERROR, ex);
-            throw new HoldingsItemsException(DATABASE_ERROR, ex);
-        }
-
-    }
-
-    /**
-     * Called by RecordCollection.save()
-     *
-     * @param collection record collection to save
-     * @param modified   modified timestamp
-     * @throws HoldingsItemsException in case of a database error
-     */
-    void saveRecordCollection(RecordCollection collection, Timestamp modified) throws HoldingsItemsException {
-        updateOrInsertCollection(collection, modified);
-        try (PreparedStatement insert = connection.prepareStatement(INSERT_ITEM) ;
-             PreparedStatement update = connection.prepareStatement(UPDATE_ITEM);) {
-            for (Record record : collection) {
-                if (record.isModified() || record.isOriginal() || collection.isOriginal()) {
-                    log.debug("record = " + record);
-                    if (record instanceof RecordImpl) {
-                        RecordImpl item = (RecordImpl) record;
-                        if (item.isOriginal() || collection.isOriginal()) {
-                            Timestamp completeTimestamp = collection.getCompleteTimestamp();
-                            if (completeTimestamp.after(modified)) { // Do not create new items, if there's a complete later in time.
-                                log.debug("Not creating, complete later in time");
-                            } else {
-                                log.debug("Insert record");
-                                insert.setInt(1, collection.getAgencyId());
-                                insert.setString(2, collection.getBibliographicRecordId());
-                                insert.setString(3, collection.getIssueId());
-                                insert.setString(4, item.getItemId());
-                                insert.setString(5, item.getBranch());
-                                insert.setString(6, item.getDepartment());
-                                insert.setString(7, item.getLocation());
-                                insert.setString(8, item.getSubLocation());
-                                insert.setString(9, item.getCirculationRule());
-                                insert.setDate(10, new java.sql.Date(item.getAccessionDate().getTime()));
-                                insert.setString(11, item.getStatus());
-                                insert.setTimestamp(12, modified);
-                                insert.setString(13, trackingId);
-                                insert.executeUpdate();
-                            }
-                        } else {
-                            log.debug("Update record");
-                            update.setString(1, item.getBranch());
-                            update.setString(2, item.getDepartment());
-                            update.setString(3, item.getLocation());
-                            update.setString(4, item.getSubLocation());
-                            update.setString(5, item.getCirculationRule());
-                            update.setDate(6, new java.sql.Date(item.getAccessionDate().getTime()));
-                            update.setString(7, item.getStatus());
-                            update.setTimestamp(8, modified);
-                            update.setString(9, trackingId);
-                            update.setInt(10, collection.getAgencyId());
-                            update.setString(11, collection.getBibliographicRecordId());
-                            update.setString(12, collection.getIssueId());
-                            update.setString(13, item.getItemId());
-                            update.setTimestamp(14, modified);
-                            update.executeUpdate();
-                        }
-                        item.original = false;
-                        item.modified = false;
-                    } else {
-                        throw new IllegalStateException("Cannot save records not of type RecordImpl");
-                    }
-                }
-            }
-        } catch (SQLException ex) {
-            log.error(DATABASE_ERROR + ex.getMessage());
-            log.info(DATABASE_ERROR, ex);
-            throw new HoldingsItemsException(DATABASE_ERROR, ex);
-        }
-        collection.original = false;
-        collection.modified = false;
-        collection.complete = false;
+    public void updateBibliographicItemNote(String note, int agencyId, String bibliographicRecordId, Instant modified) throws HoldingsItemsException {
+        HoldingsItemsCollectionEntity.byAgencyBibliographic(em, agencyId, bibliographicRecordId)
+                .stream()
+                .filter(e -> !e.getModified().isAfter(modified))
+                .forEach(e -> {
+                    e.setNote(note);
+                    e.save();
+                });
     }
 
     /**
@@ -402,21 +228,39 @@ public class HoldingsItemsDAO {
      * @return key-value pairs with status and number of that status
      * @throws HoldingsItemsException in case of a database error
      */
-    public Map<String, Integer> getStatusFor(String bibliographicRecordId, int agencyId) throws HoldingsItemsException {
-        HashMap<String, Integer> map = new HashMap<>();
-        try (PreparedStatement stmt = connection.prepareStatement(STATUS_OF_BIBLIOGRAPHIC_ITEMS)) {
-            stmt.setInt(1, agencyId);
-            stmt.setString(2, bibliographicRecordId);
-            try (ResultSet resultSet = stmt.executeQuery()) {
-                while (resultSet.next()) {
-                    map.put(resultSet.getString(1), resultSet.getInt(2));
-                }
-            }
-        } catch (SQLException ex) {
-            log.error(DATABASE_ERROR, ex);
-            throw new HoldingsItemsException(DATABASE_ERROR, ex);
+    public Map<HoldingsItemsStatus, Long> getStatusFor(String bibliographicRecordId, int agencyId) throws HoldingsItemsException {
+        return (Map<HoldingsItemsStatus, Long>) em.createQuery(
+                "SELECT new " + StatusDTO.class.getCanonicalName() + "(h.status, COUNT(h.status))" +
+                " FROM HoldingsItemsItemEntity h" +
+                " WHERE h.agencyId = :agencyId" +
+                "  AND h.bibliographicRecordId = :bibliographicRecordId" +
+                " GROUP BY h.status",
+                StatusDTO.class)
+                .setParameter("agencyId", agencyId)
+                .setParameter("bibliographicRecordId", bibliographicRecordId)
+                .getResultStream()
+                .collect(Collectors.toMap(StatusDTO::getStatus,
+                                          StatusDTO::getCount));
+    }
+
+    private static class StatusDTO {
+
+        private final HoldingsItemsStatus status;
+        private final long count;
+
+        public StatusDTO(HoldingsItemsStatus status, long count) {
+            this.status = status;
+            this.count = count;
         }
-        return map;
+
+        public HoldingsItemsStatus getStatus() {
+            return status;
+        }
+
+        public long getCount() {
+            return count;
+        }
+
     }
 
     /**
@@ -428,20 +272,18 @@ public class HoldingsItemsDAO {
      * @throws HoldingsItemsException in case of a database error
      */
     public boolean hasLiveHoldings(String bibliographicRecordId, int agencyId) throws HoldingsItemsException {
-        try (PreparedStatement stmt = connection.prepareStatement(CHECK_LIVE_HOLDINGS)) {
-
-            stmt.setInt(1, agencyId);
-            stmt.setString(2, bibliographicRecordId);
-            try (ResultSet resultSet = stmt.executeQuery()) {
-                if (resultSet.next()) {
-                    return resultSet.getBoolean(1);
-                }
-                throw new IllegalStateException("No rows from boolean query");
-            }
-        } catch (SQLException ex) {
-            log.error(DATABASE_ERROR, ex);
-            throw new HoldingsItemsException(DATABASE_ERROR, ex);
-        }
+        return !em.createQuery(
+                "SELECT h.status" +
+                " FROM HoldingsItemsItemEntity h" +
+                " WHERE h.agencyId = :agencyId" +
+                "  AND h.bibliographicRecordId = :bibliographicRecordId" +
+                "  AND h.status != :status")
+                .setParameter("agencyId", agencyId)
+                .setParameter("bibliographicRecordId", bibliographicRecordId)
+                .setParameter("status", HoldingsItemsStatus.DECOMMISSIONED)
+                .setMaxResults(1)
+                .getResultList()
+                .isEmpty();
     }
 
     /**
@@ -454,7 +296,7 @@ public class HoldingsItemsDAO {
      * @throws HoldingsItemsException in case of a database error
      */
     public void enqueue(String bibliographicRecordId, int agencyId, String stateChange, String worker) throws HoldingsItemsException {
-        PreparedQueueSupplier supplier = getQueueSupplier();
+        PreparedQueueSupplier supplier = queueSupplier.get();
         try {
             supplier.enqueue(worker, new QueueJob(agencyId, bibliographicRecordId, stateChange, trackingId));
         } catch (SQLException ex) {
@@ -475,7 +317,7 @@ public class HoldingsItemsDAO {
      * @throws HoldingsItemsException in case of a database error
      */
     public void enqueue(String bibliographicRecordId, int agencyId, String stateChange, String worker, long milliSeconds) throws HoldingsItemsException {
-        PreparedQueueSupplier supplier = getQueueSupplier();
+        PreparedQueueSupplier supplier = queueSupplier.get();
         try {
             supplier.enqueue(worker, new QueueJob(agencyId, bibliographicRecordId, stateChange, trackingId), milliSeconds);
         } catch (SQLException ex) {
@@ -535,7 +377,7 @@ public class HoldingsItemsDAO {
      * @throws HoldingsItemsException in case of a database error
      */
     public void enqueueOld(String bibliographicRecordId, int agencyId, String additionalData, String worker, long milliSeconds) throws HoldingsItemsException {
-        try (PreparedStatement stmt = connection.prepareStatement(QUEUE_INSERT_SQL_OLD)) {
+        try (PreparedStatement stmt = connection.get().prepareStatement(QUEUE_INSERT_SQL_OLD)) {
             int i = 0;
             stmt.setString(++i, worker);
             stmt.setLong(++i, milliSeconds);
@@ -550,154 +392,7 @@ public class HoldingsItemsDAO {
         }
     }
 
-    private RecordCollection recordCollectionFromStatement(final PreparedStatement collectionStmt, String bibliographicRecordId, int agencyId, String issueId) throws SQLException {
-        try (ResultSet collectionResultSet = collectionStmt.executeQuery()) {
-            if (collectionResultSet.next()) {
-                String issueText = collectionResultSet.getString(1);
-                Date expectedDelivery = collectionResultSet.getTimestamp(2);
-                Integer readyForLoan = collectionResultSet.getInt(3);
-                String note = collectionResultSet.getString(4);
-                Timestamp complete = collectionResultSet.getTimestamp(5);
-                Timestamp created = collectionResultSet.getTimestamp(6);
-                Timestamp modified = collectionResultSet.getTimestamp(7);
-                String colTrackingId = collectionResultSet.getString(8);
-                RecordCollection collection = new RecordCollection(bibliographicRecordId, agencyId, issueId,
-                                                                   issueText, expectedDelivery, readyForLoan, note,
-                                                                   complete, created, modified, colTrackingId, this);
-                try (PreparedStatement itemStmt = connection.prepareStatement(SELECT_ITEM)) {
-                    itemStmt.setInt(1, agencyId);
-                    itemStmt.setString(2, bibliographicRecordId);
-                    itemStmt.setString(3, issueId);
-                    try (ResultSet itemResultSet = itemStmt.executeQuery()) {
-                        while (itemResultSet.next()) {
-                            String itemId = itemResultSet.getString(1);
-                            String branch = itemResultSet.getString(2);
-                            String department = itemResultSet.getString(3);
-                            String location = itemResultSet.getString(4);
-                            String subLocation = itemResultSet.getString(5);
-                            String circulationRule = itemResultSet.getString(6);
-                            Date accessionDate = itemResultSet.getDate(7);
-                            String status = itemResultSet.getString(8);
-                            created = itemResultSet.getTimestamp(9);
-                            modified = itemResultSet.getTimestamp(10);
-                            String itemTrackingId = itemResultSet.getString(11);
-                            collection.put(itemId, new RecordImpl(itemId, branch, department, location, subLocation, circulationRule, accessionDate, status, created, modified, itemTrackingId));
-                        }
-                    }
-                }
-                return collection;
-            }
-        }
-        return null;
-    }
-
-    // CPD-OFF
-    private void updateOrInsertCollection(RecordCollection collection, Timestamp modified) throws HoldingsItemsException {
-        if (collection.isComplete() || collection.isOriginal()) {
-            collection.setCompleteTimestamp(modified);
-        }
-        int affectedRows;
-        try (PreparedStatement stmt = connection.prepareCall(UPDATE_COLLECTION)) {
-            int i = 1;
-            stmt.setString(i++, collection.getIssueText());
-            Date expectedDelivery = collection.getExpectedDelivery();
-            if (expectedDelivery == null) {
-                stmt.setNull(i++, Types.DATE);
-            } else {
-                stmt.setDate(i++, new java.sql.Date(collection.getExpectedDelivery().getTime()));
-            }
-            stmt.setInt(i++, collection.getReadyForLoan());
-            stmt.setString(i++, collection.getNote());
-            stmt.setTimestamp(i++, collection.getCompleteTimestamp());
-            stmt.setTimestamp(i++, modified);
-            stmt.setString(i++, trackingId);
-            stmt.setInt(i++, collection.getAgencyId());
-            stmt.setString(i++, collection.getBibliographicRecordId());
-            stmt.setString(i++, collection.getIssueId());
-            stmt.setTimestamp(i++, modified);
-            affectedRows = stmt.executeUpdate();
-        } catch (SQLException ex) {
-            log.error(DATABASE_ERROR, ex);
-            throw new HoldingsItemsException(DATABASE_ERROR, ex);
-        }
-        if (affectedRows == 0 && collection.isOriginal()) {
-            log.debug("Insert collection");
-            try {
-                insertCollection(collection, modified);
-            } catch (SQLException ex) {
-                log.error(DATABASE_ERROR, ex);
-                throw new HoldingsItemsException(DATABASE_ERROR, ex);
-            }
-        }
-    }
-    // CPD-ON
-
-    // CPD-OFF
-    private void insertCollection(RecordCollection collection, Timestamp modified) throws SQLException {
-        try (PreparedStatement stmt = connection.prepareCall(INSERT_COLLECTION)) {
-            int i = 1;
-            stmt.setInt(i++, collection.getAgencyId());
-            stmt.setString(i++, collection.getBibliographicRecordId());
-            stmt.setString(i++, collection.getIssueId());
-            stmt.setString(i++, collection.getIssueText());
-            Date expectedDelivery = collection.getExpectedDelivery();
-            if (expectedDelivery == null) {
-                stmt.setNull(i++, Types.DATE);
-            } else {
-                stmt.setDate(i++, new java.sql.Date(collection.getExpectedDelivery().getTime()));
-            }
-            stmt.setInt(i++, collection.getReadyForLoan());
-            stmt.setString(i++, collection.getNote());
-            stmt.setTimestamp(i++, collection.getCompleteTimestamp());
-            stmt.setTimestamp(i++, modified);
-            stmt.setString(i++, trackingId);
-            stmt.executeUpdate();
-        }
-    }
-    // CPD-ON
-
     private static final String DATABASE_ERROR = "Database error";
-
-    private static final String VALIDATE_SCHEMA = "SELECT warning FROM version WHERE version=?";
-
-    private static final String SELECT_COLLECTION = "SELECT issueText, expectedDelivery, readyForLoan, note, complete, created, modified, trackingId" +
-                                                    " FROM holdingsitemscollection WHERE agencyId=? AND bibliographicRecordId=? AND issueId=?";
-    private static final String SELECT_COLLECTION_FOR_UPDATE = SELECT_COLLECTION + " FOR UPDATE";
-    private static final String UPDATE_COLLECTION = "UPDATE holdingsitemscollection" +
-                                                    " SET issueText=?, expectedDelivery=?, readyForLoan=?, note=?, complete=?, modified=?, trackingId=?" +
-                                                    " WHERE agencyId=? AND bibliographicRecordId=? AND issueId=? AND modified<=?";
-    private static final String UPDATE_COLLECTION_NOTE = "UPDATE holdingsitemscollection" +
-                                                         " SET note=?" +
-                                                         " WHERE agencyId=? AND bibliographicRecordId=? AND modified<=?";
-    private static final String INSERT_COLLECTION = "INSERT INTO holdingsitemscollection" +
-                                                    " (agencyId, bibliographicRecordId, issueId, issueText, expectedDelivery, readyForLoan, note, complete, created, modified, trackingId)" +
-                                                    " VALUES (?, ?, ?, ?, ?, ?, ?, ?, timeofday()::timestamp, ?, ?)";
-    private static final String SELECT_ITEM = "SELECT itemId, branch, department, location, subLocation, circulationRule, accessionDate, status, created, modified, trackingId" +
-                                              " FROM holdingsitemsitem WHERE agencyId=? AND bibliographicRecordId=? AND issueId=?";
-    private static final String UPDATE_ITEM = "UPDATE holdingsitemsitem" +
-                                              " SET branch=?, department=?, location=?, subLocation=?, circulationRule=?, accessionDate=?, status=?," +
-                                              " modified=?, trackingId=?" +
-                                              " WHERE agencyId=? AND bibliographicRecordId=? AND issueId=? AND itemId=? AND modified<=?";
-    private static final String INSERT_ITEM = "INSERT INTO holdingsitemsitem" +
-                                              " (agencyId, bibliographicRecordId, issueId, itemId," +
-                                              " branch, department, location, subLocation, circulationRule, accessionDate, status," +
-                                              " created, modified, trackingId)" +
-                                              " VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, timeofday()::timestamp, ?, ?)";
-
-    private static final String BIBLIOGRAPHICIDS_FOR_AGENCY = "SELECT DISTINCT bibliographicRecordId FROM holdingsitemscollection" +
-                                                              " WHERE agencyId=?";
-    private static final String ISSUEIDS_FOR_RECORD = "SELECT DISTINCT issueId FROM holdingsitemscollection" +
-                                                      " WHERE agencyId=? AND bibliographicRecordId=?";
-    private static final String AGENCIES_WITH_BIBLIOGRAPHICRECORDID = "SELECT DISTINCT agencyId FROM holdingsitemscollection" +
-                                                                      " JOIN holdingsitemsitem USING(agencyId, bibliographicRecordId, issueId)" +
-                                                                      " WHERE bibliographicRecordId=? AND status != 'Decommissioned'";
-    private static final String STATUS_OF_BIBLIOGRAPHIC_ITEMS = "SELECT status, COUNT(*) FROM holdingsitemscollection" +
-                                                                " JOIN holdingsitemsitem USING(agencyid, bibliographicrecordid, issueid)" +
-                                                                " WHERE agencyid=? AND bibliographicrecordid=?" +
-                                                                " GROUP BY status;";
-
-    private static final String CHECK_LIVE_HOLDINGS = "SELECT EXISTS(SELECT * FROM holdingsitemsitem WHERE agencyid=? AND bibliographicrecordid=? AND status<>'Decommissioned')";
-
     private static final String QUEUE_INSERT_SQL_OLD = "INSERT INTO q(worker, queued, bibliographicRecordId, agencyId, additionalData, trackingId) VALUES(?, clock_timestamp() + ? * INTERVAL '1 milliseconds', ?, ?, ?, ?)";
 
 }

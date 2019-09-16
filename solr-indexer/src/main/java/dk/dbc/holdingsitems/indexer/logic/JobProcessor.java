@@ -25,21 +25,20 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import dk.dbc.ee.stats.Timed;
 import dk.dbc.holdingsitems.HoldingsItemsDAO;
 import dk.dbc.holdingsitems.QueueJob;
-import dk.dbc.holdingsitems.Record;
-import dk.dbc.holdingsitems.RecordCollection;
 import dk.dbc.holdingsitems.indexer.Config;
+import dk.dbc.holdingsitems.jpa.HoldingsItemsCollectionEntity;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.sql.Connection;
+import java.time.Instant;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import javax.annotation.PostConstruct;
 import javax.ejb.Stateless;
 import javax.inject.Inject;
+import javax.persistence.EntityManager;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
@@ -67,11 +66,15 @@ public class JobProcessor {
     @Inject
     Config config;
 
+    @Inject
+    EntityManager em;
+
     public JobProcessor() {
     }
 
-    public JobProcessor(Config config) {
+    public JobProcessor(Config config, EntityManager em) {
         this.config = config;
+        this.em = em;
     }
 
     @PostConstruct
@@ -84,10 +87,10 @@ public class JobProcessor {
     }
 
     @Timed
-    public ObjectNode buildRequestJson(Connection connection, QueueJob job) throws Exception {
+    public ObjectNode buildRequestJson(QueueJob job) throws Exception {
         String trackingId = job.getTrackingId();
 
-        HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(connection, trackingId, true);
+        HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, trackingId);
         String bibliographicRecordId = job.getBibliographicRecordId()
                 .replaceAll("\\s", "");
         int agencyId = job.getAgencyId();
@@ -95,15 +98,15 @@ public class JobProcessor {
         log.debug("issueIds = {}", issueIds);
         HashMap<UniqueFields, RepeatedFields> records = new HashMap<>();
         for (String issueId : issueIds) {
-            RecordCollection collection = dao.getRecordCollection(bibliographicRecordId, agencyId, issueId);
-            for (Iterator<Record> iterator = collection.iterator() ; iterator.hasNext() ;) {
-                Record record = iterator.next();
+            HoldingsItemsCollectionEntity collection = dao.getRecordCollection(bibliographicRecordId, agencyId, issueId, Instant.MIN);
+            collection.stream()
+                    .forEach(record -> {
                 UniqueFields key = new UniqueFields(collection, record);
                 RepeatedFields repeatedFields = records.computeIfAbsent(key, v -> new RepeatedFields(collection.getTrackingId(), job.getTrackingId()));
                 repeatedFields.addItemId(record.getItemId());
                 repeatedFields.addStatus(record.getStatus());
                 repeatedFields.addTrackingId(record.getTrackingId());
-            }
+                    });
         }
         ObjectNode json = O.createObjectNode();
         addMetadata(json, agencyId, bibliographicRecordId, trackingId);

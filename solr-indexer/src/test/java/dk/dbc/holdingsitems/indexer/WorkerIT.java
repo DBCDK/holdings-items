@@ -76,13 +76,12 @@ import static java.sql.Types.*;
  *
  * @author DBC {@literal <dbc.dk>}
  */
-public class WorkerIT {
+public class WorkerIT extends JpaBase {
 
     private static final ObjectMapper O = new ObjectMapper();
     private static final Logger log = LoggerFactory.getLogger(WorkerIT.class);
 
     private PostgresITDataSource pgds;
-    private DataSource dataSource;
     private Config config;
     private static int solrDocStorePort;
     private static Server jettyServer;
@@ -99,15 +98,6 @@ public class WorkerIT {
 
     @Before
     public void setUp() throws Exception {
-        pgds = new PostgresITDataSource("holdingsitems");
-        dataSource = pgds.getDataSource();
-
-        try (Connection connection = dataSource.getConnection() ;
-             Statement stmt = connection.createStatement()) {
-            stmt.executeUpdate("DROP SCHEMA public CASCADE");
-            stmt.executeUpdate("CREATE SCHEMA public");
-        }
-        DatabaseMigrator.migrate(dataSource);
         config = new Config("queues=q1,q2",
                             "solr-doc-store-url=http://localhost:" + solrDocStorePort + "/");
         config.init();
@@ -140,7 +130,7 @@ public class WorkerIT {
     @Test
     public void testResponse() throws Exception {
         log.info("testResponse");
-        JobProcessor jobProcessor = new JobProcessor(config);
+        JobProcessor jobProcessor = new JobProcessor(config, null);
         jobProcessor.init();
         JsonNode node = O.readTree("{\"hello\":\"there\"}");
         JsonNode response = jobProcessor.sendToSolrDocStore(node);
@@ -160,27 +150,29 @@ public class WorkerIT {
             insert(connection, "inserts/insert1.json");
         }
 
-        JobProcessor jobProcessor = new JobProcessor(config);
-        jobProcessor.init();
-        try (Connection connection = dataSource.getConnection()) {
-            ObjectNode json = jobProcessor.buildRequestJson(connection, new QueueJob(700000, "87654321", "{}", "T#1"));
-            System.out.println("json = " + json);
-            assertJson(700000, json, "/agencyId");
-            assertJson("87654321", json, "/bibliographicRecordId");
-            assertTrue(json.get("indexKeys").isArray());
-            ArrayNode subDocs = (ArrayNode) json.get("indexKeys");
-            assertEquals(3, subDocs.size());
-            ObjectNode dp = findSubDocContaining(subDocs, "/holdingsitem.itemId", "dp1");
-            log.debug("dp = {}", dp);
-            assertEquals("Two entries collapsed", 2, dp.get("holdingsitem.itemId").size());
-            assertEquals("Two entries Different status", 2, dp.get("holdingsitem.status").size());
-            ObjectNode rpo1 = findSubDocContaining(subDocs, "/holdingsitem.itemId", "rpo1");
-            log.debug("rpo1 = {}", rpo1);
-            assertEquals(O.readTree("{\"holdingsitem.bibliographicRecordId\":[\"87654321\"],\"holdingsitem.agencyId\":[\"700000\"],\"rec.bibliographicRecordId\":[\"87654321\"],\"holdingsitem.issueId\":[\"rpo\"],\"holdingsitem.issueText\":[\"ready player one\"],\"holdingsitem.readyForLoan\":[\"-1\"],\"holdingsitem.note\":[\"\"],\"holdingsitem.branch\":[\"Here\"],\"holdingsitem.department\":[\"\"],\"holdingsitem.location\":[\"\"],\"holdingsitem.subLocation\":[\"\"],\"holdingsitem.circulationRule\":[\"\"],\"holdingsitem.accessionDate\":[\"2016-02-03T00:00:00.000Z\"],\"holdingsitem.collectionId\":[\"700000-87654321\"],\"holdingsitem.itemId\":[\"rpo1\"],\"holdingsitem.status\":[\"OnLoan\"],\"rec.trackingId\":[\"\",\"T#1\"]}"), rpo1);
-            ObjectNode rpo2 = findSubDocContaining(subDocs, "/holdingsitem.itemId", "rpo2");
-            log.debug("rpo2 = {}", rpo2);
-            assertEquals(O.readTree("{\"holdingsitem.agencyId\":[\"700000\"],\"holdingsitem.bibliographicRecordId\":[\"87654321\"],\"rec.bibliographicRecordId\":[\"87654321\"],\"holdingsitem.issueId\":[\"rpo\"],\"holdingsitem.issueText\":[\"ready player one\"],\"holdingsitem.readyForLoan\":[\"-1\"],\"holdingsitem.note\":[\"\"],\"holdingsitem.branch\":[\"There\"],\"holdingsitem.department\":[\"\"],\"holdingsitem.location\":[\"\"],\"holdingsitem.subLocation\":[\"\"],\"holdingsitem.circulationRule\":[\"\"],\"holdingsitem.accessionDate\":[\"2015-01-02T00:00:00.000Z\"],\"holdingsitem.collectionId\":[\"700000-87654321\"],\"holdingsitem.itemId\":[\"rpo2\"],\"holdingsitem.status\":[\"OnShelf\"],\"rec.trackingId\":[\"\",\"T#1\"]}"), rpo2);
-        }
+        jpa(em -> {
+            JobProcessor jobProcessor = new JobProcessor(config, em);
+            jobProcessor.init();
+            try (Connection connection = dataSource.getConnection()) {
+                ObjectNode json = jobProcessor.buildRequestJson(new QueueJob(700000, "87654321", "{}", "T#1"));
+                System.out.println("json = " + json);
+                assertJson(700000, json, "/agencyId");
+                assertJson("87654321", json, "/bibliographicRecordId");
+                assertTrue(json.get("indexKeys").isArray());
+                ArrayNode subDocs = (ArrayNode) json.get("indexKeys");
+                assertEquals(3, subDocs.size());
+                ObjectNode dp = findSubDocContaining(subDocs, "/holdingsitem.itemId", "dp1");
+                log.debug("dp = {}", dp);
+                assertEquals("Two entries collapsed", 2, dp.get("holdingsitem.itemId").size());
+                assertEquals("Two entries Different status", 2, dp.get("holdingsitem.status").size());
+                ObjectNode rpo1 = findSubDocContaining(subDocs, "/holdingsitem.itemId", "rpo1");
+                log.debug("rpo1 = {}", rpo1);
+                assertEquals(O.readTree("{\"holdingsitem.bibliographicRecordId\":[\"87654321\"],\"holdingsitem.agencyId\":[\"700000\"],\"rec.bibliographicRecordId\":[\"87654321\"],\"holdingsitem.issueId\":[\"rpo\"],\"holdingsitem.issueText\":[\"ready player one\"],\"holdingsitem.readyForLoan\":[\"-1\"],\"holdingsitem.note\":[\"\"],\"holdingsitem.branch\":[\"Here\"],\"holdingsitem.department\":[\"\"],\"holdingsitem.location\":[\"\"],\"holdingsitem.subLocation\":[\"\"],\"holdingsitem.circulationRule\":[\"\"],\"holdingsitem.accessionDate\":[\"2016-02-03T00:00:00.000Z\"],\"holdingsitem.collectionId\":[\"700000-87654321\"],\"holdingsitem.itemId\":[\"rpo1\"],\"holdingsitem.status\":[\"OnLoan\"],\"rec.trackingId\":[\"\",\"T#1\"]}"), rpo1);
+                ObjectNode rpo2 = findSubDocContaining(subDocs, "/holdingsitem.itemId", "rpo2");
+                log.debug("rpo2 = {}", rpo2);
+                assertEquals(O.readTree("{\"holdingsitem.agencyId\":[\"700000\"],\"holdingsitem.bibliographicRecordId\":[\"87654321\"],\"rec.bibliographicRecordId\":[\"87654321\"],\"holdingsitem.issueId\":[\"rpo\"],\"holdingsitem.issueText\":[\"ready player one\"],\"holdingsitem.readyForLoan\":[\"-1\"],\"holdingsitem.note\":[\"\"],\"holdingsitem.branch\":[\"There\"],\"holdingsitem.department\":[\"\"],\"holdingsitem.location\":[\"\"],\"holdingsitem.subLocation\":[\"\"],\"holdingsitem.circulationRule\":[\"\"],\"holdingsitem.accessionDate\":[\"2015-01-02T00:00:00.000Z\"],\"holdingsitem.collectionId\":[\"700000-87654321\"],\"holdingsitem.itemId\":[\"rpo2\"],\"holdingsitem.status\":[\"OnShelf\"],\"rec.trackingId\":[\"\",\"T#1\"]}"), rpo2);
+            }
+        });
     }
 
     @Test
@@ -222,23 +214,25 @@ public class WorkerIT {
             supplier.enqueue("q1", new QueueJob(700000, "87654321", "{}", "foo1"));
         }
 
-        Worker worker = new Worker();
-        worker.config = config;
-        worker.dataSource = dataSource;
-        worker.jobProcessor = new JobProcessor(config);
-        worker.metrics = new MetricRegistry();
-        worker.jobProcessor.init();
-        worker.init();
-        ObjectNode job = consumer.requests.poll(10, TimeUnit.SECONDS);
-        log.debug("job = {}", job);
-        worker.destroy();
-        assertNotNull(job);
+        jpa(em -> {
+            Worker worker = new Worker();
+            worker.config = config;
+            worker.dataSource = dataSource;
+            worker.jobProcessor = new JobProcessor(config, em);
+            worker.metrics = new MetricRegistry();
+            worker.jobProcessor.init();
+            worker.init();
+            ObjectNode job = consumer.requests.poll(10, TimeUnit.SECONDS);
+            log.debug("job = {}", job);
+            worker.destroy();
+            assertNotNull(job);
 
-        JsonNode json = job.get("body");
-        assertTrue(json.get("indexKeys").isArray());
-        ArrayNode subDocs = (ArrayNode) json.get("indexKeys");
-        assertEquals(3, subDocs.size());
-        // Content tested in: testBuildRequest
+            JsonNode json = job.get("body");
+            assertTrue(json.get("indexKeys").isArray());
+            ArrayNode subDocs = (ArrayNode) json.get("indexKeys");
+            assertEquals(3, subDocs.size());
+            // Content tested in: testBuildRequest
+        });
     }
 
     private ObjectNode findSubDocContaining(ArrayNode nodes, String path, String value) {

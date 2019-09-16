@@ -18,6 +18,9 @@
  */
 package dk.dbc.holdingsitems;
 
+import dk.dbc.holdingsitems.jpa.HoldingsItemsCollectionEntity;
+import dk.dbc.holdingsitems.jpa.HoldingsItemsItemEntity;
+import dk.dbc.holdingsitems.jpa.HoldingsItemsStatus;
 import org.junit.Test;
 
 import java.sql.Connection;
@@ -25,89 +28,35 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.sql.Timestamp;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
+
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
+import javax.persistence.EntityManager;
 
+import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
 
 /**
  *
  * @author DBC {@literal <dbc.dk>}
  */
-public class HoldingsItemsDAOIT extends DbBase {
+public class HoldingsItemsDAOIT extends JpaBase {
 
     @Test
-    public void testValidateSchema() throws Exception {
-        try (Connection connection = dataSource.getConnection()) {
-            connection.setAutoCommit(false);
-            try {
-                try (Statement stmt = connection.createStatement()) {
-                    stmt.execute("UPDATE version SET warning=NULL");
-                    stmt.execute("UPDATE version SET warning='TEST VALUE' WHERE version = (SELECT MAX(version) FROM version)");
-                }
-
-                AtomicReference<String> ref = new AtomicReference<>();
-
-                HoldingsItemsDAO dao = new HoldingsItemsDAO(connection, "") {
-                    @Override
-                    void logValidationError(String warning) {
-                        System.out.println("warning = " + warning);
-                        ref.set(warning);
-                    }
-                };
-                dao.validateConnection();
-                String warning = ref.get();
-                if (warning == null || !warning.contains("TEST VALUE")) {
-                    fail("Expected Logged Warning");
-                }
-
-            } finally {
-                connection.rollback();
-            }
-        }
-    }
-
-    @Test
-    public void testReadWriteRecord() throws Exception {
-        try (Connection connection = dataSource.getConnection()) {
-            HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(connection, "FOO");
-            RecordCollection col = dao.getRecordCollection("1234567890", 870970, "1234567890");
-            Record record = col.findRecord("A1");
-            assertTrue("Newly created record is modified", record.isModified());
-            col.setIssueText("text 1");
-            col.setExpectedDelivery(dateString("2015-01-01"));
-            record.setBranch("B1");
-            record.setDepartment("D1");
-            record.setLocation("L1");
-            record.setSubLocation("S1");
-            record.setCirculationRule("ANY");
-            record.setAccessionDate(dateString("2014-06-16"));
-            record.setStatus(Record.OnOrder);
-            col.save();
-
-            RecordCollection col2 = dao.getRecordCollection("1234567890", 870970, "1234567890");
-            Record record2 = col2.findRecord("A1");
-            assertFalse("Record from db is not modified", record2.isModified());
-            assertEquals(col2.getExpectedDelivery().getTime(), col.getExpectedDelivery().getTime());
-        }
-    }
-
-    @Test
-    public void testQueue() throws HoldingsItemsException, SQLException {
-        try (Connection connection = dataSource.getConnection()) {
-            connection.setAutoCommit(false);
-            HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(connection);
+    public void testOldQueue() throws HoldingsItemsException, SQLException {
+        System.out.println("testOldQueue");
+        jpa(em -> {
+            HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em);
             dao.enqueueOld("987654321", 870970, "solrIndex1");
-            connection.commit();
+        });
+        flushAndEvict();
+        jpa(em -> {
+            HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em);
             List<QueueJob> queue = queue();
             System.out.println("queue = " + queue);
             assertEquals("Sizeof queue is 1", 1, queue.size());
@@ -116,124 +65,18 @@ public class HoldingsItemsDAOIT extends DbBase {
             long diff = Math.abs(queued.toEpochMilli() - Instant.now().toEpochMilli());
             System.out.println("diff = " + diff);
             assertTrue("Not too long ago it has been queued", diff < 500);
-        }
-    }
-
-    @Test
-    public void testGetAgenciesThatHasHoldingsFor() throws HoldingsItemsException, SQLException {
-        try (Connection connection = dataSource.getConnection()) {
-            HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(connection, "FOO");
-            connection.setAutoCommit(false);
-
-            RecordCollection col = dao.getRecordCollection("1234567890", 870970, "1234567890");
-            Record record = col.findRecord("A1");
-            assertTrue("Newly created record is modified", record.isModified());
-            col.setIssueText("text 1");
-            col.setExpectedDelivery(dateString("2015-01-01"));
-            record.setBranch("B1");
-            record.setDepartment("D1");
-            record.setLocation("L1");
-            record.setSubLocation("S1");
-            record.setCirculationRule("ANY");
-            record.setAccessionDate(dateString("2014-06-16"));
-            record.setStatus(Record.OnOrder);
-            col.save();
-
-            col = dao.getRecordCollection("1234567890", 123456, "1234567890");
-            record = col.findRecord("A1");
-            assertTrue("Newly created record is modified", record.isModified());
-            col.setIssueText("text 1");
-            col.setExpectedDelivery(dateString("2015-01-01"));
-            record.setBranch("B1");
-            record.setDepartment("D1");
-            record.setLocation("L1");
-            record.setSubLocation("S1");
-            record.setCirculationRule("ANY");
-            record.setAccessionDate(dateString("2014-06-16"));
-            record.setStatus(Record.Decommissioned);
-            col.save();
-
-            col = dao.getRecordCollection("1234567890", 700000, "1234567890");
-            record = col.findRecord("A1");
-            assertTrue("Newly created record is modified", record.isModified());
-            col.setIssueText("text 1");
-            col.setExpectedDelivery(dateString("2015-01-01"));
-            record.setBranch("B1");
-            record.setDepartment("D1");
-            record.setLocation("L1");
-            record.setSubLocation("S1");
-            record.setCirculationRule("ANY");
-            record.setAccessionDate(dateString("2014-06-16"));
-            record.setStatus(Record.OnOrder);
-            record = col.findRecord("A2");
-            assertTrue("Newly created record is modified", record.isModified());
-            col.setIssueText("text 2");
-            col.setExpectedDelivery(dateString("2015-01-01"));
-            record.setBranch("B2");
-            record.setDepartment("D2");
-            record.setLocation("L2");
-            record.setSubLocation("S2");
-            record.setCirculationRule("ANY");
-            record.setAccessionDate(dateString("2014-06-16"));
-            record.setStatus(Record.OnOrder);
-            col.save();
-
-            connection.commit();
-
-            Set<Integer> agenciesThatHasHoldingsFor = dao.getAgenciesThatHasHoldingsFor("1234567890");
-            assertEquals("Size of response", 2, agenciesThatHasHoldingsFor.size());
-            assertTrue("Has 1", agenciesThatHasHoldingsFor.contains(700000));
-            assertTrue("Has 2", agenciesThatHasHoldingsFor.contains(870970));
-        }
-    }
-
-    @Test
-    public void testStatusFor() throws Exception {
-        try (Connection connection = dataSource.getConnection()) {
-
-            HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(connection, "FOO");
-            connection.setAutoCommit(false);
-            RecordCollection c;
-            Record r;
-            c = dao.getRecordCollection("12345678", 654321, "a");
-            r = c.findRecord("1");
-            r.setAccessionDate(new Date());
-            r.setStatus("OnLoan");
-            r = c.findRecord("2");
-            r.setAccessionDate(new Date());
-            r.setStatus("OnShelf");
-            dao.saveRecordCollection(c, Timestamp.from(Instant.now()));
-            c = dao.getRecordCollection("12345678", 654321, "b");
-            r = c.findRecord("3");
-            r.setAccessionDate(new Date());
-            r.setStatus("OnLoan");
-            r = c.findRecord("4");
-            r.setAccessionDate(new Date());
-            r.setStatus("Online");
-            dao.saveRecordCollection(c, Timestamp.from(Instant.now()));
-
-            Map<String, Integer> status = dao.getStatusFor("12345678", 654321);
-
-            System.out.println("status = " + status);
-            assertEquals(1, (int) status.get("OnShelf"));
-            assertEquals(1, (int) status.get("Online"));
-            assertEquals(2, (int) status.get("OnLoan"));
-            assertEquals(3, status.size());
-
-            connection.commit();
-        }
+        });
     }
 
     @Test
     public void testEnqueue() throws Exception {
         System.out.println("testEnqueue");
-        try (Connection connection = dataSource.getConnection()) {
-            HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(connection, "FOO");
-            connection.setAutoCommit(false);
+        jpa(em -> {
+            HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, "FOO");
             dao.enqueue("12345678", 888888, "{}", "worker");
             dao.enqueue("87654321", 888888, "{}", "worker", 1000);
-            connection.commit();
-        }
+        });
+        flushAndEvict();
         try (Connection connection = dataSource.getConnection() ;
              Statement stmt = connection.createStatement() ;
              ResultSet resultSet = stmt.executeQuery("SELECT bibliographicRecordId, agencyId, trackingId FROM queue")) {
@@ -245,10 +88,144 @@ public class HoldingsItemsDAOIT extends DbBase {
                 String tracking = resultSet.getString(++i);
                 results.add(biblId + "|" + agencyId + "|" + tracking);
             }
+            System.out.println("results = " + results);
             assertEquals(2, results.size());
             assertTrue(results.contains("12345678|888888|FOO"));
             assertTrue(results.contains("87654321|888888|FOO"));
         }
+    }
+
+    @Test(timeout = 2_000L)
+    public void allLiveBibliographicIdsForAgency() throws Exception {
+        System.out.println("allLiveBibliographicIdsForAgency");
+
+        jpa(em -> {
+            make4(em);
+        });
+
+        flushAndEvict();
+
+        Set<String> bibIds = jpa(em -> {
+            HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em);
+            return dao.getBibliographicIds(870970);
+        });
+        System.out.println("bibIds = " + bibIds);
+        assertThat(bibIds, hasItems("25912233", "abc"));
+
+        // Decommission abc:i1:d
+        jpa(em -> {
+            HoldingsItemsCollectionEntity c = HoldingsItemsCollectionEntity.from(em, 870970, "abc", "i1", Instant.MIN);
+            c.item("d", Instant.MIN)
+                    .setStatus(HoldingsItemsStatus.DECOMMISSIONED);
+            em.merge(c);
+        });
+
+        flushAndEvict();
+
+        List<String> bibIdsDecom = jpa(em -> {
+            return em.createQuery("SELECT h.bibliographicRecordId" + " FROM HoldingsItemsItemEntity h" + " WHERE h.agencyId = :agencyId" + "  AND h.status != :status" + " GROUP BY h.agencyId, h.bibliographicRecordId", String.class).setParameter("agencyId", 870970).setParameter("status", HoldingsItemsStatus.DECOMMISSIONED).getResultList();
+        });
+        System.out.println("bibIds = " + bibIdsDecom);
+        assertThat(bibIdsDecom, hasItems("25912233"));
+    }
+
+    @Test(timeout = 2_000L)
+    public void allIssuesForAgencyAndBibliographicRecordId() throws Exception {
+        System.out.println("allIssuesForAgencyAndBibliographicRecordId");
+        jpa(em -> {
+            make4(em);
+        });
+
+        flushAndEvict();
+        Set<String> issues = jpa(em -> {
+            HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em);
+            return dao.getIssueIds("25912233", 870970);
+        });
+        System.out.println("issues = " + issues);
+        assertThat(issues, hasItems("i1", "i2"));
+    }
+
+    @Test(timeout = 2_000L)
+    public void statusMapForAgencyAndBibliographicRecordId() throws Exception {
+        System.out.println("statusMapForAgencyAndBibliographicRecordId");
+        jpa(em -> {
+            HoldingsItemsCollectionEntity c1 = fill(HoldingsItemsCollectionEntity.from(em, 870970, "25912233", "i1", Instant.MIN));
+            fill(c1.item("a", Instant.MIN))
+                    .setStatus(HoldingsItemsStatus.ON_LOAN);
+            fill(c1.item("b", Instant.MIN))
+                    .setStatus(HoldingsItemsStatus.ON_LOAN);
+            fill(c1.item("c", Instant.MIN))
+                    .setStatus(HoldingsItemsStatus.ON_SHELF);
+            c1.save();
+            HoldingsItemsCollectionEntity c2 = fill(HoldingsItemsCollectionEntity.from(em, 870970, "25912233", "i2", Instant.MIN));
+            fill(c1.item("d", Instant.MIN))
+                    .setStatus(HoldingsItemsStatus.ON_ORDER);
+            fill(c1.item("e", Instant.MIN))
+                    .setStatus(HoldingsItemsStatus.ON_SHELF);
+            c2.save();
+        });
+
+        flushAndEvict();
+
+        Map<HoldingsItemsStatus, Long> statusMap = jpa(em -> {
+            HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em);
+            return dao.getStatusFor("25912233", 870970);
+        });
+        System.out.println("statusMap = " + statusMap);
+
+        assertThat(statusMap.keySet(), hasItems(HoldingsItemsStatus.ON_LOAN,
+                                                HoldingsItemsStatus.ON_SHELF,
+                                                HoldingsItemsStatus.ON_ORDER));
+        assertThat(statusMap.get(HoldingsItemsStatus.ON_LOAN), is(2L));
+        assertThat(statusMap.get(HoldingsItemsStatus.ON_SHELF), is(2L));
+        assertThat(statusMap.get(HoldingsItemsStatus.ON_ORDER), is(1L));
+        assertThat(statusMap.size(), is(3));
+    }
+
+    @Test(timeout = 2_000L)
+    public void hasLiveHoldingsForAgencyAndBibliographicRecordId() throws Exception {
+        System.out.println("hasLiveHoldingsForAgencyAndBibliographicRecordId");
+        // Create live holding
+        jpa(em -> {
+            HoldingsItemsCollectionEntity c1 = fill(HoldingsItemsCollectionEntity.from(em, 870970, "25912233", "i1", Instant.MIN));
+            fill(c1.item("a", Instant.MIN))
+                    .setStatus(HoldingsItemsStatus.ON_SHELF);
+            c1.save();
+        });
+
+        boolean hasLiveHoldings = jpa(em -> {
+            HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em);
+            return dao.hasLiveHoldings("25912233", 870970);
+        });
+        assertTrue(hasLiveHoldings);
+
+        // set to decommissioned
+        jpa(em -> {
+            HoldingsItemsCollectionEntity c1 = HoldingsItemsCollectionEntity.from(em, 870970, "25912233", "i1", Instant.MIN);
+            c1.item("a", Instant.MIN)
+                    .setStatus(HoldingsItemsStatus.DECOMMISSIONED);
+            c1.save();
+        });
+
+        hasLiveHoldings = jpa(em -> {
+            HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em);
+            return dao.hasLiveHoldings("25912233", 870970);
+        });
+        assertFalse(hasLiveHoldings);
+
+        // Create other issue with live
+        jpa(em -> {
+            HoldingsItemsCollectionEntity c2 = fill(HoldingsItemsCollectionEntity.from(em, 870970, "25912233", "i2", Instant.MIN));
+            fill(c2.item("b", Instant.MIN))
+                    .setStatus(HoldingsItemsStatus.ON_SHELF);
+            c2.save();
+        });
+
+        hasLiveHoldings = jpa(em -> {
+            HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em);
+            return dao.hasLiveHoldings("25912233", 870970);
+        });
+        assertTrue(hasLiveHoldings);
     }
 
 //  _   _      _                   _____                 _   _
@@ -283,12 +260,30 @@ public class HoldingsItemsDAOIT extends DbBase {
         return -1;
     }
 
-    private static Date dateString(String s) {
-        try {
-            return DATE_PARSER.parse(s);
-        } catch (ParseException ex) {
-            return new Date(0);
-        }
+    private void make4(EntityManager em) {
+        HoldingsItemsCollectionEntity c1 = HoldingsItemsCollectionEntity.from(em, 870970, "25912233", "i1", Instant.MIN);
+        fill(c1);
+        HoldingsItemsItemEntity i1 = c1.item("a", Instant.MIN);
+        fill(i1);
+        c1.save();
+
+        HoldingsItemsCollectionEntity c2 = HoldingsItemsCollectionEntity.from(em, 870970, "25912233", "i2", Instant.MIN);
+        fill(c2);
+        HoldingsItemsItemEntity i2 = c2.item("b", Instant.MIN);
+        fill(i2);
+        c2.save();
+
+        HoldingsItemsCollectionEntity c3 = HoldingsItemsCollectionEntity.from(em, 123456, "25912233", "i1", Instant.MIN);
+        fill(c3);
+        HoldingsItemsItemEntity i3 = c3.item("c", Instant.MIN);
+        fill(i3);
+        c3.save();
+
+        HoldingsItemsCollectionEntity c4 = HoldingsItemsCollectionEntity.from(em, 870970, "abc", "i1", Instant.MIN);
+        fill(c4);
+        HoldingsItemsItemEntity i4 = c4.item("d", Instant.MIN);
+        fill(i4);
+        c4.save();
     }
 
 }
