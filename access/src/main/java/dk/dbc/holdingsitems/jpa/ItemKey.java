@@ -26,7 +26,7 @@ import javax.persistence.EmbeddedId;
 
 /**
  *
- * Primary key of {@link HoldingsItemsItemEntity}
+ * Primary key of {@link ItemEntity}
  *
  * @author Morten Bøgeskov (mb@dbc.dk)
  */
