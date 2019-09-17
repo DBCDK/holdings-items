@@ -115,10 +115,11 @@
                             <workingDirectory>${basedir}</workingDirectory>
                             <executable>bash</executable>
                             <arguments>
-                                <argument>-ce</argument>
+                                <argument>-cex</argument>
                                 <argument>
                                     java -jar ${project.build.directory}/${project.artifactId}.jar ${user.name}:${user.name}@localhost:${postgresql.port}/holdingsitems
-                                    pg_dump --no-owner postgresql://${user.name}:${user.name}@localhost:${postgresql.port}/holdingsitems > ${project.build.directory}/holdingsitems-${project.version}.sql
+                                    read pg _ &lt; ${project.build.directory}/postgresql-cluster/postmaster.opts
+                                    $${pg%/*}/pg_dump --no-owner postgresql://${user.name}:${user.name}@localhost:${postgresql.port}/holdingsitems > ${project.build.directory}/holdingsitems-${project.version}.sql
                                 </argument>
                             </arguments>
                         </configuration>
