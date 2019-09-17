@@ -43,8 +43,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -313,12 +311,12 @@ public class UpdateWebserviceIT extends JpaBase {
         jpa(em -> {
             mockUpdateWebservice(em).holdingsItemsUpdate(updateReqNote1());
         });
-        String noteBefore = checkRow("101010", "12345678", "I1", "it1-1").getOrDefault("c.note", "N/A");
+        String noteBefore = checkRow("101010", "12345678", "I1", "it1-1").getOrDefault("b.note", "N/A");
         assertEquals("Original Note", noteBefore);
         jpa(em -> {
             mockUpdateWebservice(em).holdingsItemsUpdate(updateReqNote2());
         });
-        String noteAfter = checkRow("101010", "12345678", "I1", "it1-1").getOrDefault("c.note", "N/A");
+        String noteAfter = checkRow("101010", "12345678", "I1", "it1-1").getOrDefault("b.note", "N/A");
         assertEquals("Updated Note", noteAfter);
     }
 
@@ -610,7 +608,7 @@ public class UpdateWebserviceIT extends JpaBase {
 
     private int countAllCollections() throws SQLException {
         try (Connection db = dataSource.getConnection() ;
-             PreparedStatement stmt = db.prepareStatement("SELECT COUNT(*) FROM holdingsitemscollection") ;
+             PreparedStatement stmt = db.prepareStatement("SELECT COUNT(*) FROM issue") ;
              ResultSet resultSet = stmt.executeQuery()) {
             if (resultSet.next()) {
                 return resultSet.getInt(1);
@@ -621,7 +619,7 @@ public class UpdateWebserviceIT extends JpaBase {
 
     private int countAllItems() throws SQLException {
         try (Connection db = dataSource.getConnection() ;
-             PreparedStatement stmt = db.prepareStatement("SELECT COUNT(*) FROM holdingsitemsitem") ;
+             PreparedStatement stmt = db.prepareStatement("SELECT COUNT(*) FROM item") ;
              ResultSet resultSet = stmt.executeQuery()) {
             if (resultSet.next()) {
                 return resultSet.getInt(1);
@@ -632,7 +630,7 @@ public class UpdateWebserviceIT extends JpaBase {
 
     private int countItems(StatusType type) throws SQLException {
         try (Connection db = dataSource.getConnection() ;
-             PreparedStatement stmt = db.prepareStatement("SELECT COUNT(*) FROM holdingsitemsitem WHERE status=?")) {
+             PreparedStatement stmt = db.prepareStatement("SELECT COUNT(*) FROM item WHERE status=?")) {
             stmt.setString(1, type.value());
             try (ResultSet resultSet = stmt.executeQuery()) {
                 if (resultSet.next()) {
@@ -653,7 +651,7 @@ public class UpdateWebserviceIT extends JpaBase {
                      "c.issuetext, " +
                      "c.expecteddelivery, " +
                      "c.readyforloan, " +
-                     "c.note, " +
+                     "b.note, " +
                      "c.complete, " +
                      "c.created, " +
                      "c.modified, " +
@@ -672,10 +670,13 @@ public class UpdateWebserviceIT extends JpaBase {
                      "i.created, " +
                      "i.modified, " +
                      "i.trackingid " +
-                     "FROM holdingsitemscollection AS c JOIN holdingsitemsitem AS i USING (" +
+                     "FROM issue AS c JOIN item AS i USING (" +
                      "agencyid, " +
                      "bibliographicrecordid, " +
                      "issueid" +
+                     ") JOIN bibliographicItem AS b USING(" +
+                     "agencyid, " +
+                     "bibliographicrecordid" +
                      ") WHERE " +
                      "agencyid=? AND " +
                      "bibliographicrecordid=? AND " +
@@ -695,7 +696,7 @@ public class UpdateWebserviceIT extends JpaBase {
                     setString("c.issuetext", resultSet, i, row);
                     setDate("c.expecteddelivery", resultSet, i, row);
                     setInt("c.readyforloan", resultSet, i, row);
-                    setString("c.note", resultSet, i, row);
+                    setString("b.note", resultSet, i, row);
                     setTimestamp("c.complete", resultSet, i, row);
                     setTimestamp("c.created", resultSet, i, row);
                     setTimestamp("c.modified", resultSet, i, row);
