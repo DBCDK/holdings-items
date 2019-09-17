@@ -28,7 +28,7 @@ import static java.util.stream.Collectors.toMap;
  *
  * @author Morten Bøgeskov (mb@dbc.dk)
  */
-public enum HoldingsItemsStatus {
+public enum Status {
 
     ON_ORDER("OnOrder"),
     NOT_FOR_LOAN("NotForLoan"),
@@ -40,7 +40,7 @@ public enum HoldingsItemsStatus {
 
     private final String name;
 
-    HoldingsItemsStatus(String name) {
+    Status(String name) {
         this.name = name;
     }
 
@@ -49,16 +49,16 @@ public enum HoldingsItemsStatus {
         return name;
     }
 
-    private static final Map<String, HoldingsItemsStatus> LOOKUP =
-            EnumSet.allOf(HoldingsItemsStatus.class)
+    private static final Map<String, Status> LOOKUP =
+            EnumSet.allOf(Status.class)
                     .stream()
                     .collect(toMap(e -> e.toString().toLowerCase(Locale.ROOT),
                                    e -> e));
 
-    public static HoldingsItemsStatus getHoldingsItemsStatus(String value) {
-        HoldingsItemsStatus status = LOOKUP.get(value.toLowerCase(Locale.ROOT));
+    public static Status parse(String value) {
+        Status status = LOOKUP.get(value.toLowerCase(Locale.ROOT));
         if (status == null)
-            throw new IllegalArgumentException("Cannot turn `" + value + "' into a HoldingsItemsStatus");
+            throw new IllegalArgumentException("Cannot turn `" + value + "' into a holdingsitems.Status");
         return status;
     }
 }

@@ -22,60 +22,45 @@ import java.io.Serializable;
 import java.util.Objects;
 import javax.persistence.Column;
 import javax.persistence.Embeddable;
-import javax.persistence.EmbeddedId;
 
 /**
- *
- * Primary key of {@link HoldingsItemsItemEntity}
  *
  * @author Morten Bøgeskov (mb@dbc.dk)
  */
 @Embeddable
-public class HoldingsItemsItemKey implements Serializable {
+public class BibliographicItemKey implements Serializable {
 
-    private static final long serialVersionUID = -1235435134573567276L;
-
-    @EmbeddedId
-    private final HoldingsItemsCollectionKey collection;
+    private static final long serialVersionUID = -9086851349780345061L;
 
     @Column(updatable = false, insertable = false, nullable = false)
-    private String itemId;
+    private int agencyId;
 
-    public HoldingsItemsItemKey() {
-        this.collection = new HoldingsItemsCollectionKey();
+    @Column(updatable = false, insertable = false, nullable = false)
+    private String bibliographicRecordId;
+
+
+    public BibliographicItemKey() {
     }
 
-    public HoldingsItemsItemKey(HoldingsItemsCollectionKey key, String itemId) {
-        this.collection = key;
-        this.itemId = itemId;
-    }
-
-    public HoldingsItemsItemKey(int agencyId, String bibliographicRecordId, String issueId, String itemId) {
-        this.collection = new HoldingsItemsCollectionKey(agencyId, bibliographicRecordId, issueId);
-        this.itemId = itemId;
+    public BibliographicItemKey(int agencyId, String bibliographicRecordId) {
+        this.agencyId = agencyId;
+        this.bibliographicRecordId = bibliographicRecordId;
     }
 
     public int getAgencyId() {
-        return collection.getAgencyId();
+        return agencyId;
     }
 
     public String getBibliographicRecordId() {
-        return collection.getBibliographicRecordId();
+        return bibliographicRecordId;
     }
 
-    public String getIssueId() {
-        return collection.getIssueId();
-    }
-
-    public String getItemId() {
-        return itemId;
-    }
 
     @Override
     public int hashCode() {
         int hash = 5;
-        hash = 67 * hash + collection.hashCode();
-        hash = 67 * hash + Objects.hashCode(this.itemId);
+        hash = 67 * hash + this.agencyId;
+        hash = 67 * hash + Objects.hashCode(this.bibliographicRecordId);
         return hash;
     }
 
@@ -85,9 +70,13 @@ public class HoldingsItemsItemKey implements Serializable {
             return true;
         if (obj == null || getClass() != obj.getClass())
             return false;
-        final HoldingsItemsItemKey other = (HoldingsItemsItemKey) obj;
-        return Objects.equals(this.collection, other.collection) &&
-               Objects.equals(this.itemId, other.itemId);
+        final BibliographicItemKey other = (BibliographicItemKey) obj;
+        return Objects.equals(this.agencyId, other.agencyId) &&
+               Objects.equals(this.bibliographicRecordId, other.bibliographicRecordId);
     }
 
+    @Override
+    public String toString() {
+        return "BibliographicItemKey{" + "agencyId=" + agencyId + ", bibliographicRecordId=" + bibliographicRecordId + '}';
+    }
 }

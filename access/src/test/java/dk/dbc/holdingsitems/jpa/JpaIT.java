@@ -20,6 +20,7 @@ package dk.dbc.holdingsitems.jpa;
 
 import dk.dbc.holdingsitems.JpaBase;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import org.junit.Test;
 
@@ -37,27 +38,33 @@ public class JpaIT extends JpaBase {
         System.out.println("testPersistVsMerge");
         jpa(em -> {
             // Newly created: fill is nessecary, save is persist
-            HoldingsItemsCollectionEntity c1 = HoldingsItemsCollectionEntity.from(em, 870970, "25912233", "i1", Instant.MIN);
-            assertThat(c1.getTrackingId(), nullValue());
+            BibliographicItemEntity b1 = BibliographicItemEntity.from(em, 870970, "25912233", Instant.now(), LocalDate.now());
+            fill(b1);
+            b1.setTrackingId("TOPLEVEL");
+            IssueEntity c1 = b1.issue("i1", Instant.MIN);
+            assertThat(c1.getTrackingId(), is("TOPLEVEL"));
             fill(c1);
             c1.setTrackingId("ABC#1");
             c1.save();
         });
 
-        HoldingsItemsCollectionEntity v1 = jpa(em -> {
-            return HoldingsItemsCollectionEntity.from(em, 870970, "25912233", "i1", Instant.MIN);
+        IssueEntity v1 = jpa(em -> {
+            BibliographicItemEntity b1 = BibliographicItemEntity.from(em, 870970, "25912233", Instant.now(), LocalDate.now());
+            return b1.issue("i1", Instant.MIN);
         });
         assertThat(v1.getTrackingId(), is("ABC#1"));
 
         jpa(em -> {
             // Taken from database: fill is not nessecary, save is merge
-            HoldingsItemsCollectionEntity c2 = HoldingsItemsCollectionEntity.from(em, 870970, "25912233", "i1", Instant.MIN);
+            BibliographicItemEntity b2 = BibliographicItemEntity.from(em, 870970, "25912233", Instant.now(), LocalDate.now());
+            IssueEntity c2 = b2.issue("i1", Instant.MIN);
             c2.setTrackingId("ABC#2");
             c2.save();
         });
 
-        HoldingsItemsCollectionEntity v2 = jpa(em -> {
-            return HoldingsItemsCollectionEntity.from(em, 870970, "25912233", "i1", Instant.MIN);
+        IssueEntity v2 = jpa(em -> {
+            BibliographicItemEntity b2 = BibliographicItemEntity.from(em, 870970, "25912233", Instant.now(), LocalDate.now());
+            return b2.issue("i1", Instant.MIN);
         });
         assertThat(v2.getTrackingId(), is("ABC#2"));
     }
@@ -66,31 +73,49 @@ public class JpaIT extends JpaBase {
     public void getAllIssues() throws Exception {
         System.out.println("getAllIssues");
 
-        HoldingsItemsCollectionEntity[] expected = new HoldingsItemsCollectionEntity[2];
+        IssueEntity[] expected = new IssueEntity[2];
 
         jpa(em -> {
-            HoldingsItemsCollectionEntity c1 = HoldingsItemsCollectionEntity.from(em, 870970, "25912233", "i1", Instant.MIN);
+
+            BibliographicItemEntity b1 = BibliographicItemEntity.from(em, 870970, "25912233", Instant.MIN, LocalDate.now());
+            fill(b1);
+
+            IssueEntity c1 = b1.issue("i1", Instant.MIN);
             fill(c1);
-            c1.save();
-            expected[0] = c1;
+            ItemEntity i1 = c1.item("a", Instant.MIN);
+            fill(i1);
 
-            HoldingsItemsCollectionEntity c2 = HoldingsItemsCollectionEntity.from(em, 870970, "25912233", "i2", Instant.MIN);
+            IssueEntity c2 = b1.issue("i2", Instant.MIN);
             fill(c2);
-            c2.save();
-            expected[1] = c2;
+            ItemEntity i2 = c2.item("b", Instant.MIN);
+            fill(i2);
+            b1.save();
 
-            HoldingsItemsCollectionEntity c3 = HoldingsItemsCollectionEntity.from(em, 123456, "25912233", "i2", Instant.MIN);
+            BibliographicItemEntity b2 = BibliographicItemEntity.from(em, 123456, "25912233", Instant.MIN, LocalDate.now());
+            fill(b2);
+
+            IssueEntity c3 = b2.issue("i1", Instant.MIN);
             fill(c3);
-            c3.save();
+            ItemEntity i3 = c3.item("c", Instant.MIN);
+            fill(i3);
+            b2.save();
 
-            HoldingsItemsCollectionEntity c4 = HoldingsItemsCollectionEntity.from(em, 870970, "abc", "i2", Instant.MIN);
+            BibliographicItemEntity b3 = BibliographicItemEntity.from(em, 870970, "abc", Instant.MIN, LocalDate.now());
+            fill(b3);
+
+            IssueEntity c4 = b3.issue("i1", Instant.MIN);
             fill(c4);
-            c4.save();
+            ItemEntity i4 = c4.item("d", Instant.MIN);
+            fill(i4);
+            b3.save();
+
+            expected[0] = c1;
+            expected[1] = c2;
         });
 
         flushAndEvict();
-        List<HoldingsItemsCollectionEntity> all = jpa(em -> {
-            return HoldingsItemsCollectionEntity.byAgencyBibliographic(em, 870970, "25912233");
+        List<IssueEntity> all = jpa(em -> {
+            return IssueEntity.byAgencyBibliographic(em, 870970, "25912233");
         });
         assertThat(all, hasItems(expected));
     }

@@ -18,14 +18,16 @@
  */
 package dk.dbc.holdingsitems;
 
-import dk.dbc.holdingsitems.jpa.HoldingsItemsCollectionEntity;
-import dk.dbc.holdingsitems.jpa.HoldingsItemsStatus;
+import dk.dbc.holdingsitems.jpa.BibliographicItemEntity;
+import dk.dbc.holdingsitems.jpa.Status;
 import dk.dbc.pgqueue.PreparedQueueSupplier;
 import dk.dbc.pgqueue.QueueSupplier;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -82,7 +84,7 @@ public class HoldingsItemsDAO {
     /**
      * Constructor
      *
-     * @param em EntityManager
+     * @param em         EntityManager
      * @param trackingId tracking of updates
      */
     HoldingsItemsDAO(EntityManager em, String trackingId) {
@@ -134,13 +136,13 @@ public class HoldingsItemsDAO {
      */
     public Set<String> getBibliographicIds(int agencyId) {
         return new HashSet<>(em.createQuery("SELECT h.bibliographicRecordId" +
-                                            " FROM HoldingsItemsItemEntity h" +
+                                            " FROM ItemEntity h" +
                                             " WHERE h.agencyId = :agencyId" +
                                             "  AND h.status != :status" +
                                             " GROUP BY h.agencyId, h.bibliographicRecordId",
                                             String.class)
                 .setParameter("agencyId", agencyId)
-                .setParameter("status", HoldingsItemsStatus.DECOMMISSIONED)
+                .setParameter("status", Status.DECOMMISSIONED)
                 .getResultList());
     }
 
@@ -155,7 +157,7 @@ public class HoldingsItemsDAO {
     public Set<String> getIssueIds(String bibliographicId, int agencyId) throws HoldingsItemsException {
         List<String> list = em.createQuery(
                 "SELECT h.issueId" +
-                " FROM HoldingsItemsCollectionEntity h" +
+                " FROM IssueEntity h" +
                 " WHERE h.agencyId = :agencyId" +
                 "  AND h.bibliographicRecordId = :bibliographicRecordId",
                 String.class)
@@ -174,10 +176,14 @@ public class HoldingsItemsDAO {
      * @param modified              timestamp to use for created/complete if a
      *                              new record is created
      * @return record collection object
-     * @throws HoldingsItemsException When database communication fails
      */
-    public HoldingsItemsCollectionEntity getRecordCollection(String bibliographicRecordId, int agencyId, String issueId, Instant modified) throws HoldingsItemsException {
-        return HoldingsItemsCollectionEntity.from(em, agencyId, bibliographicRecordId, issueId, modified);
+    public BibliographicItemEntity getRecordCollection(String bibliographicRecordId, int agencyId, Instant modified) {
+        BibliographicItemEntity b = BibliographicItemEntity.from(
+                em, agencyId, bibliographicRecordId, modified,
+                modified == null ? null : LocalDateTime.ofInstant(modified, ZoneOffset.UTC).toLocalDate());
+        if (b.isNew())
+            b.setTrackingId(trackingId);
+        return b;
     }
 
     /**
@@ -195,7 +201,7 @@ public class HoldingsItemsDAO {
                 " GROUP BY h.agencyId",
                 Integer.class)
                 .setParameter("bibId", bibliographicRecordId)
-                .setParameter("status", HoldingsItemsStatus.DECOMMISSIONED)
+                .setParameter("status", Status.DECOMMISSIONED)
                 .getResultList();
         return new HashSet<>(list);
     }
@@ -211,13 +217,10 @@ public class HoldingsItemsDAO {
      * @throws HoldingsItemsException in case of a database error
      */
     public void updateBibliographicItemNote(String note, int agencyId, String bibliographicRecordId, Instant modified) throws HoldingsItemsException {
-        HoldingsItemsCollectionEntity.byAgencyBibliographic(em, agencyId, bibliographicRecordId)
-                .stream()
-                .filter(e -> !e.getModified().isAfter(modified))
-                .forEach(e -> {
-                    e.setNote(note);
-                    e.save();
-                });
+        BibliographicItemEntity item = BibliographicItemEntity.from(em, agencyId, bibliographicRecordId, modified, null);
+        if (item.isNew() ||
+            !item.getModified().isAfter(modified))
+            item.setNote(note);
     }
 
     /**
@@ -228,10 +231,10 @@ public class HoldingsItemsDAO {
      * @return key-value pairs with status and number of that status
      * @throws HoldingsItemsException in case of a database error
      */
-    public Map<HoldingsItemsStatus, Long> getStatusFor(String bibliographicRecordId, int agencyId) throws HoldingsItemsException {
-        return (Map<HoldingsItemsStatus, Long>) em.createQuery(
+    public Map<Status, Long> getStatusFor(String bibliographicRecordId, int agencyId) throws HoldingsItemsException {
+        return (Map<Status, Long>) em.createQuery(
                 "SELECT new " + StatusDTO.class.getCanonicalName() + "(h.status, COUNT(h.status))" +
-                " FROM HoldingsItemsItemEntity h" +
+                " FROM ItemEntity h" +
                 " WHERE h.agencyId = :agencyId" +
                 "  AND h.bibliographicRecordId = :bibliographicRecordId" +
                 " GROUP BY h.status",
@@ -245,15 +248,15 @@ public class HoldingsItemsDAO {
 
     private static class StatusDTO {
 
-        private final HoldingsItemsStatus status;
+        private final Status status;
         private final long count;
 
-        public StatusDTO(HoldingsItemsStatus status, long count) {
+        public StatusDTO(Status status, long count) {
             this.status = status;
             this.count = count;
         }
 
-        public HoldingsItemsStatus getStatus() {
+        public Status getStatus() {
             return status;
         }
 
@@ -274,13 +277,13 @@ public class HoldingsItemsDAO {
     public boolean hasLiveHoldings(String bibliographicRecordId, int agencyId) throws HoldingsItemsException {
         return !em.createQuery(
                 "SELECT h.status" +
-                " FROM HoldingsItemsItemEntity h" +
+                " FROM ItemEntity h" +
                 " WHERE h.agencyId = :agencyId" +
                 "  AND h.bibliographicRecordId = :bibliographicRecordId" +
                 "  AND h.status != :status")
                 .setParameter("agencyId", agencyId)
                 .setParameter("bibliographicRecordId", bibliographicRecordId)
-                .setParameter("status", HoldingsItemsStatus.DECOMMISSIONED)
+                .setParameter("status", Status.DECOMMISSIONED)
                 .setMaxResults(1)
                 .getResultList()
                 .isEmpty();

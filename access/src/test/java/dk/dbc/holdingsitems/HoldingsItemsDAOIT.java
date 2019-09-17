@@ -18,9 +18,11 @@
  */
 package dk.dbc.holdingsitems;
 
-import dk.dbc.holdingsitems.jpa.HoldingsItemsCollectionEntity;
-import dk.dbc.holdingsitems.jpa.HoldingsItemsItemEntity;
-import dk.dbc.holdingsitems.jpa.HoldingsItemsStatus;
+import dk.dbc.holdingsitems.jpa.BibliographicItemEntity;
+import dk.dbc.holdingsitems.jpa.IssueEntity;
+import dk.dbc.holdingsitems.jpa.ItemEntity;
+import dk.dbc.holdingsitems.jpa.ItemKey;
+import dk.dbc.holdingsitems.jpa.Status;
 import org.junit.Test;
 
 import java.sql.Connection;
@@ -30,6 +32,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -114,16 +117,25 @@ public class HoldingsItemsDAOIT extends JpaBase {
 
         // Decommission abc:i1:d
         jpa(em -> {
-            HoldingsItemsCollectionEntity c = HoldingsItemsCollectionEntity.from(em, 870970, "abc", "i1", Instant.MIN);
+            BibliographicItemEntity b = BibliographicItemEntity.from(em, 870970, "abc", Instant.now(), LocalDate.MAX);
+            IssueEntity c = b.issue("i1", Instant.MIN);
             c.item("d", Instant.MIN)
-                    .setStatus(HoldingsItemsStatus.DECOMMISSIONED);
-            em.merge(c);
+                    .setStatus(Status.DECOMMISSIONED);
+            em.merge(b);
         });
 
         flushAndEvict();
 
         List<String> bibIdsDecom = jpa(em -> {
-            return em.createQuery("SELECT h.bibliographicRecordId" + " FROM HoldingsItemsItemEntity h" + " WHERE h.agencyId = :agencyId" + "  AND h.status != :status" + " GROUP BY h.agencyId, h.bibliographicRecordId", String.class).setParameter("agencyId", 870970).setParameter("status", HoldingsItemsStatus.DECOMMISSIONED).getResultList();
+            return em.createQuery("SELECT h.bibliographicRecordId" +
+                                  " FROM ItemEntity h" +
+                                  " WHERE h.agencyId = :agencyId" +
+                                  "  AND h.status != :status" +
+                                  " GROUP BY h.agencyId, h.bibliographicRecordId",
+                                  String.class)
+                    .setParameter("agencyId", 870970)
+                    .setParameter("status", Status.DECOMMISSIONED)
+                    .getResultList();
         });
         System.out.println("bibIds = " + bibIdsDecom);
         assertThat(bibIdsDecom, hasItems("25912233"));
@@ -149,36 +161,38 @@ public class HoldingsItemsDAOIT extends JpaBase {
     public void statusMapForAgencyAndBibliographicRecordId() throws Exception {
         System.out.println("statusMapForAgencyAndBibliographicRecordId");
         jpa(em -> {
-            HoldingsItemsCollectionEntity c1 = fill(HoldingsItemsCollectionEntity.from(em, 870970, "25912233", "i1", Instant.MIN));
+            BibliographicItemEntity b1 = BibliographicItemEntity.from(em, 870970, "25912233", Instant.MIN, LocalDate.now());
+            fill(b1);
+
+            IssueEntity c1 = fill(b1.issue("i1", Instant.MIN));
             fill(c1.item("a", Instant.MIN))
-                    .setStatus(HoldingsItemsStatus.ON_LOAN);
+                    .setStatus(Status.ON_LOAN);
             fill(c1.item("b", Instant.MIN))
-                    .setStatus(HoldingsItemsStatus.ON_LOAN);
+                    .setStatus(Status.ON_LOAN);
             fill(c1.item("c", Instant.MIN))
-                    .setStatus(HoldingsItemsStatus.ON_SHELF);
-            c1.save();
-            HoldingsItemsCollectionEntity c2 = fill(HoldingsItemsCollectionEntity.from(em, 870970, "25912233", "i2", Instant.MIN));
-            fill(c1.item("d", Instant.MIN))
-                    .setStatus(HoldingsItemsStatus.ON_ORDER);
-            fill(c1.item("e", Instant.MIN))
-                    .setStatus(HoldingsItemsStatus.ON_SHELF);
-            c2.save();
+                    .setStatus(Status.ON_SHELF);
+            IssueEntity c2 = fill(b1.issue("i2", Instant.MIN));
+            fill(c2.item("d", Instant.MIN))
+                    .setStatus(Status.ON_ORDER);
+            fill(c2.item("e", Instant.MIN))
+                    .setStatus(Status.ON_SHELF);
+            b1.save();
         });
 
         flushAndEvict();
 
-        Map<HoldingsItemsStatus, Long> statusMap = jpa(em -> {
+        Map<Status, Long> statusMap = jpa(em -> {
             HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em);
             return dao.getStatusFor("25912233", 870970);
         });
         System.out.println("statusMap = " + statusMap);
 
-        assertThat(statusMap.keySet(), hasItems(HoldingsItemsStatus.ON_LOAN,
-                                                HoldingsItemsStatus.ON_SHELF,
-                                                HoldingsItemsStatus.ON_ORDER));
-        assertThat(statusMap.get(HoldingsItemsStatus.ON_LOAN), is(2L));
-        assertThat(statusMap.get(HoldingsItemsStatus.ON_SHELF), is(2L));
-        assertThat(statusMap.get(HoldingsItemsStatus.ON_ORDER), is(1L));
+        assertThat(statusMap.keySet(), hasItems(Status.ON_LOAN,
+                                                Status.ON_SHELF,
+                                                Status.ON_ORDER));
+        assertThat(statusMap.get(Status.ON_LOAN), is(2L));
+        assertThat(statusMap.get(Status.ON_SHELF), is(2L));
+        assertThat(statusMap.get(Status.ON_ORDER), is(1L));
         assertThat(statusMap.size(), is(3));
     }
 
@@ -187,10 +201,13 @@ public class HoldingsItemsDAOIT extends JpaBase {
         System.out.println("hasLiveHoldingsForAgencyAndBibliographicRecordId");
         // Create live holding
         jpa(em -> {
-            HoldingsItemsCollectionEntity c1 = fill(HoldingsItemsCollectionEntity.from(em, 870970, "25912233", "i1", Instant.MIN));
+            BibliographicItemEntity b1 = BibliographicItemEntity.from(em, 870970, "25912233", Instant.MIN, LocalDate.now());
+            fill(b1);
+
+            IssueEntity c1 = fill(b1.issue("i1", Instant.MIN));
             fill(c1.item("a", Instant.MIN))
-                    .setStatus(HoldingsItemsStatus.ON_SHELF);
-            c1.save();
+                    .setStatus(Status.ON_SHELF);
+            b1.save();
         });
 
         boolean hasLiveHoldings = jpa(em -> {
@@ -201,10 +218,11 @@ public class HoldingsItemsDAOIT extends JpaBase {
 
         // set to decommissioned
         jpa(em -> {
-            HoldingsItemsCollectionEntity c1 = HoldingsItemsCollectionEntity.from(em, 870970, "25912233", "i1", Instant.MIN);
+            BibliographicItemEntity b1 = BibliographicItemEntity.from(em, 870970, "25912233", Instant.MIN, LocalDate.now());
+            IssueEntity c1 = b1.issue("i1", Instant.MIN);
             c1.item("a", Instant.MIN)
-                    .setStatus(HoldingsItemsStatus.DECOMMISSIONED);
-            c1.save();
+                    .setStatus(Status.DECOMMISSIONED);
+            b1.save();
         });
 
         hasLiveHoldings = jpa(em -> {
@@ -215,9 +233,10 @@ public class HoldingsItemsDAOIT extends JpaBase {
 
         // Create other issue with live
         jpa(em -> {
-            HoldingsItemsCollectionEntity c2 = fill(HoldingsItemsCollectionEntity.from(em, 870970, "25912233", "i2", Instant.MIN));
+            BibliographicItemEntity b1 = BibliographicItemEntity.from(em, 870970, "25912233", Instant.MIN, LocalDate.now());
+            IssueEntity c2 = fill(b1.issue("i2", Instant.MIN));
             fill(c2.item("b", Instant.MIN))
-                    .setStatus(HoldingsItemsStatus.ON_SHELF);
+                    .setStatus(Status.ON_SHELF);
             c2.save();
         });
 
@@ -226,6 +245,32 @@ public class HoldingsItemsDAOIT extends JpaBase {
             return dao.hasLiveHoldings("25912233", 870970);
         });
         assertTrue(hasLiveHoldings);
+    }
+
+    @Test(timeout = 2_000L)
+    public void accessByBiliographicItem() throws Exception {
+        System.out.println("accessByBiliographicItem");
+        jpa(em -> {
+
+            BibliographicItemEntity b1 = BibliographicItemEntity.from(em, 870970, "25912233", Instant.MIN, LocalDate.now());
+            fill(b1);
+
+            IssueEntity c1 = fill(b1.issue("i1", Instant.MIN));
+            fill(c1.item("a", Instant.MIN))
+                    .setStatus(Status.ON_SHELF);
+
+            ItemEntity i1 = c1.item("it1", Instant.MIN);
+            fill(i1);
+            b1.save();
+
+        });
+        flushAndEvict();
+
+        ItemEntity item = jpa(em -> {
+            return em.find(ItemEntity.class, new ItemKey(870970, "25912233", "i1", "it1"));
+        });
+        System.out.println("item = " + item);
+        assertThat(item, notNullValue());
     }
 
 //  _   _      _                   _____                 _   _
@@ -261,29 +306,38 @@ public class HoldingsItemsDAOIT extends JpaBase {
     }
 
     private void make4(EntityManager em) {
-        HoldingsItemsCollectionEntity c1 = HoldingsItemsCollectionEntity.from(em, 870970, "25912233", "i1", Instant.MIN);
+
+        BibliographicItemEntity b1 = BibliographicItemEntity.from(em, 870970, "25912233", Instant.MIN, LocalDate.now());
+        fill(b1);
+
+        IssueEntity c1 = b1.issue("i1", Instant.MIN);
         fill(c1);
-        HoldingsItemsItemEntity i1 = c1.item("a", Instant.MIN);
+        ItemEntity i1 = c1.item("a", Instant.MIN);
         fill(i1);
-        c1.save();
 
-        HoldingsItemsCollectionEntity c2 = HoldingsItemsCollectionEntity.from(em, 870970, "25912233", "i2", Instant.MIN);
+        IssueEntity c2 = b1.issue("i2", Instant.MIN);
         fill(c2);
-        HoldingsItemsItemEntity i2 = c2.item("b", Instant.MIN);
+        ItemEntity i2 = c2.item("b", Instant.MIN);
         fill(i2);
-        c2.save();
+        b1.save();
 
-        HoldingsItemsCollectionEntity c3 = HoldingsItemsCollectionEntity.from(em, 123456, "25912233", "i1", Instant.MIN);
+        BibliographicItemEntity b2 = BibliographicItemEntity.from(em, 123456, "25912233", Instant.MIN, LocalDate.now());
+        fill(b2);
+
+        IssueEntity c3 = b2.issue("i1", Instant.MIN);
         fill(c3);
-        HoldingsItemsItemEntity i3 = c3.item("c", Instant.MIN);
+        ItemEntity i3 = c3.item("c", Instant.MIN);
         fill(i3);
-        c3.save();
+        b2.save();
 
-        HoldingsItemsCollectionEntity c4 = HoldingsItemsCollectionEntity.from(em, 870970, "abc", "i1", Instant.MIN);
+        BibliographicItemEntity b3 = BibliographicItemEntity.from(em, 870970, "abc", Instant.MIN, LocalDate.now());
+        fill(b3);
+
+        IssueEntity c4 = b3.issue("i1", Instant.MIN);
         fill(c4);
-        HoldingsItemsItemEntity i4 = c4.item("d", Instant.MIN);
+        ItemEntity i4 = c4.item("d", Instant.MIN);
         fill(i4);
-        c4.save();
+        b3.save();
     }
 
 }
