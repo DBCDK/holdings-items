@@ -1,6 +1,13 @@
 [
+    { "": "bibliographicItem",
+        "agencyid": 700000,
+        "bibliographicrecordid": "87654321",
+        "trackingId": "xxx",
+        "note": "any-text",
+        "firstAccessionDate": "2019-03-04"
+    },
     {
-        "": "holdingsitemscollection",
+        "": "issue",
         "agencyid": 700000,
         "bibliographicrecordid": "87654321",
         "issueid": "dp",
@@ -9,7 +16,7 @@
         "readyforloan": -1
     },
     {
-        "": "holdingsitemsitem",
+        "": "item",
         "agencyid": 700000,
         "bibliographicrecordid": "87654321",
         "issueid": "dp",
@@ -24,7 +31,7 @@
         "modified": ""
     },
     {
-        "": "holdingsitemsitem",
+        "": "item",
         "agencyid": 700000,
         "bibliographicrecordid": "87654321",
         "issueid": "dp",
@@ -39,7 +46,7 @@
         "modified": ""
     },
     {
-        "": "holdingsitemscollection",
+        "": "issue",
         "agencyid": 700000,
         "bibliographicrecordid": "87654321",
         "issueid": "rpo",
@@ -48,7 +55,7 @@
         "readyforloan": -1
     },
     {
-        "": "holdingsitemsitem",
+        "": "item",
         "agencyid": 700000,
         "bibliographicrecordid": "87654321",
         "issueid": "rpo",
@@ -63,7 +70,7 @@
         "modified": ""
     },
     {
-        "": "holdingsitemsitem",
+        "": "item",
         "agencyid": 700000,
         "bibliographicrecordid": "87654321",
         "issueid": "rpo",

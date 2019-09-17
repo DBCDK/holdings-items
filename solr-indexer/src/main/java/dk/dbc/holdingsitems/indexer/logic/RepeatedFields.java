@@ -20,7 +20,8 @@ package dk.dbc.holdingsitems.indexer.logic;
 
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import dk.dbc.holdingsitems.jpa.HoldingsItemsStatus;
+import dk.dbc.holdingsitems.jpa.Status;
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
@@ -35,7 +36,7 @@ import static java.util.stream.Collectors.toList;
 public class RepeatedFields {
 
     private final Set<String> itemIds;
-    private final Set<HoldingsItemsStatus> statuses;
+    private final Set<Status> statuses;
     private final Set<String> trackingIds;
 
     public RepeatedFields() {
@@ -45,9 +46,7 @@ public class RepeatedFields {
     }
 
     public RepeatedFields(String... trackingIds) {
-        this.itemIds = new HashSet<>();
-        this.statuses = new HashSet<>();
-        this.trackingIds = new HashSet<>();
+        this();
         this.trackingIds.addAll(Arrays.asList(trackingIds));
     }
 
@@ -61,13 +60,15 @@ public class RepeatedFields {
         }
     }
 
-    public void addStatus(HoldingsItemsStatus status) {
+    public void addStatus(Status status) {
         statuses.add(status);
     }
 
     public void fillIn(ObjectNode node) {
         addAll(node, SolrFields.ITEM_ID, itemIds);
-        addAll(node, SolrFields.STATUS, statuses.stream().map(Object::toString).collect(toList()));
+        addAll(node, SolrFields.STATUS, statuses.stream()
+               .map(Object::toString)
+               .collect(toList()));
         addAll(node, SolrFields.TRACKING_ID, trackingIds);
     }
 

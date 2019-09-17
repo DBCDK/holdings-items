@@ -19,8 +19,8 @@
 package dk.dbc.holdingsitems.indexer.logic;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import dk.dbc.holdingsitems.jpa.HoldingsItemsCollectionEntity;
-import dk.dbc.holdingsitems.jpa.HoldingsItemsItemEntity;
+import dk.dbc.holdingsitems.jpa.IssueEntity;
+import dk.dbc.holdingsitems.jpa.ItemEntity;
 import java.time.LocalDate;
 import java.util.Objects;
 
@@ -36,7 +36,6 @@ public class UniqueFields {
     private final String issueText;
     private final LocalDate expectedDelivery;
     private final int readyForLoan;
-    private final String note;
     private final String branch;
     private final String department;
     private final String location;
@@ -44,14 +43,13 @@ public class UniqueFields {
     private final String circulationRule;
     private final LocalDate accessionDate;
 
-    public UniqueFields(HoldingsItemsCollectionEntity collection, HoldingsItemsItemEntity record) {
+    public UniqueFields(IssueEntity collection, ItemEntity record) {
         this.agencyId = collection.getAgencyId();
         this.bibliographicRecordId = collection.getBibliographicRecordId();
         this.issueId = collection.getIssueId();
         this.issueText = collection.getIssueText();
         this.expectedDelivery = collection.getExpectedDelivery();
         this.readyForLoan = collection.getReadyForLoan();
-        this.note = collection.getNote();
         this.branch = record.getBranch();
         this.department = record.getDepartment();
         this.location = record.getLocation();
@@ -70,7 +68,6 @@ public class UniqueFields {
             node.putArray(SolrFields.EXPECTED_DELIVERY.getFieldName()).add(expectedDelivery.toString());
         }
         node.putArray(SolrFields.READY_FOR_LOAN.getFieldName()).add(String.valueOf(readyForLoan));
-        node.putArray(SolrFields.NOTE.getFieldName()).add(note);
         node.putArray(SolrFields.BRANCH.getFieldName()).add(branch);
         node.putArray(SolrFields.DEPARTMENT.getFieldName()).add(department);
         node.putArray(SolrFields.LOCATION.getFieldName()).add(location);
@@ -89,7 +86,6 @@ public class UniqueFields {
         hash = 43 * hash + Objects.hashCode(this.issueText);
         hash = 43 * hash + Objects.hashCode(this.expectedDelivery);
         hash = 43 * hash + this.readyForLoan;
-        hash = 43 * hash + Objects.hashCode(this.note);
         hash = 43 * hash + Objects.hashCode(this.branch);
         hash = 43 * hash + Objects.hashCode(this.department);
         hash = 43 * hash + Objects.hashCode(this.location);
@@ -101,61 +97,28 @@ public class UniqueFields {
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj) {
+        if (this == obj)
             return true;
-        }
-        if (obj == null) {
+        if (obj == null || getClass() != obj.getClass())
             return false;
-        }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
         final UniqueFields other = (UniqueFields) obj;
-        if (this.agencyId != other.agencyId) {
-            return false;
-        }
-        if (this.readyForLoan != other.readyForLoan) {
-            return false;
-        }
-        if (!Objects.equals(this.bibliographicRecordId, other.bibliographicRecordId)) {
-            return false;
-        }
-        if (!Objects.equals(this.issueId, other.issueId)) {
-            return false;
-        }
-        if (!Objects.equals(this.issueText, other.issueText)) {
-            return false;
-        }
-        if (!Objects.equals(this.note, other.note)) {
-            return false;
-        }
-        if (!Objects.equals(this.branch, other.branch)) {
-            return false;
-        }
-        if (!Objects.equals(this.department, other.department)) {
-            return false;
-        }
-        if (!Objects.equals(this.location, other.location)) {
-            return false;
-        }
-        if (!Objects.equals(this.subLocation, other.subLocation)) {
-            return false;
-        }
-        if (!Objects.equals(this.circulationRule, other.circulationRule)) {
-            return false;
-        }
-        if (!Objects.equals(this.expectedDelivery, other.expectedDelivery)) {
-            return false;
-        }
-        if (!Objects.equals(this.accessionDate, other.accessionDate)) {
-            return false;
-        }
-        return true;
+        return  this.agencyId == other.agencyId &&
+                this.readyForLoan == other.readyForLoan &&
+                Objects.equals(this.bibliographicRecordId, other.bibliographicRecordId)&&
+                Objects.equals(this.issueId, other.issueId) &&
+                Objects.equals(this.issueText, other.issueText)&&
+                Objects.equals(this.branch, other.branch)&&
+                Objects.equals(this.department, other.department)&&
+                Objects.equals(this.location, other.location)&&
+                Objects.equals(this.subLocation, other.subLocation)&&
+                Objects.equals(this.circulationRule, other.circulationRule)&&
+                Objects.equals(this.expectedDelivery, other.expectedDelivery)&&
+                Objects.equals(this.accessionDate, other.accessionDate);
     }
 
     @Override
     public String toString() {
-        return "UniqueFields{" + "agencyId=" + agencyId + ", bibliographicRecordId=" + bibliographicRecordId + ", issueId=" + issueId + ", issueText=" + issueText + ", expectedDelivery=" + expectedDelivery + ", readyForLoan=" + readyForLoan + ", note=" + note + ", branch=" + branch + ", department=" + department + ", location=" + location + ", subLocation=" + subLocation + ", circulationRule=" + circulationRule + ", accessionDate=" + accessionDate + '}';
+        return "UniqueFields{" + "agencyId=" + agencyId + ", bibliographicRecordId=" + bibliographicRecordId + ", issueId=" + issueId + ", issueText=" + issueText + ", expectedDelivery=" + expectedDelivery + ", readyForLoan=" + readyForLoan + ", branch=" + branch + ", department=" + department + ", location=" + location + ", subLocation=" + subLocation + ", circulationRule=" + circulationRule + ", accessionDate=" + accessionDate + '}';
     }
 
 }

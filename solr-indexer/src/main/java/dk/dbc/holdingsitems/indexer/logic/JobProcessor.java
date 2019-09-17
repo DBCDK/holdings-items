@@ -26,7 +26,8 @@ import dk.dbc.ee.stats.Timed;
 import dk.dbc.holdingsitems.HoldingsItemsDAO;
 import dk.dbc.holdingsitems.QueueJob;
 import dk.dbc.holdingsitems.indexer.Config;
-import dk.dbc.holdingsitems.jpa.HoldingsItemsCollectionEntity;
+import dk.dbc.holdingsitems.jpa.BibliographicItemEntity;
+import dk.dbc.holdingsitems.jpa.IssueEntity;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -91,29 +92,28 @@ public class JobProcessor {
         String trackingId = job.getTrackingId();
 
         HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, trackingId);
-        String bibliographicRecordId = job.getBibliographicRecordId()
-                .replaceAll("\\s", "");
+        String bibliographicRecordId = job.getBibliographicRecordId();
         int agencyId = job.getAgencyId();
-        Set<String> issueIds = dao.getIssueIds(bibliographicRecordId, agencyId);
-        log.debug("issueIds = {}", issueIds);
+        BibliographicItemEntity b = dao.getRecordCollection(bibliographicRecordId, agencyId, null);
         HashMap<UniqueFields, RepeatedFields> records = new HashMap<>();
-        for (String issueId : issueIds) {
-            HoldingsItemsCollectionEntity collection = dao.getRecordCollection(bibliographicRecordId, agencyId, issueId, Instant.MIN);
-            collection.stream()
-                    .forEach(record -> {
-                UniqueFields key = new UniqueFields(collection, record);
-                RepeatedFields repeatedFields = records.computeIfAbsent(key, v -> new RepeatedFields(collection.getTrackingId(), job.getTrackingId()));
-                repeatedFields.addItemId(record.getItemId());
-                repeatedFields.addStatus(record.getStatus());
-                repeatedFields.addTrackingId(record.getTrackingId());
-                    });
-        }
+        b.stream().forEach(issue -> {
+            issue.stream().forEach(item -> {
+                UniqueFields key = new UniqueFields(issue, item);
+                RepeatedFields repeatedFields = records.computeIfAbsent(key, v -> new RepeatedFields(b.getTrackingId(), issue.getTrackingId(), job.getTrackingId()));
+                repeatedFields.addItemId(item.getItemId());
+                repeatedFields.addStatus(item.getStatus());
+                repeatedFields.addTrackingId(item.getTrackingId());
+            });
+        });
+
         ObjectNode json = O.createObjectNode();
         addMetadata(json, agencyId, bibliographicRecordId, trackingId);
         ArrayNode jsonRecords = json.putArray("indexKeys");
 
         for (Map.Entry<UniqueFields, RepeatedFields> entry : records.entrySet()) {
             ObjectNode node = jsonRecords.addObject();
+            node.putArray(SolrFields.NOTE.getFieldName()).add(b.getNote());
+            node.putArray(SolrFields.FIRST_ACCESSION_DATE.getFieldName()).add(b.getFirstAccessionDate().toString());
             entry.getKey().fillIn(node);
             entry.getValue().fillIn(node);
         }

@@ -24,7 +24,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import dk.dbc.commons.testutils.postgres.connection.PostgresITDataSource;
-import dk.dbc.holdingsitems.DatabaseMigrator;
 import dk.dbc.holdingsitems.QueueJob;
 import dk.dbc.holdingsitems.indexer.logic.JobProcessor;
 import dk.dbc.pgqueue.PreparedQueueSupplier;
@@ -36,7 +35,6 @@ import java.sql.Connection;
 import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.time.LocalDate;
@@ -52,7 +50,6 @@ import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.sql.DataSource;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
@@ -167,10 +164,10 @@ public class WorkerIT extends JpaBase {
                 assertEquals("Two entries Different status", 2, dp.get("holdingsitem.status").size());
                 ObjectNode rpo1 = findSubDocContaining(subDocs, "/holdingsitem.itemId", "rpo1");
                 log.debug("rpo1 = {}", rpo1);
-                assertEquals(O.readTree("{\"holdingsitem.bibliographicRecordId\":[\"87654321\"],\"holdingsitem.agencyId\":[\"700000\"],\"rec.bibliographicRecordId\":[\"87654321\"],\"holdingsitem.issueId\":[\"rpo\"],\"holdingsitem.issueText\":[\"ready player one\"],\"holdingsitem.readyForLoan\":[\"-1\"],\"holdingsitem.note\":[\"\"],\"holdingsitem.branch\":[\"Here\"],\"holdingsitem.department\":[\"\"],\"holdingsitem.location\":[\"\"],\"holdingsitem.subLocation\":[\"\"],\"holdingsitem.circulationRule\":[\"\"],\"holdingsitem.accessionDate\":[\"2016-02-03T00:00:00.000Z\"],\"holdingsitem.collectionId\":[\"700000-87654321\"],\"holdingsitem.itemId\":[\"rpo1\"],\"holdingsitem.status\":[\"OnLoan\"],\"rec.trackingId\":[\"\",\"T#1\"]}"), rpo1);
+                assertEquals(O.readTree("{\"holdingsitem.note\":[\"any-text\"],\"holdingsitem.firstAccessionDate\":[\"2019-03-04\"],\"holdingsitem.agencyId\":[\"700000\"],\"holdingsitem.bibliographicRecordId\":[\"87654321\"],\"rec.bibliographicRecordId\":[\"87654321\"],\"holdingsitem.issueId\":[\"rpo\"],\"holdingsitem.issueText\":[\"ready player one\"],\"holdingsitem.readyForLoan\":[\"-1\"],\"holdingsitem.branch\":[\"Here\"],\"holdingsitem.department\":[\"\"],\"holdingsitem.location\":[\"\"],\"holdingsitem.subLocation\":[\"\"],\"holdingsitem.circulationRule\":[\"\"],\"holdingsitem.accessionDate\":[\"2016-02-03T00:00:00.000Z\"],\"holdingsitem.collectionId\":[\"700000-87654321\"],\"holdingsitem.itemId\":[\"rpo1\"],\"holdingsitem.status\":[\"OnLoan\"],\"rec.trackingId\":[\"\",\"T#1\",\"xxx\"]}"), rpo1);
                 ObjectNode rpo2 = findSubDocContaining(subDocs, "/holdingsitem.itemId", "rpo2");
                 log.debug("rpo2 = {}", rpo2);
-                assertEquals(O.readTree("{\"holdingsitem.agencyId\":[\"700000\"],\"holdingsitem.bibliographicRecordId\":[\"87654321\"],\"rec.bibliographicRecordId\":[\"87654321\"],\"holdingsitem.issueId\":[\"rpo\"],\"holdingsitem.issueText\":[\"ready player one\"],\"holdingsitem.readyForLoan\":[\"-1\"],\"holdingsitem.note\":[\"\"],\"holdingsitem.branch\":[\"There\"],\"holdingsitem.department\":[\"\"],\"holdingsitem.location\":[\"\"],\"holdingsitem.subLocation\":[\"\"],\"holdingsitem.circulationRule\":[\"\"],\"holdingsitem.accessionDate\":[\"2015-01-02T00:00:00.000Z\"],\"holdingsitem.collectionId\":[\"700000-87654321\"],\"holdingsitem.itemId\":[\"rpo2\"],\"holdingsitem.status\":[\"OnShelf\"],\"rec.trackingId\":[\"\",\"T#1\"]}"), rpo2);
+                assertEquals(O.readTree("{\"holdingsitem.note\":[\"any-text\"],\"holdingsitem.firstAccessionDate\":[\"2019-03-04\"],\"holdingsitem.agencyId\":[\"700000\"],\"holdingsitem.bibliographicRecordId\":[\"87654321\"],\"rec.bibliographicRecordId\":[\"87654321\"],\"holdingsitem.issueId\":[\"rpo\"],\"holdingsitem.issueText\":[\"ready player one\"],\"holdingsitem.readyForLoan\":[\"-1\"],\"holdingsitem.branch\":[\"There\"],\"holdingsitem.department\":[\"\"],\"holdingsitem.location\":[\"\"],\"holdingsitem.subLocation\":[\"\"],\"holdingsitem.circulationRule\":[\"\"],\"holdingsitem.accessionDate\":[\"2015-01-02T00:00:00.000Z\"],\"holdingsitem.collectionId\":[\"700000-87654321\"],\"holdingsitem.itemId\":[\"rpo2\"],\"holdingsitem.status\":[\"OnShelf\"],\"rec.trackingId\":[\"\",\"T#1\",\"xxx\"]}"), rpo2);
             }
         });
     }
