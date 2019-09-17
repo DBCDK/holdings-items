@@ -25,7 +25,8 @@ import dk.dbc.holdingsitems.HoldingsItemsDAO;
 import dk.dbc.holdingsitems.HoldingsItemsException;
 import dk.dbc.holdingsitems.QueueJob;
 import dk.dbc.holdingsitems.StateChangeMetadata;
-import dk.dbc.holdingsitems.jpa.HoldingsItemsCollectionEntity;
+import dk.dbc.holdingsitems.jpa.BibliographicItemEntity;
+import dk.dbc.holdingsitems.jpa.IssueEntity;
 import dk.dbc.kafka.producer.Producer;
 import dk.dbc.log.LogWith;
 import java.time.Instant;
@@ -94,11 +95,16 @@ public class JobProcessor {
         log.debug("issueIds = {}", issueIds);
         HashMap<String, StateChangeMetadata> stateChange = new HashMap<>();
 
-        for (String issueId : issueIds) {
-            HoldingsItemsCollectionEntity collection = dao.getRecordCollection(bibliographicRecordId, agencyId, issueId, Instant.MIN);
-            collection.stream()
-                    .forEach(record -> stateChange.put(record.getItemId(), new StateChangeMetadata(record.getStatus(), record.getModified())));
-        }
+        BibliographicItemEntity b = dao.getRecordCollection(bibliographicRecordId, agencyId, null);
+        if (b.isNew())
+            throw new IllegalStateException("Nothing found in database related to: " + agencyId + ":" + bibliographicRecordId);
+
+        b.stream().forEach(issue -> {
+            issue.stream().forEach(item -> {
+                stateChange.put(item.getItemId(), new StateChangeMetadata(item.getStatus(), item.getModified()));
+            });
+        });
+
         return O.valueToTree(stateChange);
     }
 }
