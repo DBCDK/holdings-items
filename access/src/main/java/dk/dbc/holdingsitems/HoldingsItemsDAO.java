@@ -186,6 +186,24 @@ public class HoldingsItemsDAO {
     }
 
     /**
+     * Create / Get a collection of items defined by id/library/orderId
+     *
+     * @param bibliographicRecordId part of the primary key
+     * @param agencyId              part of the primary key
+     * @param modified              timestamp to use for created/complete if a
+     *                              new record is created
+     * @return record collection object
+     */
+    public BibliographicItemEntity getRecordCollectionUnLocked(String bibliographicRecordId, int agencyId, Instant modified) {
+        BibliographicItemEntity b = BibliographicItemEntity.fromUnLocked(
+                em, agencyId, bibliographicRecordId, modified,
+                modified == null ? null : LocalDateTime.ofInstant(modified, ZoneOffset.UTC).toLocalDate());
+        if (b.isNew())
+            b.setTrackingId(trackingId);
+        return b;
+    }
+
+    /**
      * Get a set of agencies that has holdings for a record
      *
      * @param bibliographicRecordId id of record

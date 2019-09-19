@@ -42,6 +42,10 @@ import static java.util.Collections.EMPTY_SET;
 
 /**
  * Database mapping of bibliographicItem table
+ * <p>
+ * This should never be removed from the database even in case that all issues
+ * are gone. The firstAccessionDate should survive is an issue is resurrected.
+ *
  *
  * @author Morten Bøgeskov (mb@dbc.dk)
  */
@@ -76,7 +80,7 @@ public class BibliographicItemEntity implements Serializable {
     @Column(nullable = false)
     private String trackingId;
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "owner", orphanRemoval = true, cascade = CascadeType.ALL)
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "owner", orphanRemoval = true, cascade = {CascadeType.MERGE, CascadeType.PERSIST})
     private Set<IssueEntity> issues;
 
     @Transient
@@ -85,22 +89,35 @@ public class BibliographicItemEntity implements Serializable {
     @Transient
     transient EntityManager em;
 
+    @Transient
+    transient boolean pessimistic; // If entities fectked by this entity should be pessimistic_write locked
+
     public static BibliographicItemEntity from(EntityManager em, int agencyId, String bibliographicRecordId, Instant modified, LocalDate firstAccessionDate) {
-        return from(em, new BibliographicItemKey(agencyId, bibliographicRecordId), modified, firstAccessionDate);
+        return from(em, new BibliographicItemKey(agencyId, bibliographicRecordId), modified, firstAccessionDate, LockModeType.PESSIMISTIC_WRITE);
+    }
+
+    public static BibliographicItemEntity fromUnLocked(EntityManager em, int agencyId, String bibliographicRecordId, Instant modified, LocalDate firstAccessionDate) {
+        return from(em, new BibliographicItemKey(agencyId, bibliographicRecordId), modified, firstAccessionDate, LockModeType.NONE);
     }
 
     public static BibliographicItemEntity from(EntityManager em, BibliographicItemKey key, Instant modified, LocalDate firstAccessionDate) {
-        BibliographicItemEntity entity = em.find(BibliographicItemEntity.class, key, LockModeType.PESSIMISTIC_WRITE);
+        return from(em, key, modified, firstAccessionDate, LockModeType.PESSIMISTIC_WRITE);
+    }
+
+    public static BibliographicItemEntity fromUnLocked(EntityManager em, BibliographicItemKey key, Instant modified, LocalDate firstAccessionDate) {
+        return from(em, key, modified, firstAccessionDate, LockModeType.NONE);
+    }
+
+    private static BibliographicItemEntity from(EntityManager em, BibliographicItemKey key, Instant modified, LocalDate firstAccessionDate, LockModeType lock) {
+        BibliographicItemEntity entity = em.find(BibliographicItemEntity.class, key, lock);
         if (entity == null) {
             entity = new BibliographicItemEntity(key.getAgencyId(), key.getBibliographicRecordId());
             entity.setFirstAccessionDate(firstAccessionDate);
             entity.setNote("");
             entity.setModified(modified);
-
-            System.err.println("CREATED KEY: " + key);
         }
         entity.em = em;
-        System.out.println("entity = " + entity);
+        entity.pessimistic = lock == LockModeType.PESSIMISTIC_WRITE;
         return entity;
     }
 
@@ -145,7 +162,8 @@ public class BibliographicItemEntity implements Serializable {
     }
 
     public IssueEntity issue(String issueId, Instant modified) {
-        IssueEntity issue = em.find(IssueEntity.class, new IssueKey(agencyId, bibliographicRecordId, issueId));
+        IssueEntity issue = em.find(IssueEntity.class, new IssueKey(agencyId, bibliographicRecordId, issueId),
+                                                       pessimistic ? LockModeType.PESSIMISTIC_WRITE : LockModeType.NONE);
         if (issue == null) {
             if (issues == null)
                 issues = new HashSet<>();
@@ -157,6 +175,7 @@ public class BibliographicItemEntity implements Serializable {
             issue.setTrackingId(trackingId);
             issues.add(issue);
         }
+        issue.pessimistic = pessimistic;
         issue.owner = this;
         return issue;
     }

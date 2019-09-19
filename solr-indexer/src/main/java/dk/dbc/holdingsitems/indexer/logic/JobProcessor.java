@@ -94,7 +94,7 @@ public class JobProcessor {
         HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, trackingId);
         String bibliographicRecordId = job.getBibliographicRecordId();
         int agencyId = job.getAgencyId();
-        BibliographicItemEntity b = dao.getRecordCollection(bibliographicRecordId, agencyId, null);
+        BibliographicItemEntity b = dao.getRecordCollectionUnLocked(bibliographicRecordId, agencyId, null);
         HashMap<UniqueFields, RepeatedFields> records = new HashMap<>();
         b.stream().forEach(issue -> {
             issue.stream().forEach(item -> {

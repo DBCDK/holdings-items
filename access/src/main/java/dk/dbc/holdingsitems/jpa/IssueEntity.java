@@ -37,6 +37,7 @@ import javax.persistence.EntityManager;
 import javax.persistence.FetchType;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinColumns;
+import javax.persistence.LockModeType;
 import javax.persistence.ManyToOne;
 import javax.persistence.MapsId;
 import javax.persistence.NamedQueries;
@@ -106,7 +107,7 @@ public class IssueEntity implements Serializable {
     @Column(nullable = false)
     private String trackingId;
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "owner", orphanRemoval = true, cascade = CascadeType.ALL)
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "owner", orphanRemoval = true, cascade = {CascadeType.MERGE, CascadeType.PERSIST})
     private Set<ItemEntity> items;
 
     @MapsId("collection") // Refers to pk(IssueKey).collection
@@ -126,6 +127,9 @@ public class IssueEntity implements Serializable {
 
     @Transient
     transient EntityManager em;
+
+    @Transient
+    transient boolean pessimistic; // If entities fectked by this entity should be pessimistic_write locked
 
     public static List<IssueEntity> byAgencyBibliographic(EntityManager em, int agencyId, String bibliographicRecordId) {
         List<IssueEntity> list = em.createNamedQuery("byAgencyBibliographic", IssueEntity.class)
@@ -205,7 +209,8 @@ public class IssueEntity implements Serializable {
      *         it is newly created)
      */
     public ItemEntity item(String itemId, Instant modified) {
-        ItemEntity item = em.find(ItemEntity.class, new ItemKey(agencyId, bibliographicRecordId, issueId, itemId));
+        ItemEntity item = em.find(ItemEntity.class, new ItemKey(agencyId, bibliographicRecordId, issueId, itemId),
+                                  pessimistic ? LockModeType.PESSIMISTIC_WRITE : LockModeType.NONE);
         if (item == null) {
             if (items == null)
                 items = new HashSet<>();

@@ -30,6 +30,8 @@ import dk.dbc.kafka.producer.Producer;
 import dk.dbc.log.LogWith;
 import java.util.HashMap;
 import java.util.Set;
+import javax.ejb.TransactionAttribute;
+import javax.ejb.TransactionAttributeType;
 import javax.inject.Inject;
 import javax.persistence.EntityManager;
 import org.slf4j.Logger;
@@ -52,6 +54,7 @@ public class JobProcessor {
     EntityManager em;
 
     @Timed
+    @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
     public void transferJob(QueueJob job) throws Exception {
         try (Producer messageTarget = makeKafkaTarget() ;
              LogWith logWith = new LogWith(job.getTrackingId())) {
@@ -93,7 +96,7 @@ public class JobProcessor {
         log.debug("issueIds = {}", issueIds);
         HashMap<String, StateChangeMetadata> stateChange = new HashMap<>();
 
-        BibliographicItemEntity b = dao.getRecordCollection(bibliographicRecordId, agencyId, null);
+        BibliographicItemEntity b = dao.getRecordCollectionUnLocked(bibliographicRecordId, agencyId, null);
         if (b.isNew())
             throw new IllegalStateException("Nothing found in database related to: " + agencyId + ":" + bibliographicRecordId);
 
