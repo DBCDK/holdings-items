@@ -1,4 +1,4 @@
-if (env.BRANCH_NAME == '1-1-4') {
+if (env.BRANCH_NAME == 'master') {
     properties([
         disableConcurrentBuilds(),
         pipelineTriggers([
@@ -93,7 +93,7 @@ pipeline {
                     } else {
                         imageLabel = env.CHANGE_BRANCH
                     }
-                    if ( ! (imageLabel ==~ /master|trunk|1-1-4/) ) {
+                    if ( ! (imageLabel ==~ /master|trunk/) ) {
                         println("Using branch_name ${imageLabel}")
                         imageLabel = imageLabel.split(/\//)[-1]
                         imageLabel = imageLabel.toLowerCase()
@@ -117,7 +117,7 @@ pipeline {
                             if (currentBuild.resultIsBetterOrEqualTo('SUCCESS')) {
                                 docker.withRegistry('https://docker-os.dbc.dk', 'docker') {
                                     app.push()
-                                    if (env.BRANCH_NAME ==~ /master|trunk|1-1-4/) {
+                                    if (env.BRANCH_NAME ==~ /master|trunk/) {
                                         app.push "latest"
                                     }
                                 }
@@ -131,7 +131,7 @@ pipeline {
         stage("upload") {
             steps {
                 script {
-                    if (env.BRANCH_NAME ==~ /master|trunk|1-1-4/) {
+                    if (env.BRANCH_NAME ==~ /master|trunk/) {
                         sh """
                             mvn -Dmaven.repo.local=\$WORKSPACE/.repo jar:jar deploy:deploy
                         """
