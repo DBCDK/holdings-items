@@ -76,7 +76,7 @@ DROP FUNCTION firstAccessionDate_of(NUMERIC(6,0), TEXT);
 DROP FUNCTION modified_of(NUMERIC(6,0), TEXT);
 
 ALTER TABLE holdingsitemscollection
-  ADD CONSTRAINT holdingsitemscollection_agencyidbibliographicrecordid_fk
+  ADD CONSTRAINT issue_agencyidbibliographicrecordid_fk
     FOREIGN KEY (agencyid, bibliographicrecordid)
       REFERENCES bibliographicitem(agencyid, bibliographicrecordid);
 
