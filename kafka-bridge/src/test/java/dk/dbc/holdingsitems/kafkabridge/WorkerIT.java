@@ -25,8 +25,9 @@ import com.salesforce.kafka.test.junit.SharedKafkaTestResource;
 import dk.dbc.holdingsitems.HoldingsItemsDAO;
 import dk.dbc.holdingsitems.QueueJob;
 import dk.dbc.holdingsitems.StateChangeMetadata;
-import dk.dbc.holdingsitems.jpa.HoldingsItemsCollectionEntity;
-import dk.dbc.holdingsitems.jpa.HoldingsItemsStatus;
+import dk.dbc.holdingsitems.jpa.BibliographicItemEntity;
+import dk.dbc.holdingsitems.jpa.IssueEntity;
+import dk.dbc.holdingsitems.jpa.Status;
 import dk.dbc.kafka.consumer.SimpleConsumer;
 import java.time.Instant;
 import java.util.HashMap;
@@ -67,25 +68,26 @@ public class WorkerIT extends JpaBase {
         System.out.println("TESTING");
 
         jpa(em -> {
+
             HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, "track1");
-            HoldingsItemsCollectionEntity issue1 = fill(dao.getRecordCollection("12345678", 654321, "Issue#1", Instant.MIN));
+            BibliographicItemEntity b = dao.getRecordCollection("12345678", 654321, Instant.now());
+            IssueEntity issue1 = fill(b.issue("Issue#1", Instant.now()));
             issue1.setIssueText("#1");
-            issue1.setNote("");
             issue1.setReadyForLoan(1);
             fill(issue1.item("1234", Instant.MIN))
-                    .setStatus(HoldingsItemsStatus.ON_SHELF);
+                    .setStatus(Status.ON_SHELF);
             fill(issue1.item("2345", Instant.MIN))
-                    .setStatus(HoldingsItemsStatus.ON_LOAN);
+                    .setStatus(Status.ON_LOAN);
             issue1.save();
-            HoldingsItemsCollectionEntity issue2 = fill(dao.getRecordCollection("12345678", 654321, "Issue#2", Instant.MIN));
+            IssueEntity issue2 = fill(b.issue("Issue#2", Instant.now()));
             issue2.setIssueText("#2");
-            issue2.setNote("");
             issue2.setReadyForLoan(1);
             fill(issue2.item("5432", Instant.MIN))
-                    .setStatus(HoldingsItemsStatus.ON_SHELF);
+                    .setStatus(Status.ON_SHELF);
             fill(issue2.item("4321", Instant.MIN))
-                    .setStatus(HoldingsItemsStatus.ON_ORDER);
+                    .setStatus(Status.ON_ORDER);
             issue2.save();
+            b.save();
         });
 
         jpa(em -> {
@@ -103,7 +105,7 @@ public class WorkerIT extends JpaBase {
             };
             kafkaWorker.em = em;
             HashMap<String, StateChangeMetadata> stateChange = new HashMap<>();
-            stateChange.put("1234", new StateChangeMetadata(HoldingsItemsStatus.ON_LOAN, HoldingsItemsStatus.ON_SHELF, Instant.parse("2018-01-01T12:34:56Z")));
+            stateChange.put("1234", new StateChangeMetadata(Status.ON_LOAN, Status.ON_SHELF, Instant.parse("2018-01-01T12:34:56Z")));
 
             kafkaWorker.transferJob(new QueueJob(654321, "12345678", "", "t1"));
             kafkaWorker.transferJob(new QueueJob(123456, "87654321", O.writeValueAsString(stateChange), "t1"));

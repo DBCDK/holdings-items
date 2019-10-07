@@ -26,16 +26,16 @@ import javax.persistence.Converter;
  * @author Morten Bøgeskov (mb@dbc.dk)
  */
 @Converter
-public class HoldingsItemsStatusConverter implements AttributeConverter<HoldingsItemsStatus, String> {
+public class StatusConverter implements AttributeConverter<Status, String> {
 
     @Override
-    public String convertToDatabaseColumn(HoldingsItemsStatus status) {
+    public String convertToDatabaseColumn(Status status) {
         return status.toString();
     }
 
     @Override
-    public HoldingsItemsStatus convertToEntityAttribute(String dbData) {
-        return HoldingsItemsStatus.getHoldingsItemsStatus(dbData);
+    public Status convertToEntityAttribute(String dbData) {
+        return Status.parse(dbData);
     }
 
 }

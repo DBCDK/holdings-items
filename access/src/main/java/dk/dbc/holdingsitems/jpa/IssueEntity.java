@@ -35,7 +35,11 @@ import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
 import javax.persistence.EntityManager;
 import javax.persistence.FetchType;
+import javax.persistence.JoinColumn;
+import javax.persistence.JoinColumns;
 import javax.persistence.LockModeType;
+import javax.persistence.ManyToOne;
+import javax.persistence.MapsId;
 import javax.persistence.NamedQueries;
 import javax.persistence.NamedQuery;
 import javax.persistence.OneToMany;
@@ -50,22 +54,23 @@ import static java.util.Collections.EMPTY_SET;
  * @author Morten Bøgeskov (mb@dbc.dk)
  */
 @Entity
-@Table(name = "holdingsitemscollection")
+@Table(name = "issue")
 @NamedQueries({
     @NamedQuery(name = "byAgencyBibliographic",
                 query = "SELECT h" +
-                        " FROM HoldingsItemsCollectionEntity h" +
+                        " FROM IssueEntity h" +
                         " WHERE h.agencyId = :agencyId" +
                         "  AND h.bibliographicRecordId = :bibliographicRecordId")
 })
-public class HoldingsItemsCollectionEntity implements Serializable {
+public class IssueEntity implements Serializable {
 
     private static final long serialVersionUID = 1089023457634768914L;
 
     @EmbeddedId
-    private final HoldingsItemsCollectionKey pk;
+    @SuppressWarnings("PMD.UnusedPrivateField")
+    private final IssueKey pk;
 
-    // Mirrors of values from HoldingsItemsCollectionKey
+    // Mirrors of values from IssueKey
     // Needed for EntityManager.createQuery to access these fields
     // Primary Key
     @Column(updatable = false, nullable = false)
@@ -88,9 +93,6 @@ public class HoldingsItemsCollectionEntity implements Serializable {
     private int readyForLoan;
 
     @Column(nullable = false)
-    private String note;
-
-    @Column(nullable = false)
     private Timestamp complete;
 
     @Column(nullable = false)
@@ -105,34 +107,32 @@ public class HoldingsItemsCollectionEntity implements Serializable {
     @Column(nullable = false)
     private String trackingId;
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "owner", orphanRemoval = true, cascade = CascadeType.ALL)
-    private Set<HoldingsItemsItemEntity> items;
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "owner", orphanRemoval = true, cascade = {CascadeType.MERGE, CascadeType.PERSIST})
+    private Set<ItemEntity> items;
+
+    @MapsId("collection") // Refers to pk(IssueKey).collection
+    // Columns needs to be insertable=false, updatable=false to not collide with mirrored fields
+    @JoinColumns({
+        @JoinColumn(name = "agencyId", referencedColumnName = "agencyId",
+                    insertable = false, updatable = false),
+        @JoinColumn(name = "bibliographicRecordId", referencedColumnName = "bibliographicRecordId",
+                    insertable = false, updatable = false)
+    })
+
+    @ManyToOne(cascade = CascadeType.ALL)
+    BibliographicItemEntity owner;
 
     @Transient
-    private transient boolean persist;
+    transient boolean persist;
 
     @Transient
-    private transient EntityManager em;
+    transient EntityManager em;
 
-    public static HoldingsItemsCollectionEntity from(EntityManager em, int agencyId, String bibliographicRecordId, String issueId, Instant modified) {
-        return from(em, new HoldingsItemsCollectionKey(agencyId, bibliographicRecordId, issueId), modified);
-    }
+    @Transient
+    transient boolean pessimistic; // If entities fectked by this entity should be pessimistic_write locked
 
-    public static HoldingsItemsCollectionEntity from(EntityManager em, HoldingsItemsCollectionKey key, Instant modified) {
-        HoldingsItemsCollectionEntity entity = em.find(HoldingsItemsCollectionEntity.class, key, LockModeType.PESSIMISTIC_WRITE);
-        if (entity == null) {
-            entity = new HoldingsItemsCollectionEntity(key.getAgencyId(), key.getBibliographicRecordId(), key.getIssueId());
-            entity.setIssueText("");
-            entity.setNote("");
-            entity.setComplete(modified);
-            entity.setCreated(modified);
-        }
-        entity.em = em;
-        return entity;
-    }
-
-    public static List<HoldingsItemsCollectionEntity> byAgencyBibliographic(EntityManager em, int agencyId, String bibliographicRecordId) {
-        List<HoldingsItemsCollectionEntity> list = em.createNamedQuery("byAgencyBibliographic", HoldingsItemsCollectionEntity.class)
+    public static List<IssueEntity> byAgencyBibliographic(EntityManager em, int agencyId, String bibliographicRecordId) {
+        List<IssueEntity> list = em.createNamedQuery("byAgencyBibliographic", IssueEntity.class)
                 .setParameter("agencyId", agencyId)
                 .setParameter("bibliographicRecordId", bibliographicRecordId)
                 .getResultList();
@@ -140,16 +140,25 @@ public class HoldingsItemsCollectionEntity implements Serializable {
         return list;
     }
 
-    public HoldingsItemsCollectionEntity() {
-        this.pk = new HoldingsItemsCollectionKey();
+    public IssueEntity() {
+        this.pk = new IssueKey();
         this.persist = false;
     }
 
-    private HoldingsItemsCollectionEntity(int agencyId, String bibliographicRecordId, String issueId) {
-        this.pk = new HoldingsItemsCollectionKey();
+    IssueEntity(int agencyId, String bibliographicRecordId, String issueId) {
+        this.pk = new IssueKey();
         this.agencyId = agencyId;
         this.bibliographicRecordId = bibliographicRecordId;
         this.issueId = issueId;
+        this.persist = true;
+    }
+
+    IssueEntity(BibliographicItemEntity owner, String issueId) {
+        this.pk = new IssueKey();
+        this.agencyId = owner.getAgencyId();
+        this.bibliographicRecordId = owner.getBibliographicRecordId();
+        this.issueId = issueId;
+        this.owner = owner;
         this.persist = true;
     }
 
@@ -159,12 +168,15 @@ public class HoldingsItemsCollectionEntity implements Serializable {
     public void save() {
         if (persist) {
             em.persist(this);
-            if (items != null)
-                items.forEach(i -> i.persist = false);
-            persist = false;
         } else {
             em.merge(this);
         }
+        persisted();
+    }
+
+    void persisted() {
+        persist = false;
+        items.forEach(ItemEntity::persisted);
     }
 
     /**
@@ -172,7 +184,7 @@ public class HoldingsItemsCollectionEntity implements Serializable {
      *
      * @return stream of all related items
      */
-    public Stream<HoldingsItemsItemEntity> stream() {
+    public Stream<ItemEntity> stream() {
         if (items == null)
             return EMPTY_SET.stream();
         return items.stream();
@@ -183,7 +195,7 @@ public class HoldingsItemsCollectionEntity implements Serializable {
      *
      * @return iterator of all related items
      */
-    public Iterator<HoldingsItemsItemEntity> iterator() {
+    public Iterator<ItemEntity> iterator() {
         return items.iterator();
     }
 
@@ -196,25 +208,37 @@ public class HoldingsItemsCollectionEntity implements Serializable {
      * @return related item (remember to set all values, there's no defaults if
      *         it is newly created)
      */
-    public HoldingsItemsItemEntity item(String itemId, Instant modified) {
-        HoldingsItemsItemEntity item = em.find(HoldingsItemsItemEntity.class, new HoldingsItemsItemKey(pk, itemId));
+    public ItemEntity item(String itemId, Instant modified) {
+        ItemEntity item = em.find(ItemEntity.class, new ItemKey(agencyId, bibliographicRecordId, issueId, itemId),
+                                  pessimistic ? LockModeType.PESSIMISTIC_WRITE : LockModeType.NONE);
         if (item == null) {
             if (items == null)
                 items = new HashSet<>();
-            item = new HoldingsItemsItemEntity(this, itemId);
-            item.setCreated(modified);
+            item = new ItemEntity(this, itemId);
+            item.setCreated(Instant.now());
             item.setModified(modified);
+            item.setTrackingId(trackingId);
             items.add(item);
         }
+        item.owner = this;
         return item;
     }
 
-    public void removeItem(HoldingsItemsItemEntity item) {
+    public void removeItem(ItemEntity item) {
         items.remove(item);
     }
 
     public boolean isNew() {
         return this.persist;
+    }
+
+    /**
+     * Propagate it up through the structure
+     *
+     * @param accessionDate When something was accessioned
+     */
+    public void setFirstAccessionDate(LocalDate accessionDate) {
+        owner.setFirstAccessionDate(accessionDate);
     }
 
     // Accessors (Immutable)
@@ -235,7 +259,7 @@ public class HoldingsItemsCollectionEntity implements Serializable {
         return issueText;
     }
 
-    public HoldingsItemsCollectionEntity setIssueText(String issueText) {
+    public IssueEntity setIssueText(String issueText) {
         this.issueText = issueText;
         return this;
     }
@@ -244,7 +268,7 @@ public class HoldingsItemsCollectionEntity implements Serializable {
         return expectedDelivery == null ? null : expectedDelivery.toLocalDate();
     }
 
-    public HoldingsItemsCollectionEntity setExpectedDelivery(LocalDate expectedDelivery) {
+    public IssueEntity setExpectedDelivery(LocalDate expectedDelivery) {
         this.expectedDelivery = expectedDelivery == null ? null : Date.valueOf(expectedDelivery);
         return this;
     }
@@ -253,17 +277,8 @@ public class HoldingsItemsCollectionEntity implements Serializable {
         return readyForLoan;
     }
 
-    public HoldingsItemsCollectionEntity setReadyForLoan(int readyForLoan) {
+    public IssueEntity setReadyForLoan(int readyForLoan) {
         this.readyForLoan = readyForLoan;
-        return this;
-    }
-
-    public String getNote() {
-        return note;
-    }
-
-    public HoldingsItemsCollectionEntity setNote(String note) {
-        this.note = note;
         return this;
     }
 
@@ -271,7 +286,7 @@ public class HoldingsItemsCollectionEntity implements Serializable {
         return complete.toInstant();
     }
 
-    public HoldingsItemsCollectionEntity setComplete(Instant complete) {
+    public IssueEntity setComplete(Instant complete) {
         this.complete = Timestamp.from(complete);
         return this;
     }
@@ -280,7 +295,7 @@ public class HoldingsItemsCollectionEntity implements Serializable {
         return modified.toInstant();
     }
 
-    public HoldingsItemsCollectionEntity setModified(Instant modified) {
+    public IssueEntity setModified(Instant modified) {
         this.modified = Timestamp.from(modified);
         return this;
     }
@@ -289,7 +304,7 @@ public class HoldingsItemsCollectionEntity implements Serializable {
         return created.toInstant();
     }
 
-    public HoldingsItemsCollectionEntity setCreated(Instant created) {
+    public IssueEntity setCreated(Instant created) {
         this.created = Timestamp.from(created);
         return this;
     }
@@ -298,7 +313,7 @@ public class HoldingsItemsCollectionEntity implements Serializable {
         return updated.toInstant();
     }
 
-    public HoldingsItemsCollectionEntity setUpdated(Instant updated) {
+    public IssueEntity setUpdated(Instant updated) {
         this.updated = Timestamp.from(updated);
         return this;
     }
@@ -307,7 +322,7 @@ public class HoldingsItemsCollectionEntity implements Serializable {
         return trackingId;
     }
 
-    public HoldingsItemsCollectionEntity setTrackingId(String trackingId) {
+    public IssueEntity setTrackingId(String trackingId) {
         this.trackingId = trackingId;
         return this;
     }
@@ -321,7 +336,6 @@ public class HoldingsItemsCollectionEntity implements Serializable {
         hash = 79 * hash + Objects.hashCode(this.issueText);
         hash = 79 * hash + Objects.hashCode(this.expectedDelivery);
         hash = 79 * hash + this.readyForLoan;
-        hash = 79 * hash + Objects.hashCode(this.note);
         hash = 79 * hash + Objects.hashCode(this.complete);
         hash = 79 * hash + Objects.hashCode(this.modified);
         hash = 79 * hash + Objects.hashCode(this.created);
@@ -336,14 +350,13 @@ public class HoldingsItemsCollectionEntity implements Serializable {
             return true;
         if (obj == null || getClass() != obj.getClass())
             return false;
-        final HoldingsItemsCollectionEntity other = (HoldingsItemsCollectionEntity) obj;
+        final IssueEntity other = (IssueEntity) obj;
         return this.agencyId == other.agencyId &&
                Objects.equals(this.bibliographicRecordId, other.bibliographicRecordId) &&
                Objects.equals(this.issueId, other.issueId) &&
                Objects.equals(this.issueText, other.issueText) &&
                Objects.equals(this.expectedDelivery, other.expectedDelivery) &&
                this.readyForLoan == other.readyForLoan &&
-               Objects.equals(this.note, other.note) &&
                Objects.equals(this.complete, other.complete) &&
                Objects.equals(this.modified, other.modified) &&
                Objects.equals(this.created, other.created) &&
@@ -353,7 +366,7 @@ public class HoldingsItemsCollectionEntity implements Serializable {
 
     @Override
     public String toString() {
-        return "HoldingsItemsCollectionEntity{" + "agencyId=" + agencyId + ", bibliographicRecordId=" + bibliographicRecordId + ", issueId=" + issueId + ", issueText=" + issueText + ", expectedDelivery=" + expectedDelivery + ", readyForLoan=" + readyForLoan + ", note=" + note + ", complete=" + complete + ", modified=" + modified + ", created=" + created + ", updated=" + updated + ", trackingId=" + trackingId + ", items=" + items + '}';
+        return "IssueEntity{" + "agencyId=" + agencyId + ", bibliographicRecordId=" + bibliographicRecordId + ", issueId=" + issueId + ", issueText=" + issueText + ", expectedDelivery=" + expectedDelivery + ", readyForLoan=" + readyForLoan + ", complete=" + complete + ", modified=" + modified + ", created=" + created + ", updated=" + updated + ", trackingId=" + trackingId + ", items=" + items + '}';
     }
 
 }

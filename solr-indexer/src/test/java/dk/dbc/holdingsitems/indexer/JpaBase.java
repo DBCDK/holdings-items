@@ -21,9 +21,10 @@ package dk.dbc.holdingsitems.indexer;
 import dk.dbc.commons.persistence.JpaIntegrationTest;
 import dk.dbc.commons.persistence.JpaTestEnvironment;
 import dk.dbc.holdingsitems.DatabaseMigrator;
-import dk.dbc.holdingsitems.jpa.HoldingsItemsCollectionEntity;
-import dk.dbc.holdingsitems.jpa.HoldingsItemsItemEntity;
-import dk.dbc.holdingsitems.jpa.HoldingsItemsStatus;
+import dk.dbc.holdingsitems.jpa.BibliographicItemEntity;
+import dk.dbc.holdingsitems.jpa.IssueEntity;
+import dk.dbc.holdingsitems.jpa.ItemEntity;
+import dk.dbc.holdingsitems.jpa.Status;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -105,8 +106,9 @@ public class JpaBase extends JpaIntegrationTest {
     public void cleanTables() throws Exception {
         try (Connection connection = dataSource.getConnection() ;
              Statement stmt = connection.createStatement()) {
-            stmt.execute("TRUNCATE holdingsitemsitem CASCADE");
-            stmt.execute("TRUNCATE holdingsitemscollection CASCADE");
+            stmt.execute("TRUNCATE item CASCADE");
+            stmt.execute("TRUNCATE issue CASCADE");
+            stmt.execute("TRUNCATE bibliographicItem CASCADE");
             stmt.execute("TRUNCATE queue CASCADE");
             stmt.execute("TRUNCATE queue_error CASCADE");
             stmt.execute("TRUNCATE q CASCADE");
@@ -156,13 +158,20 @@ public class JpaBase extends JpaIntegrationTest {
         return ds;
     }
 
-    protected HoldingsItemsCollectionEntity fill(HoldingsItemsCollectionEntity collection) {
+    protected BibliographicItemEntity fill(BibliographicItemEntity item) {
+        Instant now = Instant.now();
+        return item
+                .setNote("Nothing")
+                .setModified(now)
+                .setTrackingId("Some-Id");
+    }
+
+    protected IssueEntity fill(IssueEntity collection) {
         Instant now = Instant.now();
         return collection
                 .setIssueText("")
                 .setExpectedDelivery(LocalDate.now().plusDays(1))
                 .setReadyForLoan(1)
-                .setNote("Nothing")
                 .setComplete(now)
                 .setModified(now)
                 .setCreated(now)
@@ -170,14 +179,14 @@ public class JpaBase extends JpaIntegrationTest {
                 .setTrackingId("Some-Id");
     }
 
-    protected HoldingsItemsItemEntity fill(HoldingsItemsItemEntity item) {
+    protected ItemEntity fill(ItemEntity item) {
         return item
                 .setBranch("mybr")
                 .setDepartment("dep")
                 .setLocation("fiction")
                 .setSubLocation("thriller")
                 .setCirculationRule("")
-                .setStatus(HoldingsItemsStatus.ON_SHELF)
+                .setStatus(Status.ON_SHELF)
                 .setAccessionDate(LocalDate.now().minusDays(1))
                 .setModified(Instant.now())
                 .setCreated(Instant.now())

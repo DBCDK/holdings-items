@@ -20,12 +20,12 @@ package dk.dbc.holdingsitems.purge;
 
 import dk.dbc.holdingsitems.HoldingsItemsDAO;
 import dk.dbc.holdingsitems.HoldingsItemsException;
-import dk.dbc.holdingsitems.jpa.HoldingsItemsCollectionEntity;
-import dk.dbc.holdingsitems.jpa.HoldingsItemsStatus;
+import dk.dbc.holdingsitems.jpa.BibliographicItemEntity;
+import dk.dbc.holdingsitems.jpa.IssueEntity;
+import dk.dbc.holdingsitems.jpa.Status;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.IOException;
 import java.sql.SQLException;
-import java.time.Instant;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -123,26 +123,17 @@ public class Purge {
         AtomicInteger records = new AtomicInteger(0);
         for (String bibliographicId : bibliographicIds) {
             log.trace("Bibliographic Id '{}'", bibliographicId);
-            Set<String> issues = dao.getIssueIds(bibliographicId, agencyId);
             AtomicBoolean toQueue = new AtomicBoolean(false);
-            for (String issue : issues) {
-                log.trace("Issue '{}'", issue);
-                HoldingsItemsCollectionEntity collection = dao.getRecordCollection(bibliographicId, agencyId, issue, Instant.MIN);
-                collection.stream()
-                        .forEach(record -> {
-                            if (record.getStatus() != HoldingsItemsStatus.DECOMMISSIONED) {
-                                log.trace("Record {}", record);
-                                if (!dryRun) {
-                                    record.setStatus(HoldingsItemsStatus.DECOMMISSIONED);
-                                }
-                                records.incrementAndGet();
-                                toQueue.set(true);
-                            }
-                        });
-                // Save if any records were decommissioned
-                if (!dryRun)
-                    collection.save();
-            }
+            BibliographicItemEntity bibItem = dao.getRecordCollection(bibliographicId, agencyId, null);
+            bibItem.stream()
+                    .flatMap(IssueEntity::stream)
+                    .filter(item -> item.getStatus() != Status.DECOMMISSIONED)
+                    .forEach(item -> {
+                        item.setStatus(Status.DECOMMISSIONED);
+                        toQueue.set(true);
+                    });
+            if (!dryRun)
+                bibItem.save();
             if (!dryRun && toQueue.get()) {
                 dao.enqueue(bibliographicId, agencyId, "{}", queue);
             }

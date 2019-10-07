@@ -24,9 +24,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dk.dbc.holdingsitems.HoldingsItemsDAO;
 import dk.dbc.holdingsitems.HoldingsItemsException;
-import dk.dbc.holdingsitems.jpa.HoldingsItemsCollectionEntity;
-import dk.dbc.holdingsitems.jpa.HoldingsItemsItemEntity;
-import dk.dbc.holdingsitems.jpa.HoldingsItemsStatus;
+import dk.dbc.holdingsitems.jpa.BibliographicItemEntity;
+import dk.dbc.holdingsitems.jpa.IssueEntity;
+import dk.dbc.holdingsitems.jpa.ItemEntity;
+import dk.dbc.holdingsitems.jpa.Status;
 import dk.dbc.log.LogWith;
 import dk.dbc.oss.ns.holdingsitemsupdate.Authentication;
 import dk.dbc.oss.ns.holdingsitemsupdate.BibliographicItem;
@@ -104,7 +105,7 @@ public abstract class UpdateRequest {
 
     private final UpdateWebservice updateWebService;
     private final HashSet<QueueEntry> queueEntries;
-    private final HashMap<String, HashMap<String, StateChangeMetadata>> oldItemStatus; // Bibl -> item -> status
+    protected final HashMap<String, HashMap<String, StateChangeMetadata>> oldItemStatus; // Bibl -> item -> status
     protected HoldingsItemsDAO dao;
 
     /**
@@ -127,12 +128,10 @@ public abstract class UpdateRequest {
         this.dao = dao;
     }
 
-    public void updateNote(String note, int agencyId, String bibliographicRecordId, Instant modified) {
-        try {
-            dao.updateBibliographicItemNote(note, agencyId, bibliographicRecordId, modified);
-        } catch (HoldingsItemsException ex) {
-            throw new WrapperException(ex);
-        }
+    public void updateNote(BibliographicItemEntity item, String note, Instant modified) {
+        if (item.isNew() ||
+            !item.getModified().isAfter(modified))
+            item.setNote(note);
     }
 
     /**
@@ -196,39 +195,64 @@ public abstract class UpdateRequest {
     /**
      * Fetch a collection and add a holding to it
      *
-     * @param modified              whence the request says the collection is
-     *                              modified
-     * @param agencyId              id
-     * @param bibliographicRecordId id
-     * @param note                  note about content
-     * @param holding               holding describing an issue
-     * @param complete              is this a complete or an update request
+     * @param modified whence the request says the collection is
+     *                 modified
+     * @param bibItem  database representation
+     * @param holding  holding describing an issue
+     * @param complete is this a complete or an update request
      * @throws WrapperException RuntimeException for wrapping Exceptions in
      *                          (useful for using .stream())
      */
-    protected void processHolding(Instant modified, int agencyId, String bibliographicRecordId, String note, boolean complete, Holding holding) throws WrapperException {
+    protected void processHolding(Instant modified, BibliographicItemEntity bibItem, boolean complete, Holding holding) throws WrapperException {
+        String issueId = holding.getIssueId();
         try (LogWith logWith = new LogWith()) {
-            String issueId = holding.getIssueId();
             logWith.with("issueId", issueId);
-            log.info("agencyId = " + agencyId + "; bibliographicRecordId = " + bibliographicRecordId + "; issueId = " + issueId + "; trackingId = " + getTrakingId());
-            HoldingsItemsCollectionEntity collection = getRecordCollection(bibliographicRecordId, agencyId, issueId, modified);
-            if (complete && !collection.getComplete().isAfter(modified)) {
-                decommissionEntireHolding(collection, modified);
+            log.info("agencyId = {}; bibliographicRecordId = {}; issueId = {}; trackingId = {}",
+                     bibItem.getAgencyId(),
+                     bibItem.getBibliographicRecordId(),
+                     issueId,
+                     getTrakingId());
+            IssueEntity issue = bibItem.issue(issueId, modified);
+            if (issue.isNew())
+                issue.setCreated(Instant.now());
+            if (!issue.isNew() && issue.getComplete().isAfter(modified))
+                return;
+
+            if (issue.isNew() || !issue.getModified().isAfter(modified)) {
+                copyValue(holding::getIssueText, issue::setIssueText);
+
+                XMLGregorianCalendar expectedDeliveryDate = holding.getExpectedDeliveryDate();
+                if (expectedDeliveryDate == null) {
+                    issue.setExpectedDelivery(null);
+                } else {
+                    issue.setExpectedDelivery(toDate(expectedDeliveryDate, true));
+                }
+                issue.setReadyForLoan(holding.getReadyForLoan().intValueExact())
+                        .setModified(modified)
+                        .setUpdated(Instant.now())
+                        .setTrackingId(getTrakingId());
             }
-            collection.setNote(note);
-            copyValue(holding::getIssueText, collection::setIssueText);
-            XMLGregorianCalendar expectedDeliveryDate = holding.getExpectedDeliveryDate();
-            if (expectedDeliveryDate == null) {
-                collection.setExpectedDelivery(null);
-            } else {
-                collection.setExpectedDelivery(toDate(expectedDeliveryDate, true));
+
+            HashSet<String> handledItems = new HashSet<>();
+            holding.getHoldingsItems().forEach(holdingsItem -> {
+                handledItems.add(holdingsItem.getItemId());
+                addItemToCollection(issue, holdingsItem, modified);
+            });
+            HashMap<String, StateChangeMetadata> statuses = oldItemStatus.computeIfAbsent(bibItem.getBibliographicRecordId(), f -> new HashMap<>());
+            if (complete) {
+                issue.setComplete(modified);
+                issue.stream()
+                        .filter(item -> !handledItems.contains(item.getItemId())) // Skip all that are in the request
+                        .filter(item -> !item.getModified().isAfter(modified)) // Skip all that are newer in tha database
+                        .filter(item -> item.getStatus() != Status.ONLINE) // Online are special - should not be deleted
+                        .forEach(item -> {
+                            statuses.computeIfAbsent(item.getItemId(), i -> new StateChangeMetadata(item.getStatus(), item.getModified()))
+                                    .update(Status.DECOMMISSIONED, modified);
+                            item.setStatus(Status.DECOMMISSIONED)
+                                    .setModified(modified)
+                                    .setTrackingId(getTrakingId());
+                        });
             }
-            collection.setReadyForLoan(holding.getReadyForLoan().intValueExact());
-            holding.getHoldingsItems().forEach(item -> addItemToCollection(collection, item, modified));
-            log.debug("saving");
-            saveCollection(collection, modified);
-        } catch (HoldingsItemsException ex) {
-            throw new WrapperException(ex);
         }
     }
 
@@ -239,22 +263,22 @@ public abstract class UpdateRequest {
      * @param collection the collection (bibid/agency/issue)
      * @param modified   then data has been changed
      */
-    public void decommissionEntireHolding(HoldingsItemsCollectionEntity collection, Instant modified) {
+    public void decommissionEntireHolding(IssueEntity collection, Instant modified) {
         collection.setComplete(modified);
         String bibliographicRecordId = collection.getBibliographicRecordId();
         HashMap<String, StateChangeMetadata> statuses = oldItemStatus.computeIfAbsent(bibliographicRecordId, f -> new HashMap<>());
         collection.stream()
                 .forEach(record -> {
                     String itemId = record.getItemId();
-                    HoldingsItemsStatus oldStatus = record.getStatus();
-                    if (oldStatus == HoldingsItemsStatus.ONLINE)
+                    Status oldStatus = record.getStatus();
+                    if (oldStatus == Status.ONLINE)
                         return;
                     if (record.getModified().isAfter(modified)) // This is modified after complete - keep it
                         return;
 
                     StateChangeMetadata metadata = statuses.computeIfAbsent(itemId, i -> new StateChangeMetadata(oldStatus, record.getModified()));
-                    metadata.update(HoldingsItemsStatus.DECOMMISSIONED, modified);
-                    record.setStatus(HoldingsItemsStatus.DECOMMISSIONED);
+                    metadata.update(Status.DECOMMISSIONED, modified);
+                    record.setStatus(Status.DECOMMISSIONED);
                     record.setModified(modified);
                     record.setTrackingId(getTrakingId());
 
@@ -273,12 +297,13 @@ public abstract class UpdateRequest {
      * @return Collection fetched from database or created
      * @throws HoldingsItemsException if database communication fails
      */
-    protected HoldingsItemsCollectionEntity getRecordCollection(String bibliographicRecordId, int agencyId, String issueId, Instant modified) throws HoldingsItemsException {
+    protected IssueEntity getRecordCollection(String bibliographicRecordId, int agencyId, String issueId, Instant modified) throws HoldingsItemsException {
         try (Timer.Context time = updateWebService.loadCollectionTimer.time()) {
-            HoldingsItemsCollectionEntity collection = dao.getRecordCollection(bibliographicRecordId,
-                    agencyId,
-                    issueId,
-                    modified);
+            BibliographicItemEntity bibItem = dao.getRecordCollection(bibliographicRecordId,
+                                                                      agencyId,
+                                                                      modified);
+            bibItem.setTrackingId(getTrakingId());
+            IssueEntity collection = bibItem.issue(issueId, modified);
             HashMap<String, StateChangeMetadata> biblItemStatus = oldItemStatus.computeIfAbsent(bibliographicRecordId, b -> new HashMap<>());
             collection.stream()
                     .forEach(record -> biblItemStatus.putIfAbsent(record.getItemId(), new StateChangeMetadata(record.getStatus(), modified)));
@@ -295,11 +320,11 @@ public abstract class UpdateRequest {
      * @param modified   timestamp it has been modified
      * @throws HoldingsItemsException save (database) error
      */
-    protected void saveCollection(HoldingsItemsCollectionEntity collection, Instant modified) throws HoldingsItemsException {
+    protected void saveCollection(IssueEntity collection, Instant modified) throws HoldingsItemsException {
         log.debug("saveCollection {}", collection);
         try (Timer.Context time = updateWebService.saveCollectionTimer.time()) {
             collection.setModified(modified);
-            collection.setUpdated(modified);
+            collection.setUpdated(Instant.now());
             collection.save();
             System.out.println("collection = " + collection + " <--------------------------------------------");
         }
@@ -308,38 +333,38 @@ public abstract class UpdateRequest {
     /**
      * Add a HoldingsItem to a collection
      *
-     * @param collection target collection
-     * @param item       item to add
-     * @param modified   timestamp it has been modified
+     * @param issue        target collection
+     * @param holdingsItem item to add
+     * @param modified     timestamp it has been modified
      */
-    protected void addItemToCollection(HoldingsItemsCollectionEntity collection, HoldingsItem item, Instant modified) {
+    protected void addItemToCollection(IssueEntity issue, HoldingsItem holdingsItem, Instant modified) {
         try (LogWith logWith = new LogWith()) {
-            String itemId = item.getItemId();
+            String itemId = holdingsItem.getItemId();
             logWith.with("itemId", itemId);
             log.info("Adding item: {}", itemId);
-            HoldingsItemsItemEntity rec = collection.item(itemId, modified);
-            rec.setTrackingId(getTrakingId());
-            XMLGregorianCalendar accessionDate = item.getAccessionDate();
+            ItemEntity item = issue.item(itemId, modified);
+            item.setTrackingId(getTrakingId());
+            XMLGregorianCalendar accessionDate = holdingsItem.getAccessionDate();
             if (accessionDate != null) {
-                rec.setAccessionDate(toDate(accessionDate, false));
+                item.setAccessionDate(toDate(accessionDate, false));
             }
-            StatusType status = item.getStatus();
+            StatusType status = holdingsItem.getStatus();
             if (status != null) {
                 if (status == StatusType.ONLINE) {
                     throw new FailedUpdateInternalException("Use endpoint onlineHoldingsItemsUpdate got status ONLINE");
                 }
-                HashMap<String, StateChangeMetadata> metas = oldItemStatus.computeIfAbsent(collection.getBibliographicRecordId(), f -> new HashMap<>());
-                StateChangeMetadata meta = metas.computeIfAbsent(itemId, f -> new StateChangeMetadata(rec.isNew() ? HoldingsItemsStatus.UNKNOWN : rec.getStatus(), rec.getModified()));
-                HoldingsItemsStatus newStatus = HoldingsItemsStatus.getHoldingsItemsStatus(status.value());
-                meta.update(newStatus, modified);
-                rec.setStatus(newStatus);
-                log.debug("meta = {}", meta);
+                oldItemStatus.computeIfAbsent(issue.getBibliographicRecordId(),
+                                              f -> new HashMap<>())
+                        .computeIfAbsent(itemId, f -> new StateChangeMetadata(
+                                         item.getStatus(), item.getModified()))
+                        .update(Status.parse(status.value()), modified);
+                item.setStatus(Status.parse(status.value()));
             }
-            copyValue(item::getBranch, rec::setBranch);
-            copyValue(item::getCirculationRule, rec::setCirculationRule);
-            copyValue(item::getDepartment, rec::setDepartment);
-            copyValue(item::getLocation, rec::setLocation);
-            copyValue(item::getSubLocation, rec::setSubLocation);
+            copyValue(holdingsItem::getBranch, item::setBranch);
+            copyValue(holdingsItem::getCirculationRule, item::setCirculationRule);
+            copyValue(holdingsItem::getDepartment, item::setDepartment);
+            copyValue(holdingsItem::getLocation, item::setLocation);
+            copyValue(holdingsItem::getSubLocation, item::setSubLocation);
         }
     }
 
@@ -350,7 +375,7 @@ public abstract class UpdateRequest {
      * @param from where to take the value
      * @param to   where to put it
      */
-    private <T> void copyValue(Supplier<T> from, Consumer<T> to) {
+    protected <T> void copyValue(Supplier<T> from, Consumer<T> to) {
         T value = from.get();
         if (value != null) {
             to.accept(value);

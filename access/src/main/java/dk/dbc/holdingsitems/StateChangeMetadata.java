@@ -18,7 +18,7 @@
  */
 package dk.dbc.holdingsitems;
 
-import dk.dbc.holdingsitems.jpa.HoldingsItemsStatus;
+import dk.dbc.holdingsitems.jpa.Status;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.time.Instant;
 
@@ -28,23 +28,23 @@ import java.time.Instant;
  */
 public class StateChangeMetadata {
 
-    private HoldingsItemsStatus newStatus;
-    private final HoldingsItemsStatus oldStatus;
+    private Status newStatus;
+    private final Status oldStatus;
     private Instant when;
 
-    public StateChangeMetadata(HoldingsItemsStatus oldStatus, Instant when) {
+    public StateChangeMetadata(Status oldStatus, Instant when) {
         this(oldStatus, oldStatus, when);
     }
 
     @SuppressFBWarnings("EI_EXPOSE_REP2")
-    public StateChangeMetadata(HoldingsItemsStatus newStatus, HoldingsItemsStatus oldStatus, Instant when) {
+    public StateChangeMetadata(Status newStatus, Status oldStatus, Instant when) {
         this.newStatus = newStatus;
         this.oldStatus = oldStatus;
         this.when = when;
     }
 
     @SuppressFBWarnings("EI_EXPOSE_REP2")
-    public void update(HoldingsItemsStatus status, Instant when) {
+    public void update(Status status, Instant when) {
         this.newStatus = status;
         this.when = when;
     }

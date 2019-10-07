@@ -20,7 +20,7 @@ package dk.dbc.holdingsitems.purge;
 
 import dk.dbc.holdingsitems.HoldingsItemsDAO;
 import dk.dbc.holdingsitems.HoldingsItemsException;
-import dk.dbc.holdingsitems.jpa.HoldingsItemsStatus;
+import dk.dbc.holdingsitems.jpa.Status;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -60,15 +60,15 @@ public class PurgeReport {
     }
 
     public void statusReport(Set<String> bibliographicIds) throws HoldingsItemsException {
-        Map<HoldingsItemsStatus, AtomicLong> allStatus = new HashMap<>();
+        Map<Status, AtomicLong> allStatus = new HashMap<>();
         System.out.println("Status Report");
         System.out.printf("Found %9d Bibliographic Ids%n", bibliographicIds.size());
 
         for (String bibliographicId : bibliographicIds) {
             log.debug("Has {} - {}", agencyId, bibliographicId);
-            Map<HoldingsItemsStatus, Long> statusFor = dao.getStatusFor(bibliographicId, agencyId);
-            for (Map.Entry<HoldingsItemsStatus, Long> entry : statusFor.entrySet()) {
-                HoldingsItemsStatus key = entry.getKey();
+            Map<Status, Long> statusFor = dao.getStatusFor(bibliographicId, agencyId);
+            for (Map.Entry<Status, Long> entry : statusFor.entrySet()) {
+                Status key = entry.getKey();
                 allStatus.computeIfAbsent(key, k -> new AtomicLong(0));
                 allStatus.get(key).addAndGet(entry.getValue());
                 log.trace("Has agency {} - id {}: type {}, count: {}", agencyId, bibliographicId, key, entry.getValue());
@@ -76,8 +76,8 @@ public class PurgeReport {
         }
 
         int items = 0;
-        for (Map.Entry<HoldingsItemsStatus, AtomicLong> entry : allStatus.entrySet()) {
-            HoldingsItemsStatus key = entry.getKey();
+        for (Map.Entry<Status, AtomicLong> entry : allStatus.entrySet()) {
+            Status key = entry.getKey();
             long value = entry.getValue().get();
             log.debug("Found {} {} items", key, value);
             System.out.printf("Found %9d %s items%n", value, key);

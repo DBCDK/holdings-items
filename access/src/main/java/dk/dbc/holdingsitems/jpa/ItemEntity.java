@@ -24,6 +24,7 @@ import java.sql.Date;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Objects;
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Convert;
 import javax.persistence.EmbeddedId;
@@ -40,16 +41,16 @@ import javax.persistence.Transient;
  * @author Morten Bøgeskov (mb@dbc.dk)
  */
 @Entity
-@Table(name = "holdingsitemsitem")
+@Table(name = "item")
 @SuppressWarnings("PMD.UnusedPrivateField")
-public class HoldingsItemsItemEntity implements Serializable {
+public class ItemEntity implements Serializable {
 
     private static final long serialVersionUID = 1089023457634768914L;
 
     @EmbeddedId
-    private final HoldingsItemsItemKey pk;
+    private final ItemKey pk;
 
-    // Mirrors of values from HoldingsItemsItemKey
+    // Mirrors of values from ItemKey
     // Needed for EntityManager.createQuery to access these fields
     // Primary Key
     @Column(updatable = false, nullable = false)
@@ -84,8 +85,8 @@ public class HoldingsItemsItemEntity implements Serializable {
     private Date accessionDate;
 
     @Column(nullable = false)
-    @Convert(converter = HoldingsItemsStatusConverter.class)
-    private HoldingsItemsStatus status;
+    @Convert(converter = StatusConverter.class)
+    private Status status;
 
     @Column(nullable = false)
     private Timestamp modified;
@@ -96,7 +97,7 @@ public class HoldingsItemsItemEntity implements Serializable {
     @Column(nullable = false)
     private String trackingId;
 
-    @MapsId("collection") // Refers to pk(HoldingsItemsItemKey).collection
+    @MapsId("collection") // Refers to pk(ItemKey).collection
     // Columns needs to be insertable=false, updatable=false to not collide with mirrored fields
     @JoinColumns({
         @JoinColumn(name = "agencyId", referencedColumnName = "agencyId",
@@ -106,29 +107,35 @@ public class HoldingsItemsItemEntity implements Serializable {
         @JoinColumn(name = "issueId", referencedColumnName = "issueId",
                     insertable = false, updatable = false)
     })
-    @ManyToOne
-    public HoldingsItemsCollectionEntity owner;
+
+    @ManyToOne(cascade = CascadeType.ALL)
+    IssueEntity owner;
 
     @Transient
     transient boolean persist;
 
-    public HoldingsItemsItemEntity() {
-        this.pk = new HoldingsItemsItemKey();
+    public ItemEntity() {
+        this.pk = new ItemKey();
         this.persist = false;
     }
 
-    HoldingsItemsItemEntity(HoldingsItemsCollectionEntity owner, String itemId) {
-        this.pk = new HoldingsItemsItemKey();
+    ItemEntity(IssueEntity owner, String itemId) {
+        this.pk = new ItemKey();
         this.agencyId = owner.getAgencyId();
         this.bibliographicRecordId = owner.getBibliographicRecordId();
         this.issueId = owner.getIssueId();
         this.itemId = itemId;
+        this.status = Status.UNKNOWN;
         this.owner = owner;
         this.persist = true;
     }
 
     public void remove() {
         owner.removeItem(this);
+    }
+
+    void persisted() {
+        persist = false;
     }
 
     public boolean isNew() {
@@ -157,7 +164,7 @@ public class HoldingsItemsItemEntity implements Serializable {
         return branch;
     }
 
-    public HoldingsItemsItemEntity setBranch(String branch) {
+    public ItemEntity setBranch(String branch) {
         this.branch = branch;
         return this;
     }
@@ -166,7 +173,7 @@ public class HoldingsItemsItemEntity implements Serializable {
         return department;
     }
 
-    public HoldingsItemsItemEntity setDepartment(String department) {
+    public ItemEntity setDepartment(String department) {
         this.department = department;
         return this;
     }
@@ -175,7 +182,7 @@ public class HoldingsItemsItemEntity implements Serializable {
         return location;
     }
 
-    public HoldingsItemsItemEntity setLocation(String location) {
+    public ItemEntity setLocation(String location) {
         this.location = location;
         return this;
     }
@@ -184,7 +191,7 @@ public class HoldingsItemsItemEntity implements Serializable {
         return subLocation;
     }
 
-    public HoldingsItemsItemEntity setSubLocation(String subLocation) {
+    public ItemEntity setSubLocation(String subLocation) {
         this.subLocation = subLocation;
         return this;
     }
@@ -193,7 +200,7 @@ public class HoldingsItemsItemEntity implements Serializable {
         return circulationRule;
     }
 
-    public HoldingsItemsItemEntity setCirculationRule(String circulationRule) {
+    public ItemEntity setCirculationRule(String circulationRule) {
         this.circulationRule = circulationRule;
         return this;
     }
@@ -202,16 +209,26 @@ public class HoldingsItemsItemEntity implements Serializable {
         return accessionDate.toLocalDate();
     }
 
-    public HoldingsItemsItemEntity setAccessionDate(LocalDate accessionDate) {
+    /**
+     * Set accessionDate (when something was received)
+     * <p>
+     * Also propagate it up the structure eventually to
+     * {@link BibliographicItemEntity#setFirstAccessionDate(java.time.LocalDate)}
+     *
+     * @param accessionDate date of accession
+     * @return self
+     */
+    public ItemEntity setAccessionDate(LocalDate accessionDate) {
         this.accessionDate = Date.valueOf(accessionDate);
+        owner.setFirstAccessionDate(accessionDate);
         return this;
     }
 
-    public HoldingsItemsStatus getStatus() {
+    public Status getStatus() {
         return status;
     }
 
-    public HoldingsItemsItemEntity setStatus(HoldingsItemsStatus status) {
+    public ItemEntity setStatus(Status status) {
         this.status = status;
         return this;
     }
@@ -220,7 +237,7 @@ public class HoldingsItemsItemEntity implements Serializable {
         return modified.toInstant();
     }
 
-    public HoldingsItemsItemEntity setModified(Instant modified) {
+    public ItemEntity setModified(Instant modified) {
         this.modified = Timestamp.from(modified);
         return this;
     }
@@ -229,7 +246,7 @@ public class HoldingsItemsItemEntity implements Serializable {
         return created.toInstant();
     }
 
-    public HoldingsItemsItemEntity setCreated(Instant created) {
+    public ItemEntity setCreated(Instant created) {
         this.created = Timestamp.from(created);
         return this;
     }
@@ -238,7 +255,7 @@ public class HoldingsItemsItemEntity implements Serializable {
         return trackingId;
     }
 
-    public HoldingsItemsItemEntity setTrackingId(String trackingId) {
+    public ItemEntity setTrackingId(String trackingId) {
         this.trackingId = trackingId;
         return this;
     }
@@ -269,7 +286,7 @@ public class HoldingsItemsItemEntity implements Serializable {
             return true;
         if (obj == null || getClass() != obj.getClass())
             return false;
-        final HoldingsItemsItemEntity other = (HoldingsItemsItemEntity) obj;
+        final ItemEntity other = (ItemEntity) obj;
         return this.agencyId == other.agencyId &&
                Objects.equals(this.bibliographicRecordId, other.bibliographicRecordId) &&
                Objects.equals(this.issueId, other.issueId) &&
@@ -288,7 +305,7 @@ public class HoldingsItemsItemEntity implements Serializable {
 
     @Override
     public String toString() {
-        return "HoldingsItemsItemEntity{" + "agencyId=" + agencyId + ", bibliographicRecordId=" + bibliographicRecordId + ", issueId=" + issueId + ", itemId=" + itemId + ", branch=" + branch + ", department=" + department + ", location=" + location + ", subLocation=" + subLocation + ", circulationRule=" + circulationRule + ", accessionDate=" + accessionDate + ", status=" + status + ", modified=" + modified + ", created=" + created + ", trackingId=" + trackingId + '}';
+        return "ItemEntity{" + "agencyId=" + agencyId + ", bibliographicRecordId=" + bibliographicRecordId + ", issueId=" + issueId + ", itemId=" + itemId + ", branch=" + branch + ", department=" + department + ", location=" + location + ", subLocation=" + subLocation + ", circulationRule=" + circulationRule + ", accessionDate=" + accessionDate + ", status=" + status + ", modified=" + modified + ", created=" + created + ", trackingId=" + trackingId + '}';
     }
 
 }

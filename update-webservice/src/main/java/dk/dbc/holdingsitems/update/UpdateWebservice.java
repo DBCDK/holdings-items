@@ -26,9 +26,11 @@ import dk.dbc.ee.stats.Timed;
 import dk.dbc.forsrights.client.ForsRightsException;
 import dk.dbc.holdingsitems.HoldingsItemsDAO;
 import dk.dbc.holdingsitems.HoldingsItemsException;
-import dk.dbc.holdingsitems.jpa.HoldingsItemsCollectionEntity;
-import dk.dbc.holdingsitems.jpa.HoldingsItemsItemEntity;
-import dk.dbc.holdingsitems.jpa.HoldingsItemsStatus;
+import dk.dbc.holdingsitems.StateChangeMetadata;
+import dk.dbc.holdingsitems.jpa.BibliographicItemEntity;
+import dk.dbc.holdingsitems.jpa.IssueEntity;
+import dk.dbc.holdingsitems.jpa.ItemEntity;
+import dk.dbc.holdingsitems.jpa.Status;
 import dk.dbc.log.LogWith;
 import dk.dbc.oss.ns.holdingsitemsupdate.Authentication;
 import dk.dbc.oss.ns.holdingsitemsupdate.BibliographicItem;
@@ -51,10 +53,11 @@ import java.io.StringWriter;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import javax.inject.Inject;
@@ -88,9 +91,6 @@ public class UpdateWebservice {
 
     @Inject
     AccessValidator validator;
-
-//    @Resource(lookup = C.DATASOURCE)
-//    DataSource dataSource;
 
     @Inject
     EntityManager em;
@@ -162,7 +162,6 @@ public class UpdateWebservice {
     }
 
     // CPD-OFF
-
     /**
      * Accept request for multiple bibliographic record ids
      * <p>
@@ -222,19 +221,24 @@ public class UpdateWebservice {
                     req.getBibliographicItems().stream()
                             .sorted(BIBLIOGRAPHICITEM_SORT_COMPARE)
                             .forEachOrdered(bibliographicItem -> {
+
                                 Instant modified = parseTimestamp(bibliographicItem.getModificationTimeStamp());
                                 String bibliographicRecordId = bibliographicItem.getBibliographicRecordId();
-                                String note = orEmptyString(bibliographicItem.getNote());
-                                updateNote(note, agencyId, bibliographicRecordId, modified);
                                 try (LogWith logWith = new LogWith()) {
                                     logWith.bibliographicRecordId(bibliographicRecordId);
-
-                                    addQueueJob(bibliographicRecordId, agencyId);
+                                    BibliographicItemEntity bibItem = dao.getRecordCollection(bibliographicRecordId, agencyId, modified);
+                                    if (!bibItem.getModified().isAfter(modified)) {
+                                        String note = orEmptyString(bibliographicItem.getNote());
+                                        bibItem.setNote(note);
+                                        bibItem.setModified(modified);
+                                        bibItem.setTrackingId(getTrakingId());
+                                    }
 
                                     bibliographicItem.getHoldings().stream()
                                             .sorted(HOLDINGS_SORT_COMPARE)
-                                            .forEachOrdered(holding -> processHolding(modified, agencyId, bibliographicRecordId, note, false, holding));
-
+                                            .forEachOrdered(holding -> processHolding(modified, bibItem, false, holding));
+                                    bibItem.save();
+                                    addQueueJob(bibliographicRecordId, agencyId);
                                 }
                             });
                 }
@@ -297,17 +301,49 @@ public class UpdateWebservice {
                     CompleteBibliographicItem bibliographicItem = req.getCompleteBibliographicItem();
                     Instant modified = parseTimestamp(bibliographicItem.getModificationTimeStamp());
                     String bibliographicRecordId = bibliographicItem.getBibliographicRecordId();
-                    String note = orEmptyString(bibliographicItem.getNote());
-                    updateNote(note, agencyId, bibliographicRecordId, modified);
                     try (LogWith logWith = new LogWith()) {
                         logWith.bibliographicRecordId(bibliographicRecordId);
+                        BibliographicItemEntity bibItem = dao.getRecordCollection(bibliographicRecordId, agencyId, modified);
 
-                        addQueueJob(bibliographicRecordId, agencyId);
+                        if (!bibItem.getModified().isAfter(modified)) {
+                            String note = orEmptyString(bibliographicItem.getNote());
+                            bibItem.setNote(note);
+                            bibItem.setModified(modified);
+                            bibItem.setTrackingId(getTrakingId());
+                        }
+
+                        Set<String> handledIssues = new HashSet<>();
                         bibliographicItem.getHoldings().stream()
                                 .sorted(HOLDINGS_SORT_COMPARE)
-                                .forEachOrdered(holding -> processHolding(modified, agencyId, bibliographicRecordId, note, true, holding));
-                        Set<String> handledIssues = bibliographicItem.getHoldings().stream().map(h -> h.getIssueId()).collect(Collectors.toSet());
-                        decommissionExistingRecords(bibliographicRecordId, agencyId, modified, handledIssues);
+                                .forEachOrdered(holding -> {
+                                    handledIssues.add(holding.getIssueId());
+                                    processHolding(modified, bibItem, true, holding);
+                                });
+                        HashMap<String, StateChangeMetadata> statuses = oldItemStatus.computeIfAbsent(bibliographicRecordId, f -> new HashMap<>());
+
+                        bibItem.stream() // For all issues
+                                .filter(issue -> !handledIssues.contains(issue.getIssueId())) // That wasn't in the request
+                                .filter(issue -> !issue.getComplete().isAfter(modified)) // And hasn't been changed in the furure
+                                .forEach(issue -> {
+                                    issue.setComplete(modified)
+                                            .setModified(modified)
+                                            .setTrackingId(getTrakingId());
+                                    issue.stream() // For al items
+                                            .filter(item -> item.getStatus() != Status.ONLINE) // That are't online type
+                                            .filter(item -> !item.getModified().isAfter(modified)) // Han hasn't been modified in the future
+                                            .forEach(item -> {
+                                                statuses.computeIfAbsent(item.getItemId(), i -> new StateChangeMetadata(item.getStatus(), item.getModified()))
+                                                        .update(Status.DECOMMISSIONED, modified);
+
+                                                item.setStatus(Status.DECOMMISSIONED)
+                                                        .setModified(modified)
+                                                        .setTrackingId(getTrakingId());
+
+                                            });
+
+                                });
+                        bibItem.save();
+                        addQueueJob(bibliographicRecordId, agencyId);
                     }
                 }
 
@@ -319,33 +355,52 @@ public class UpdateWebservice {
                  * @throws WrapperException for holding exceptions through
                  *                          .stream()
                  */
-                public void decommissionExistingRecords(String bibliographicRecordId, int agencyId, Instant modified, Set<String> handledIssues) throws WrapperException {
-                    try (LogWith logWith = new LogWith()) {
-                        logWith.bibliographicRecordId(bibliographicRecordId);
-                        Set<String> issueIds = dao.getIssueIds(bibliographicRecordId, agencyId);
-                        for (String issueId : issueIds) {
-                            if (handledIssues.contains(issueId)) {
-                                continue;
-                            }
-                            logWith.with("issueId", issueId);
-                            log.info("Decommissioning");
-                            log.debug("agencyId = " + agencyId + "; bibliographicRecordId = " + bibliographicRecordId + "; issueId = " + issueId + "; wipe");
-                            HoldingsItemsCollectionEntity collection;
-                            try (Timer.Context time = loadCollectionTimer.time()) {
-                                collection = dao.getRecordCollection(bibliographicRecordId, agencyId, issueId, modified);
-                            }
-                            if (!collection.getComplete().isAfter(modified)) {
-                                decommissionEntireHolding(collection, modified);
-                            } else {
-                                log.info("Got older modified {} from last complete {}", modified, collection.getComplete());
-                            }
-                            log.debug("collection = {}", collection);
-                            saveCollection(collection, modified);
-                        }
-                    } catch (HoldingsItemsException ex) {
-                        throw new WrapperException(ex);
-                    }
-                }
+//                public void decommissionExistingRecords(String bibliographicRecordId, int agencyId, Instant modified, Set<String> handledIssues) throws WrapperException {
+//                    try (LogWith logWith = new LogWith()) {
+//                        logWith.bibliographicRecordId(bibliographicRecordId);
+//                        Set<String> issueIds = dao.getIssueIds(bibliographicRecordId, agencyId);
+//                        for (String issueId : issueIds) {
+//                            if (handledIssues.contains(issueId)) {
+//                                continue;
+//                            }
+//                            logWith.with("issueId", issueId);
+//                            log.info("Decommissioning");
+//                            log.debug("agencyId = " + agencyId + "; bibliographicRecordId = " + bibliographicRecordId + "; issueId = " + issueId + "; wipe");
+//                            HoldingsItemsCollectionEntity collection;
+//                            try (Timer.Context time = loadCollectionTimer.time()) {
+//                                collection = dao.getRecordCollection(bibliographicRecordId, agencyId, issueId, modified);
+//                            }
+//                            if (!collection.getComplete().isAfter(modified)) {
+//                                decommissionEntireHolding(collection, modified);
+//                            } else {
+//                                log.info("Got older modified {} from last complete {}", modified, collection.getComplete());
+//                            }
+//                            log.debug("collection = {}", collection);
+//                            saveCollection(collection, modified);
+//                        }
+//                    } catch (HoldingsItemsException ex) {
+//                        throw new WrapperException(ex);
+//                    }
+//                }
+//                public void decommissionExistingRecords(String bibliographicRecordId, int agencyId, Instant modified, Set<String> handledIssues) throws WrapperException {
+//                    try (LogWith logWith = new LogWith()) {
+//                        logWith.bibliographicRecordId(bibliographicRecordId);
+//                        log.info("Decommissioning");
+//                        BibliographicItemEntity bibItem;
+//                        try (Timer.Context time = loadCollectionTimer.time()) {
+//                            bibItem = dao.getRecordCollection(bibliographicRecordId, agencyId, modified);
+//                            bibItem.stream()
+//                                    .filter(issue -> !handledIssues.contains(issue.getIssueId()))
+//                                    .filter(issue -> !modified.isBefore(issue.getComplete()))
+//                                    .forEach(issue -> decommissionEntireHolding(issue, modified));
+//                        }
+//                        try (Timer.Context time = saveCollectionTimer.time()) {
+//                            bibItem.save();
+//                        }
+//                    } catch (HoldingsItemsException ex) {
+//                        throw new WrapperException(ex);
+//                    }
+//                }
             });
         }
     }
@@ -417,16 +472,19 @@ public class UpdateWebservice {
                     try (LogWith logWith = new LogWith()) {
                         logWith.bibliographicRecordId(bibliographicRecordId);
                         log.info("OnlineItem");
-                        HoldingsItemsCollectionEntity collection;
+                        IssueEntity collection;
                         try (Timer.Context time = loadCollectionTimer.time()) {
-                            collection = dao.getRecordCollection(bibliographicRecordId, agencyId, "", modified);
+                            collection = dao.getRecordCollection(bibliographicRecordId, agencyId, modified)
+                                    .issue("", modified);
                         }
-                        collection.setTrackingId(getTrakingId());
-                        HoldingsItemsItemEntity rec = collection.item("", modified); // Empty issueId = ONLINE
+                        collection
+                                .setIssueText("ONLINE")
+                                .setTrackingId(getTrakingId());
+                        ItemEntity rec = collection.item("", modified); // Empty issueId = ONLINE
                         if (bibliographicItem.isHasOnlineHolding()) {
-                            rec.setStatus(HoldingsItemsStatus.ONLINE);
+                            rec.setStatus(Status.ONLINE);
                         } else {
-                            rec.setStatus(HoldingsItemsStatus.DECOMMISSIONED);
+                            rec.setStatus(Status.DECOMMISSIONED);
                         }
                         if (rec.isNew()) {
                             rec.setBranch("");
@@ -448,7 +506,6 @@ public class UpdateWebservice {
     }
 
     // CPD-ON
-
     private void logXml(String agencyId, Object req, Authentication auth) {
         if (config.shouldLogXml(agencyId)) {
             if (auth != null) {
