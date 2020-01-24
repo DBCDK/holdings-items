@@ -154,7 +154,7 @@ pipeline {
             }
             when {
                 expression {
-                    (currentBuild.result == null || currentBuild.result == 'SUCCESS') && env.BRANCH_NAME ~== /master|trunk|1-1-4/
+                    (currentBuild.result == null || currentBuild.result == 'SUCCESS') && env.BRANCH_NAME == '1-1-4'
                 }
             }
             steps {
