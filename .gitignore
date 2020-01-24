@@ -14,3 +14,7 @@ buildNumber.properties
 /*/src/main/docker/*.war
 /*/src/main/docker/*.jar
 /**/nb-configuration.xml
+
+# IntelliJ IDEA project files
+.idea/
+*.iml
