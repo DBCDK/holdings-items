@@ -36,7 +36,6 @@
         <module>access</module>
         <module>update-ws-transport</module>
         <module>update-webservice</module>
-        <module>update-client</module>
         <module>solr-indexer</module>
         <module>queue-bridge</module>
         <module>monitor</module>
