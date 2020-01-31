@@ -18,3 +18,5 @@ buildNumber.properties
 # IntelliJ IDEA project files
 .idea/
 *.iml
+
+queue-bridge/data/

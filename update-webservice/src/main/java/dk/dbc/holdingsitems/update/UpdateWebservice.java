@@ -195,7 +195,7 @@ public class UpdateWebservice {
                 }
 
                 @Override
-                public String getTrakingId() {
+                public String getTrackingId() {
                     return req.getTrackingId();
                 }
 
@@ -272,7 +272,7 @@ public class UpdateWebservice {
                 }
 
                 @Override
-                public String getTrakingId() {
+                public String getTrackingId() {
                     return req.getTrackingId();
                 }
 
@@ -383,7 +383,7 @@ public class UpdateWebservice {
                 }
 
                 @Override
-                public String getTrakingId() {
+                public String getTrackingId() {
                     return req.getTrackingId();
                 }
 
@@ -479,7 +479,7 @@ public class UpdateWebservice {
             return buildReponse(HoldingsItemsUpdateStatusEnum.FAILED_UPDATE_INTERNAL_ERROR, "Soap Error: " + ex.getMessage());
         }
         try (Connection connection = getUTCConnection()) {
-            HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(connection, req.getTrakingId());
+            HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(connection, req.getTrackingId());
             req.setDao(dao);
             userValidation(req);
             try {
