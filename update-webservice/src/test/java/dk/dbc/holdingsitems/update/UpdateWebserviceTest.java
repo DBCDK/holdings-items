@@ -31,46 +31,46 @@ public class UpdateWebserviceTest {
     @Test(timeout = 2_000L)
     public void testAuthEnabledAuthOk() throws Exception {
         System.out.println("testAuthEnabledAuthOk");
-        makeAuthTestRequest("user/123456/pass", "123456", false);
+        makeAuthTestRequest("user/123456/pass", 123456, false);
     }
 
     @Test(timeout = 2_000L)
     public void testAuthDisabledAuthFailure() throws Exception {
         System.out.println("testAuthDisabledAuthFailure");
-        makeAuthTestRequest("user/123456/ERROR", "123456", true);
+        makeAuthTestRequest("user/123456/ERROR", 123456, true);
     }
 
     @Test(timeout = 2_000L, expected = AuthenticationException.class)
     public void testAuthEnabledAuthFailure() throws Exception {
         System.out.println("testAuthEnabledAuthFailure");
-        makeAuthTestRequest("user/123456/ERROR", "123456", false);
+        makeAuthTestRequest("user/123456/ERROR", 123456, false);
     }
 
     @Test(timeout = 2_000L)
     public void testAuthDisabledNoAuth() throws Exception {
         System.out.println("testAuthDisabledNoAuth");
-        makeAuthTestRequest(null, "123456", true);
+        makeAuthTestRequest(null, 123456, true);
     }
 
     @Test(timeout = 2_000L, expected = AuthenticationException.class)
     public void testAuthEnabledNoAuth() throws Exception {
         System.out.println("testAuthEnabledNoAuth");
-        makeAuthTestRequest(null, "123456", false);
+        makeAuthTestRequest(null, 123456, false);
     }
 
     @Test(timeout = 2_000L)
     public void testAuthDisabledAuthMisMatch() throws Exception {
         System.out.println("testAuthDisabledAuthMisMatch");
-        makeAuthTestRequest("user/654321/pass", "123456", true);
+        makeAuthTestRequest("user/654321/pass", 123456, true);
     }
 
     @Test(timeout = 2_000L, expected = AuthenticationException.class)
     public void testAuthEnabledAuthMisMatch() throws Exception {
         System.out.println("testAuthEnabledAuthMisMatch");
-        makeAuthTestRequest("user/654321/pass", "123456", false);
+        makeAuthTestRequest("user/654321/pass", 123456, false);
     }
 
-    public static void makeAuthTestRequest(String auth, String agencyId, boolean disableAuth) {
+    public static void makeAuthTestRequest(String auth, int agencyId, boolean disableAuth) {
         UpdateWebservice updateWebservice = new UpdateWebservice();
         updateWebservice.config = new Config() {
             @Override
@@ -117,7 +117,7 @@ public class UpdateWebserviceTest {
             }
 
             @Override
-            public String getAgencyId() {
+            public int getAgencyId() {
                 return agencyId;
             }
 

@@ -75,7 +75,7 @@ public abstract class UpdateRequest {
      *
      * @return agency id
      */
-    public abstract String getAgencyId();
+    public abstract int getAgencyId();
 
     /**
      * extract tracking id from incoming request
@@ -360,8 +360,11 @@ public abstract class UpdateRequest {
                         .update(Status.parse(status.value()), modified);
                 item.setStatus(Status.parse(status.value()));
             }
+            item.setModified(modified);
             copyValue(holdingsItem::getBranch, item::setBranch);
+            copyValue(holdingsItem::getBranchId, item::setBranchId);
             copyValue(holdingsItem::getCirculationRule, item::setCirculationRule);
+            copyValue(holdingsItem::getLoanRestriction, item::setLoanRestriction);
             copyValue(holdingsItem::getDepartment, item::setDepartment);
             copyValue(holdingsItem::getLocation, item::setLocation);
             copyValue(holdingsItem::getSubLocation, item::setSubLocation);

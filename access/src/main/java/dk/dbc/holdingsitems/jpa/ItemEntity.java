@@ -70,6 +70,9 @@ public class ItemEntity implements Serializable {
     private String branch;
 
     @Column(nullable = false)
+    private String branchId;
+
+    @Column(nullable = false)
     private String department;
 
     @Column(nullable = false)
@@ -83,6 +86,9 @@ public class ItemEntity implements Serializable {
 
     @Column(nullable = false)
     private Date accessionDate;
+
+    @Column(nullable = false)
+    private String loanRestriction;
 
     @Column(nullable = false)
     @Convert(converter = StatusConverter.class)
@@ -126,6 +132,7 @@ public class ItemEntity implements Serializable {
         this.issueId = owner.getIssueId();
         this.itemId = itemId;
         this.status = Status.UNKNOWN;
+        this.loanRestriction = "";
         this.owner = owner;
         this.persist = true;
     }
@@ -169,12 +176,30 @@ public class ItemEntity implements Serializable {
         return this;
     }
 
+    public String getBranchId() {
+        return branchId;
+    }
+
+    public ItemEntity setBranchId(String branchId) {
+        this.branchId = branchId;
+        return this;
+    }
+
     public String getDepartment() {
         return department;
     }
 
     public ItemEntity setDepartment(String department) {
         this.department = department;
+        return this;
+    }
+
+    public String getLoanRestriction() {
+        return loanRestriction;
+    }
+
+    public ItemEntity setLoanRestriction(String loanRestriction) {
+        this.loanRestriction = loanRestriction;
         return this;
     }
 
@@ -268,11 +293,13 @@ public class ItemEntity implements Serializable {
         hash = 67 * hash + Objects.hashCode(this.issueId);
         hash = 67 * hash + Objects.hashCode(this.itemId);
         hash = 67 * hash + Objects.hashCode(this.branch);
+        hash = 67 * hash + Objects.hashCode(this.branchId);
         hash = 67 * hash + Objects.hashCode(this.department);
         hash = 67 * hash + Objects.hashCode(this.location);
         hash = 67 * hash + Objects.hashCode(this.subLocation);
         hash = 67 * hash + Objects.hashCode(this.circulationRule);
         hash = 67 * hash + Objects.hashCode(this.accessionDate);
+        hash = 67 * hash + Objects.hashCode(this.loanRestriction);
         hash = 67 * hash + Objects.hashCode(this.status);
         hash = 67 * hash + Objects.hashCode(this.modified);
         hash = 67 * hash + Objects.hashCode(this.created);
@@ -292,11 +319,13 @@ public class ItemEntity implements Serializable {
                Objects.equals(this.issueId, other.issueId) &&
                Objects.equals(this.itemId, other.itemId) &&
                Objects.equals(this.branch, other.branch) &&
+               Objects.equals(this.branchId, other.branchId) &&
                Objects.equals(this.department, other.department) &&
                Objects.equals(this.location, other.location) &&
                Objects.equals(this.subLocation, other.subLocation) &&
                Objects.equals(this.circulationRule, other.circulationRule) &&
                Objects.equals(this.accessionDate, other.accessionDate) &&
+               Objects.equals(this.loanRestriction, other.loanRestriction) &&
                Objects.equals(this.status, other.status) &&
                Objects.equals(this.modified, other.modified) &&
                Objects.equals(this.created, other.created) &&
@@ -305,7 +334,7 @@ public class ItemEntity implements Serializable {
 
     @Override
     public String toString() {
-        return "ItemEntity{" + "agencyId=" + agencyId + ", bibliographicRecordId=" + bibliographicRecordId + ", issueId=" + issueId + ", itemId=" + itemId + ", branch=" + branch + ", department=" + department + ", location=" + location + ", subLocation=" + subLocation + ", circulationRule=" + circulationRule + ", accessionDate=" + accessionDate + ", status=" + status + ", modified=" + modified + ", created=" + created + ", trackingId=" + trackingId + '}';
+        return "ItemEntity{" + "agencyId=" + agencyId + ", bibliographicRecordId=" + bibliographicRecordId + ", issueId=" + issueId + ", itemId=" + itemId + ", branch=" + branch + ", branchId=" + branchId + ", department=" + department + ", location=" + location + ", subLocation=" + subLocation + ", circulationRule=" + circulationRule + ", accessionDate=" + accessionDate + ", loanRestriction=" + loanRestriction + ", status=" + status + ", modified=" + modified + ", created=" + created + ", trackingId=" + trackingId + '}';
     }
 
 }

@@ -23,6 +23,7 @@
         "itemid": "dp1",
         "status": "OnLoan",
         "branch": "",
+        "branchId": "234567",
         "department": "",
         "location": "",
         "sublocation": "",
@@ -38,6 +39,7 @@
         "itemid": "dp2",
         "status": "OnShelf",
         "branch": "",
+        "branchId": "234567",
         "department": "",
         "location": "",
         "sublocation": "",
@@ -62,6 +64,7 @@
         "itemid": "rpo1",
         "status": "OnLoan",
         "branch": "Here",
+        "branchId": "345678",
         "department": "",
         "location": "",
         "sublocation": "",
@@ -77,11 +80,13 @@
         "itemid": "rpo2",
         "status": "OnShelf",
         "branch": "There",
+        "branchId": "456789",
         "department": "",
         "location": "",
         "sublocation": "",
         "circulationrule": "",
         "accessiondate": "2015-01-02",
+        "loanRestriction": "x",
         "modified": ""
     }
 ]

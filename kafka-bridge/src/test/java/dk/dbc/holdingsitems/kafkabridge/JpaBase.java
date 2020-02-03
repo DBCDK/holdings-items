@@ -182,12 +182,14 @@ public class JpaBase extends JpaIntegrationTest {
     protected ItemEntity fill(ItemEntity item) {
         return item
                 .setBranch("mybr")
+                .setBranchId("123456")
                 .setDepartment("dep")
                 .setLocation("fiction")
                 .setSubLocation("thriller")
                 .setCirculationRule("")
                 .setStatus(Status.ON_SHELF)
                 .setAccessionDate(LocalDate.now().minusDays(1))
+                .setLoanRestriction("")
                 .setModified(Instant.now())
                 .setCreated(Instant.now())
                 .setTrackingId("Some-Id");
