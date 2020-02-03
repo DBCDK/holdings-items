@@ -121,6 +121,9 @@ public class WorkerIT {
         parameters.put(TransportConstants.HOST_PROP_NAME, "127.0.0.1");
 
         Configuration configuration = new ConfigurationImpl();
+        String dataDir = System.getProperty("hornetq.data", null);
+        if(dataDir != null)
+            configuration.setJournalDirectory(dataDir);
         configuration.setPersistenceEnabled(false);
         configuration.setSecurityEnabled(false);
         configuration.getAcceptorConfigurations()
