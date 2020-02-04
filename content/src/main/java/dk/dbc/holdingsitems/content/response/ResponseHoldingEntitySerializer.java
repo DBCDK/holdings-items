@@ -19,19 +19,19 @@ public class ResponseHoldingEntitySerializer extends StdSerializer<ResponseHoldi
     @Override
     public void serialize(ResponseHoldingEntity responseHoldingEntity, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException {
         jsonGenerator.writeStartObject();
-        jsonGenerator.writeStringField("bibliographicRecordId", responseHoldingEntity.getItem().getBibliographicRecordId());
-        jsonGenerator.writeStringField("issueId", responseHoldingEntity.getItem().getIssueId());
-        jsonGenerator.writeStringField("itemId", responseHoldingEntity.getItem().getItemId());
+        jsonGenerator.writeStringField("bibliographicRecordId", responseHoldingEntity.getBibliographicRecordId());
+        jsonGenerator.writeStringField("issueId", responseHoldingEntity.getIssueId());
+        jsonGenerator.writeStringField("itemId", responseHoldingEntity.getItemId());
         // jsonGenerator.writeStringField("branchId", "");
-        jsonGenerator.writeStringField("branch", responseHoldingEntity.getItem().getBranch());
-        jsonGenerator.writeStringField("department", responseHoldingEntity.getItem().getDepartment());
-        jsonGenerator.writeStringField("location", responseHoldingEntity.getItem().getLocation());
-        jsonGenerator.writeStringField("subLocation", responseHoldingEntity.getItem().getSubLocation());
-//        jsonGenerator.writeStringField("issueText", responseHoldingEntity.getItem().getIssueText());
-        jsonGenerator.writeStringField("status", responseHoldingEntity.getItem().getStatus().toString());
-        jsonGenerator.writeStringField("circulationRule", responseHoldingEntity.getItem().getCirculationRule());
-//        jsonGenerator.writeNumberField("readyForLoan", responseHoldingEntity.getItem().getIssueReadyForLoan());
-//        jsonGenerator.writeStringField("note", responseHoldingEntity.getItem().getBibliographicItemNote());
+        jsonGenerator.writeStringField("branch", responseHoldingEntity.getBranch());
+        jsonGenerator.writeStringField("department", responseHoldingEntity.getDepartment());
+        jsonGenerator.writeStringField("location", responseHoldingEntity.getLocation());
+        jsonGenerator.writeStringField("subLocation", responseHoldingEntity.getSubLocation());
+        jsonGenerator.writeStringField("issueText", responseHoldingEntity.getIssueText());
+        jsonGenerator.writeStringField("status", responseHoldingEntity.getStatus().toString());
+        jsonGenerator.writeStringField("circulationRule", responseHoldingEntity.getCirculationRule());
+        jsonGenerator.writeNumberField("readyForLoan", responseHoldingEntity.getReadyForLoan());
+        jsonGenerator.writeStringField("note", responseHoldingEntity.getNote());
         jsonGenerator.writeEndObject();
     }
 }
