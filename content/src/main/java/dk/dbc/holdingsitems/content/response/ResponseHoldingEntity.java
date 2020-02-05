@@ -1,5 +1,6 @@
 package dk.dbc.holdingsitems.content.response;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import dk.dbc.holdingsitems.Record;
 import dk.dbc.holdingsitems.RecordCollection;
 
@@ -8,6 +9,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+@JsonSerialize(using = ResponseHoldingEntitySerializer.class)
 public class ResponseHoldingEntity {
     private final String bibliographicRecordId;
     private final String issueId;
