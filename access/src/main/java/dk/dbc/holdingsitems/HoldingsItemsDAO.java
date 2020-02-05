@@ -20,19 +20,11 @@ package dk.dbc.holdingsitems;
 
 import dk.dbc.pgqueue.PreparedQueueSupplier;
 import dk.dbc.pgqueue.QueueSupplier;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Savepoint;
-import java.sql.Timestamp;
-import java.sql.Types;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
 import org.slf4j.LoggerFactory;
+
+import java.sql.*;
+import java.util.Date;
+import java.util.*;
 
 /**
  *
@@ -721,7 +713,7 @@ public class HoldingsItemsDAO {
         return null;
     }
 
-        // CPD-OFF
+    // CPD-OFF
     private void updateOrInsertCollection(RecordCollection collection, Timestamp modified) throws HoldingsItemsException {
         if (collection.isComplete() || collection.isOriginal()) {
             collection.setCompleteTimestamp(modified);

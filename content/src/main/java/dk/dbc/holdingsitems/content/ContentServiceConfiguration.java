@@ -11,8 +11,8 @@ import javax.enterprise.context.ApplicationScoped;
 @Startup
 @Singleton
 public class ContentServiceConfiguration {
+
     private static final Logger log = LoggerFactory.getLogger(ContentServiceConfiguration.class);
     public static final String DATABASE = "jdbc/holdings-items";
-
 
 }

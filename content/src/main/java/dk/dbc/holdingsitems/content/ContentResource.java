@@ -15,6 +15,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -25,7 +26,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Stateless
-@Path("holdings-by-item-id")
+@Path("/")
 @Produces("application/json")
 public class ContentResource {
 
@@ -35,16 +36,27 @@ public class ContentResource {
     private static final Logger log = LoggerFactory.getLogger(ContentResource.class);
 
     @GET
+    @Path("holdings-by-item-id")
     public Response getItemEntity(
             @QueryParam("agency") int agencyId,
             @QueryParam("itemId") String itemId,
             @QueryParam("trackingId") String trackingId)
     {
+        { // argument validation
+            if (agencyId < 0) {
+                return Response.status(Response.Status.BAD_REQUEST.getStatusCode(), "agency ID is required!").build();
+            }
+            if (!(itemId.trim().length() > 0)) {
+                return Response.status(Response.Status.BAD_REQUEST.getStatusCode(), "itemId is required!").build();
+            }
+        }
+        log.debug("holdings-by-item-id called with agency: {}, itemId: {}, trackingId: {}", agencyId, itemId, trackingId);
         try (Connection connection = dataSource.getConnection()) {
             HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(connection, trackingId);
             RecordCollection recordCollection = dao.getRecordCollectionItemId(agencyId, itemId);
             ContentServiceItemResponse res = new ContentServiceItemResponse(trackingId, recordCollection);
-            return Response.ok(res).build();
+
+            return Response.ok(res, MediaType.APPLICATION_JSON_TYPE).build();
         } catch (HoldingsItemsException | SQLException ex) {
             log.error("Database issues: ", ex);
             return Response.serverError().build();
@@ -52,6 +64,7 @@ public class ContentResource {
     }
 
     @GET
+    @Path("holdings-by-pid")
     public Response getItemEntities(
             @QueryParam("agency") int agencyId,
             @QueryParam("pid") List<String> pids,
@@ -66,6 +79,7 @@ public class ContentResource {
                 return Response.status(Response.Status.BAD_REQUEST.getStatusCode(), "BibliographicRecordIds in request pids must be unique").build();
             }
         }
+        log.debug("holdings-by-pid called with agency {}, pids: {}, trackingId: {}", agencyId, pids, trackingId);
         Map<String, String> pidMap = new HashMap<>();
         for (String p : pids) {
             pidMap.put(p, p.split(":")[1]);

@@ -1,6 +1,5 @@
 package dk.dbc.holdingsitems.content.response;
 
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import dk.dbc.holdingsitems.Record;
 import dk.dbc.holdingsitems.RecordCollection;
 
@@ -9,21 +8,20 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-@JsonSerialize(using = ResponseHoldingEntitySerializer.class)
 public class ResponseHoldingEntity {
-    private final String bibliographicRecordId;
-    private final String issueId;
-    private final String itemId;
+    public String bibliographicRecordId;
+    public String issueId;
+    public String itemId;
     // private final String branchId;
-    private final String branch;
-    private final String department;
-    private final String location;
-    private final String subLocation;
-    private final String issueText;
-    private final String status;
-    private final String circulationRule;
-    private final int readyForLoan;
-    private final String note;
+    public String branch;
+    public String department;
+    public String location;
+    public String subLocation;
+    public String issueText;
+    public String status;
+    public String circulationRule;
+    public int readyForLoan;
+    public String note;
 
     public ResponseHoldingEntity(Record record, RecordCollection collection) {
         this.bibliographicRecordId = collection.getBibliographicRecordId();
@@ -38,54 +36,6 @@ public class ResponseHoldingEntity {
         this.circulationRule = record.getCirculationRule();
         this.readyForLoan = collection.getReadyForLoan();
         this.note = collection.getNote();
-    }
-
-    public String getNote() {
-        return note;
-    }
-
-    public int getReadyForLoan() {
-        return readyForLoan;
-    }
-
-    public String getCirculationRule() {
-        return circulationRule;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public String getIssueText() {
-        return issueText;
-    }
-
-    public String getSubLocation() {
-        return subLocation;
-    }
-
-    public String getLocation() {
-        return location;
-    }
-
-    public String getDepartment() {
-        return department;
-    }
-
-    public String getItemId() {
-        return itemId;
-    }
-
-    public String getIssueId() {
-        return issueId;
-    }
-
-    public String getBibliographicRecordId() {
-        return bibliographicRecordId;
-    }
-
-    public String getBranch() {
-        return branch;
     }
 
     public static List<ResponseHoldingEntity> listFromRecordCollection(RecordCollection rc) {
