@@ -238,8 +238,8 @@ public class HoldingsItemsDAO {
      */
     public RecordCollection getRecordCollectionItemId(int agencyId, String itemId) throws HoldingsItemsException {
         try (PreparedStatement collectionStmt = connection.prepareStatement(SELECT_HOLDING_AGENCY_ITEM)) {
-            collectionStmt.setInt(1, agencyId);
-            collectionStmt.setString(2, itemId);
+            collectionStmt.setInt(2, agencyId);
+            collectionStmt.setString(1, itemId);
             RecordCollection collection = recordCollectionFromItemIdStatement(collectionStmt, agencyId, itemId);
             if (collection != null) {
                 return collection;
