@@ -223,8 +223,8 @@ public class HoldingsItemsDAO {
     /**
      * Get a collection of items identified by an agencyId and an itemId
      *
-     * @param agencyId
-     * @param itemId
+     * @param agencyId  the agency
+     * @param itemId    item id
      * @return an object representing a collection of records. If none are found, return null.
      * @throws HoldingsItemsException when database communication fails.
      */
@@ -246,8 +246,8 @@ public class HoldingsItemsDAO {
     /**
      * Get a collection of items identified by and agencyId and a bibliographicRecordId
      *
-     * @param agencyId
-     * @param bibliographicRecordId
+     * @param agencyId                  id of agency
+     * @param bibliographicRecordId     bibliographic record id
      * @return an object representing a collection of records. If none are found, return null.
      * @throws HoldingsItemsException when database communication fails.
      */
