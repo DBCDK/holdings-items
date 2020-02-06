@@ -625,7 +625,7 @@ public class HoldingsItemsDAO {
         return null;
     }
 
-    private RecordCollection recordCollectionFromItemIdStatement(final PreparedStatement collectionStmt, int agencyId, String itemId) throws SQLException {
+    private RecordCollection recordCollectionFromItemIdStatement(final PreparedStatement collectionStmt, int agencyId) throws SQLException {
         try (ResultSet collectionResultSet = collectionStmt.executeQuery()) {
             if (collectionResultSet.next()) {
                 String issueId = collectionResultSet.getString(9);
