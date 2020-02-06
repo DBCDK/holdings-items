@@ -38,12 +38,12 @@ public class ContentResource {
     @GET
     @Path("holdings-by-item-id")
     public Response getItemEntity(
-            @QueryParam("agency") int agencyId,
+            @QueryParam("agency") Integer agencyId,
             @QueryParam("itemId") String itemId,
             @QueryParam("trackingId") String trackingId)
     {
         { // argument validation
-            if (agencyId < 0) {
+            if (agencyId == null || agencyId < 0) {
                 return Response.status(Response.Status.BAD_REQUEST.getStatusCode(), "agency ID is required!").build();
             }
             if (!(itemId.trim().length() > 0)) {
@@ -66,11 +66,14 @@ public class ContentResource {
     @GET
     @Path("holdings-by-pid")
     public Response getItemEntities(
-            @QueryParam("agency") int agencyId,
+            @QueryParam("agency") Integer agencyId,
             @QueryParam("pid") List<String> pids,
             @QueryParam("trackingId") String trackingId)
     {
         { // argument validation
+            if (agencyId == null || agencyId < 0) {
+                return Response.status(Response.Status.BAD_REQUEST.getStatusCode(), "agency ID is required!").build();
+            }
             if (!(pids.stream().allMatch(s -> (s.contains(":") && s.chars().filter(ch -> ch == ':').count() == 1))))
                 return Response.status(Response.Status.BAD_REQUEST.getStatusCode(), "All argument pids must contain exactly one colon").build();
             List<String> bibliographicRecordIds = pids.stream().map(s -> s.split(":")[1]).collect(Collectors.toList());
