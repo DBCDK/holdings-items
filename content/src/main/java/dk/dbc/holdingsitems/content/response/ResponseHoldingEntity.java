@@ -4,6 +4,7 @@ import dk.dbc.holdingsitems.Record;
 import dk.dbc.holdingsitems.RecordCollection;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -41,6 +42,9 @@ public class ResponseHoldingEntity {
     }
 
     public static List<ResponseHoldingEntity> listFromRecordCollection(RecordCollection rc) {
+        if (rc == null) {
+            return new ArrayList<>();
+        }
         final Iterable<Record> recordIterable = () -> rc.iterator();
         final Stream<Record> recordList = StreamSupport.stream(recordIterable.spliterator(), false);
         final List<ResponseHoldingEntity> holdingEntities = recordList.map(r -> new ResponseHoldingEntity(r, rc)).collect(Collectors.toList());
