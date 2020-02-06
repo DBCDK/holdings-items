@@ -232,7 +232,7 @@ public class HoldingsItemsDAO {
         try (PreparedStatement collectionStmt = connection.prepareStatement(SELECT_HOLDING_AGENCY_ITEM)) {
             collectionStmt.setInt(2, agencyId);
             collectionStmt.setString(1, itemId);
-            RecordCollection collection = recordCollectionFromItemIdStatement(collectionStmt, agencyId, itemId);
+            RecordCollection collection = recordCollectionFromItemIdStatement(collectionStmt, agencyId);
             if (collection != null) {
                 return collection;
             }
