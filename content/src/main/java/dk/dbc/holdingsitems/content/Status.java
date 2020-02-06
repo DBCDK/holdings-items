@@ -29,7 +29,7 @@ public class Status {
     @GET
     @Produces({MediaType.APPLICATION_JSON})
     @Timed
-    public Response GetStatus() {
+    public Response getStatus() {
         log.info("Status endpoint called.");
         try (Connection connection = dataSource.getConnection();
              Statement stmt = connection.createStatement();

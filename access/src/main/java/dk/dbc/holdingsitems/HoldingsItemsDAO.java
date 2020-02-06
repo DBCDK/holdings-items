@@ -591,36 +591,13 @@ public class HoldingsItemsDAO {
     private RecordCollection recordCollectionFromStatement(final PreparedStatement collectionStmt, String bibliographicRecordId, int agencyId, String issueId) throws SQLException {
         try (ResultSet collectionResultSet = collectionStmt.executeQuery()) {
             if (collectionResultSet.next()) {
-                String issueText = collectionResultSet.getString(1);
-                Date expectedDelivery = collectionResultSet.getTimestamp(2);
-                Integer readyForLoan = collectionResultSet.getInt(3);
-                String note = collectionResultSet.getString(4);
-                Timestamp complete = collectionResultSet.getTimestamp(5);
-                Timestamp created = collectionResultSet.getTimestamp(6);
-                Timestamp modified = collectionResultSet.getTimestamp(7);
-                String colTrackingId = collectionResultSet.getString(8);
-                RecordCollection collection = new RecordCollection(bibliographicRecordId, agencyId, issueId,
-                                                                   issueText, expectedDelivery, readyForLoan, note,
-                                                                   complete, created, modified, colTrackingId, this);
+                RecordCollection collection = collectionFromResultSet(agencyId, bibliographicRecordId, issueId, collectionResultSet, this);
                 try (PreparedStatement itemStmt = connection.prepareStatement(SELECT_ITEM)) {
                     itemStmt.setInt(1, agencyId);
                     itemStmt.setString(2, bibliographicRecordId);
                     itemStmt.setString(3, issueId);
                     try (ResultSet itemResultSet = itemStmt.executeQuery()) {
-                        while (itemResultSet.next()) {
-                            String itemId = itemResultSet.getString(1);
-                            String branch = itemResultSet.getString(2);
-                            String department = itemResultSet.getString(3);
-                            String location = itemResultSet.getString(4);
-                            String subLocation = itemResultSet.getString(5);
-                            String circulationRule = itemResultSet.getString(6);
-                            Date accessionDate = itemResultSet.getDate(7);
-                            String status = itemResultSet.getString(8);
-                            created = itemResultSet.getTimestamp(9);
-                            modified = itemResultSet.getTimestamp(10);
-                            String itemTrackingId = itemResultSet.getString(11);
-                            collection.put(itemId, new RecordImpl(itemId, branch, department, location, subLocation, circulationRule, accessionDate, status, created, modified, itemTrackingId));
-                        }
+                        updateCollectionFromItemResultSet(collection, itemResultSet);
                     }
                 }
                 return collection;
@@ -632,37 +609,14 @@ public class HoldingsItemsDAO {
     private RecordCollection recordCollectionFromPidStatement(final PreparedStatement collectionStatement, int agencyId, String bibliographicRecordId) throws SQLException {
         try (ResultSet collectionResultSet = collectionStatement.executeQuery()) {
             if (collectionResultSet.next()) {
-                String issueText = collectionResultSet.getString(1);
-                Date expectedDelivery = collectionResultSet.getTimestamp(2);
-                Integer readyForLoan = collectionResultSet.getInt(3);
-                String note = collectionResultSet.getString(4);
-                Timestamp complete = collectionResultSet.getTimestamp(5);
-                Timestamp created = collectionResultSet.getTimestamp(6);
-                Timestamp modified = collectionResultSet.getTimestamp(7);
-                String colTrackingId = collectionResultSet.getString(8);
                 String issueId = collectionResultSet.getString(9);
-                RecordCollection collection = new RecordCollection(bibliographicRecordId, agencyId, issueId,
-                        issueText, expectedDelivery, readyForLoan, note,
-                        complete, created, modified, colTrackingId, this);
+                RecordCollection collection = collectionFromResultSet(agencyId, bibliographicRecordId, issueId, collectionResultSet, this);
                 try (PreparedStatement itemStmt = connection.prepareStatement(SELECT_ITEM)) {
                     itemStmt.setInt(1, agencyId);
                     itemStmt.setString(2, bibliographicRecordId);
                     itemStmt.setString(3, issueId);
                     try (ResultSet itemResultSet = itemStmt.executeQuery()) {
-                        while (itemResultSet.next()) {
-                            String itemId = itemResultSet.getString(1);
-                            String branch = itemResultSet.getString(2);
-                            String department = itemResultSet.getString(3);
-                            String location = itemResultSet.getString(4);
-                            String subLocation = itemResultSet.getString(5);
-                            String circulationRule = itemResultSet.getString(6);
-                            Date accessionDate = itemResultSet.getDate(7);
-                            String status = itemResultSet.getString(8);
-                            created = itemResultSet.getTimestamp(9);
-                            modified = itemResultSet.getTimestamp(10);
-                            String itemTrackingId = itemResultSet.getString(11);
-                            collection.put(itemId, new RecordImpl(itemId, branch, department, location, subLocation, circulationRule, accessionDate, status, created, modified, itemTrackingId));
-                        }
+                        updateCollectionFromItemResultSet(collection, itemResultSet);
                     }
                 }
                 return collection;
@@ -674,43 +628,52 @@ public class HoldingsItemsDAO {
     private RecordCollection recordCollectionFromItemIdStatement(final PreparedStatement collectionStmt, int agencyId, String itemId) throws SQLException {
         try (ResultSet collectionResultSet = collectionStmt.executeQuery()) {
             if (collectionResultSet.next()) {
-                String issueText = collectionResultSet.getString(1); // todo: copied code
-                Date expectedDelivery = collectionResultSet.getTimestamp(2);
-                Integer readyForLoan = collectionResultSet.getInt(3);
-                String note = collectionResultSet.getString(4);
-                Timestamp complete = collectionResultSet.getTimestamp(5);
-                Timestamp created = collectionResultSet.getTimestamp(6);
-                Timestamp modified = collectionResultSet.getTimestamp(7);
-                String colTrackingId = collectionResultSet.getString(8);
                 String issueId = collectionResultSet.getString(9);
                 String bibliographicRecordId = collectionResultSet.getString(10);
-                RecordCollection collection = new RecordCollection(bibliographicRecordId, agencyId, issueId,
-                                                                    issueText, expectedDelivery, readyForLoan,
-                                                                    note, complete, created, modified, colTrackingId, this);
+                RecordCollection collection = collectionFromResultSet(agencyId, bibliographicRecordId, issueId, collectionResultSet, this);
                 try (PreparedStatement itemStatement = connection.prepareStatement(SELECT_ITEM)) {
                     itemStatement.setInt(1, agencyId);
                     itemStatement.setString(2, bibliographicRecordId);
                     itemStatement.setString(3, issueId);
                     try (ResultSet itemResultSet = itemStatement.executeQuery()) {
-                        while (itemResultSet.next()) {
-                            String branch = itemResultSet.getString(2);
-                            String department = itemResultSet.getString(3);
-                            String location = itemResultSet.getString(4);
-                            String subLocation = itemResultSet.getString(5);
-                            String circulationRule = itemResultSet.getString(6);
-                            Date accessionDate = itemResultSet.getDate(7);
-                            String status = itemResultSet.getString(8);
-                            created = itemResultSet.getTimestamp(9);
-                            modified = itemResultSet.getTimestamp(10);
-                            String itemTrackingId = itemResultSet.getString(11);
-                            collection.put(itemId, new RecordImpl(itemId, branch, department, location, subLocation, circulationRule, accessionDate, status, created, modified, itemTrackingId));
-                        }
+                        updateCollectionFromItemResultSet(collection, itemResultSet);
                     }
                 }
                 return collection;
             }
         }
         return null;
+    }
+
+    private static void updateCollectionFromItemResultSet(RecordCollection recordCollection, ResultSet itemResultSet)  throws SQLException {
+        while (itemResultSet.next()) {
+            String itemId = itemResultSet.getString(1);
+            String branch = itemResultSet.getString(2);
+            String department = itemResultSet.getString(3);
+            String location = itemResultSet.getString(4);
+            String subLocation = itemResultSet.getString(5);
+            String circulationRule = itemResultSet.getString(6);
+            Date accessionDate = itemResultSet.getDate(7);
+            String status = itemResultSet.getString(8);
+            Timestamp created = itemResultSet.getTimestamp(9);
+            Timestamp modified = itemResultSet.getTimestamp(10);
+            String itemTrackingId = itemResultSet.getString(11);
+            recordCollection.put(itemId, new RecordImpl(itemId, branch, department, location, subLocation, circulationRule, accessionDate, status, created, modified, itemTrackingId));
+        }
+    }
+
+    private static RecordCollection collectionFromResultSet(int agencyId, String bibliographicRecordId, String issueId, ResultSet resultSet, HoldingsItemsDAO dao) throws SQLException {
+        String issueText = resultSet.getString(1);
+        Date expectedDelivery = resultSet.getTimestamp(2);
+        Integer readyForLoan = resultSet.getInt(3);
+        String note = resultSet.getString(4);
+        Timestamp complete = resultSet.getTimestamp(5);
+        Timestamp created = resultSet.getTimestamp(6);
+        Timestamp modified = resultSet.getTimestamp(7);
+        String colTrackingId = resultSet.getString(8);
+        return new RecordCollection(bibliographicRecordId, agencyId, issueId,
+                issueText, expectedDelivery, readyForLoan, note,
+                complete, created, modified, colTrackingId, dao);
     }
 
     // CPD-OFF

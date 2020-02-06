@@ -74,7 +74,7 @@ public class ContentResource {
             if (agencyId == null || agencyId < 0) {
                 return Response.status(Response.Status.BAD_REQUEST.getStatusCode(), "agency ID is required!").build();
             }
-            if (!pids.stream().allMatch(s -> (s.contains(":") && s.chars().filter(ch -> ch == ':').count() == 1)))
+            if (!pids.stream().allMatch(s -> s.contains(":") && s.chars().filter(ch -> ch == ':').count() == 1))
                 return Response.status(Response.Status.BAD_REQUEST.getStatusCode(), "All argument pids must contain exactly one colon").build();
             List<String> bibliographicRecordIds = pids.stream().map(s -> s.split(":")[1]).collect(Collectors.toList());
             HashSet<String> uniqueBibliographicRecordIds = new HashSet<String>(bibliographicRecordIds);
