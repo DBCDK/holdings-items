@@ -80,7 +80,7 @@ public abstract class UpdateRequest {
      *
      * @return tracking id
      */
-    public abstract String getTrakingId();
+    public abstract String getTrackingId();
 
     /**
      * List queues a request should enqueue onto
@@ -209,7 +209,7 @@ public abstract class UpdateRequest {
         try (LogWith logWith = new LogWith()) {
             String issueId = holding.getIssueId();
             logWith.with("issueId", issueId);
-            log.info("agencyId = " + agencyId + "; bibliographicRecordId = " + bibliographicRecordId + "; issueId = " + issueId + "; trackingId = " + getTrakingId());
+            log.info("agencyId = " + agencyId + "; bibliographicRecordId = " + bibliographicRecordId + "; issueId = " + issueId + "; trackingId = " + getTrackingId());
             RecordCollection collection = getRecordCollection(bibliographicRecordId, agencyId, issueId, modified);
             collection.setComplete(complete);
             if (complete && !collection.getCompleteTimestamp().after(modified)) {

@@ -20,19 +20,21 @@ package dk.dbc.holdingsitems;
 
 import dk.dbc.pgqueue.PreparedQueueSupplier;
 import dk.dbc.pgqueue.QueueSupplier;
+import org.slf4j.LoggerFactory;
+
 import java.sql.Connection;
+import java.sql.Types;
+import java.sql.Timestamp;
+import java.sql.Savepoint;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Savepoint;
-import java.sql.Timestamp;
-import java.sql.Types;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import org.slf4j.LoggerFactory;
+import java.util.Date;
+
 
 /**
  *
@@ -229,6 +231,52 @@ public class HoldingsItemsDAO {
     }
 
     /**
+     * Get a collection of items identified by an agencyId and an itemId
+     *
+     * @param agencyId  the agency
+     * @param itemId    item id
+     * @return an object representing a collection of records. If none are found, return null.
+     * @throws HoldingsItemsException when database communication fails.
+     */
+    public RecordCollection getRecordCollectionItemId(int agencyId, String itemId) throws HoldingsItemsException {
+        try (PreparedStatement collectionStmt = connection.prepareStatement(SELECT_HOLDING_AGENCY_ITEM)) {
+            collectionStmt.setInt(2, agencyId);
+            collectionStmt.setString(1, itemId);
+            RecordCollection collection = recordCollectionFromItemIdStatement(collectionStmt, agencyId, itemId);
+            if (collection != null) {
+                return collection;
+            }
+        } catch (SQLException ex) {
+            log.error(DATABASE_ERROR, ex);
+            throw new HoldingsItemsException(DATABASE_ERROR, ex);
+        }
+        return null;
+    }
+
+    /**
+     * Get a collection of items identified by and agencyId and a bibliographicRecordId
+     *
+     * @param agencyId                  id of agency
+     * @param bibliographicRecordId     bibliographic record id
+     * @return an object representing a collection of records. If none are found, return null.
+     * @throws HoldingsItemsException when database communication fails.
+     */
+    public RecordCollection getRecordCollectionPid(int agencyId, String bibliographicRecordId) throws HoldingsItemsException {
+        try (PreparedStatement collectionStmt = connection.prepareStatement(SELECT_COLLECTION_AGENCY_BIBLIOGRAPHICRECORDID)) {
+            collectionStmt.setInt(1, agencyId);
+            collectionStmt.setString(2, bibliographicRecordId);
+            RecordCollection collection = recordCollectionFromPidStatement(collectionStmt, agencyId, bibliographicRecordId);
+            if (collection != null) {
+                return collection;
+            }
+        } catch (SQLException ex) {
+            log.error(DATABASE_ERROR, ex);
+            throw new HoldingsItemsException(DATABASE_ERROR, ex);
+        }
+        return null;
+    }
+
+    /**
      * Create (if required) a collection of items defined by id/library/orderId
      *
      * @param bibliographicRecordId part of the primary key
@@ -280,7 +328,7 @@ public class HoldingsItemsDAO {
      * @throws HoldingsItemsException When database communication fails
      */
     public Set<Integer> getAgenciesThatHasHoldingsFor(String bibliographicRecordId) throws HoldingsItemsException {
-        HashSet agencies = new HashSet();
+        HashSet agencies = new HashSet<Integer>();
 
         try (PreparedStatement stmt = connection.prepareStatement(AGENCIES_WITH_BIBLIOGRAPHICRECORDID)) {
             stmt.setString(1, bibliographicRecordId);
@@ -332,7 +380,7 @@ public class HoldingsItemsDAO {
     void saveRecordCollection(RecordCollection collection, Timestamp modified) throws HoldingsItemsException {
         updateOrInsertCollection(collection, modified);
         try (PreparedStatement insert = connection.prepareStatement(INSERT_ITEM) ;
-             PreparedStatement update = connection.prepareStatement(UPDATE_ITEM);) {
+             PreparedStatement update = connection.prepareStatement(UPDATE_ITEM)) {
             for (Record record : collection) {
                 if (record.isModified() || record.isOriginal() || collection.isOriginal()) {
                     log.debug("record = " + record);
@@ -553,42 +601,92 @@ public class HoldingsItemsDAO {
     private RecordCollection recordCollectionFromStatement(final PreparedStatement collectionStmt, String bibliographicRecordId, int agencyId, String issueId) throws SQLException {
         try (ResultSet collectionResultSet = collectionStmt.executeQuery()) {
             if (collectionResultSet.next()) {
-                String issueText = collectionResultSet.getString(1);
-                Date expectedDelivery = collectionResultSet.getTimestamp(2);
-                Integer readyForLoan = collectionResultSet.getInt(3);
-                String note = collectionResultSet.getString(4);
-                Timestamp complete = collectionResultSet.getTimestamp(5);
-                Timestamp created = collectionResultSet.getTimestamp(6);
-                Timestamp modified = collectionResultSet.getTimestamp(7);
-                String colTrackingId = collectionResultSet.getString(8);
-                RecordCollection collection = new RecordCollection(bibliographicRecordId, agencyId, issueId,
-                                                                   issueText, expectedDelivery, readyForLoan, note,
-                                                                   complete, created, modified, colTrackingId, this);
+                RecordCollection collection = collectionFromResultSet(agencyId, bibliographicRecordId, issueId, collectionResultSet);
                 try (PreparedStatement itemStmt = connection.prepareStatement(SELECT_ITEM)) {
-                    itemStmt.setInt(1, agencyId);
-                    itemStmt.setString(2, bibliographicRecordId);
-                    itemStmt.setString(3, issueId);
+                    itemStmt.setInt(1, collection.getAgencyId());
+                    itemStmt.setString(2, collection.getBibliographicRecordId());
+                    itemStmt.setString(3, collection.getIssueId());
                     try (ResultSet itemResultSet = itemStmt.executeQuery()) {
-                        while (itemResultSet.next()) {
-                            String itemId = itemResultSet.getString(1);
-                            String branch = itemResultSet.getString(2);
-                            String department = itemResultSet.getString(3);
-                            String location = itemResultSet.getString(4);
-                            String subLocation = itemResultSet.getString(5);
-                            String circulationRule = itemResultSet.getString(6);
-                            Date accessionDate = itemResultSet.getDate(7);
-                            String status = itemResultSet.getString(8);
-                            created = itemResultSet.getTimestamp(9);
-                            modified = itemResultSet.getTimestamp(10);
-                            String itemTrackingId = itemResultSet.getString(11);
-                            collection.put(itemId, new RecordImpl(itemId, branch, department, location, subLocation, circulationRule, accessionDate, status, created, modified, itemTrackingId));
-                        }
+                        updateCollectionFromItemResultSet(collection, itemResultSet);
                     }
                 }
                 return collection;
             }
         }
         return null;
+    }
+
+    private RecordCollection recordCollectionFromPidStatement(final PreparedStatement collectionStatement, int agencyId, String bibliographicRecordId) throws SQLException {
+        try (ResultSet collectionResultSet = collectionStatement.executeQuery()) {
+            if (collectionResultSet.next()) {
+                String issueId = collectionResultSet.getString(9);
+                RecordCollection collection = collectionFromResultSet(agencyId, bibliographicRecordId, issueId, collectionResultSet);
+                try (PreparedStatement itemStmt = connection.prepareStatement(SELECT_ITEM)) {
+                    itemStmt.setInt(1, collection.getAgencyId());
+                    itemStmt.setString(2, collection.getBibliographicRecordId());
+                    itemStmt.setString(3, collection.getIssueId());
+                    try (ResultSet itemResultSet = itemStmt.executeQuery()) {
+                        updateCollectionFromItemResultSet(collection, itemResultSet);
+                    }
+                }
+                return collection;
+            }
+        }
+        return null;
+    }
+
+    private RecordCollection recordCollectionFromItemIdStatement(final PreparedStatement collectionStmt, int agencyId, String itemId) throws SQLException {
+        try (ResultSet collectionResultSet = collectionStmt.executeQuery()) {
+            if (collectionResultSet.next()) {
+                String issueId = collectionResultSet.getString(9);
+                String bibliographicRecordId = collectionResultSet.getString(10);
+                RecordCollection collection = collectionFromResultSet(agencyId, bibliographicRecordId, issueId, collectionResultSet);
+                try (PreparedStatement itemStatement = connection.prepareStatement(SELECT_ITEM_ID)) {
+                    itemStatement.setInt(1, agencyId);
+                    itemStatement.setString(2, bibliographicRecordId);
+                    itemStatement.setString(3, issueId);
+                    itemStatement.setString(4, itemId);
+                    try (ResultSet itemResultSet = itemStatement.executeQuery()) {
+                        updateCollectionFromItemResultSet(collection, itemResultSet);
+                    }
+                }
+                return collection;
+            }
+        }
+        return null;
+    }
+
+    private void updateCollectionFromItemResultSet(RecordCollection recordCollection, ResultSet itemResultSet)  throws SQLException {
+        while (itemResultSet.next()) {
+            int i = 0;
+            String itemId = itemResultSet.getString(++i);
+            String branch = itemResultSet.getString(++i);
+            String department = itemResultSet.getString(++i);
+            String location = itemResultSet.getString(++i);
+            String subLocation = itemResultSet.getString(++i);
+            String circulationRule = itemResultSet.getString(++i);
+            Date accessionDate = itemResultSet.getDate(++i);
+            String status = itemResultSet.getString(++i);
+            Timestamp created = itemResultSet.getTimestamp(++i);
+            Timestamp modified = itemResultSet.getTimestamp(++i);
+            String itemTrackingId = itemResultSet.getString(++i);
+            recordCollection.put(itemId, new RecordImpl(itemId, branch, department, location, subLocation, circulationRule, accessionDate, status, created, modified, itemTrackingId));
+        }
+    }
+
+    private RecordCollection collectionFromResultSet(int agencyId, String bibliographicRecordId, String issueId, ResultSet resultSet) throws SQLException {
+        int i = 0;
+        String issueText = resultSet.getString(++i);
+        Date expectedDelivery = resultSet.getTimestamp(++i);
+        Integer readyForLoan = resultSet.getInt(++i);
+        String note = resultSet.getString(++i);
+        Timestamp complete = resultSet.getTimestamp(++i);
+        Timestamp created = resultSet.getTimestamp(++i);
+        Timestamp modified = resultSet.getTimestamp(++i);
+        String colTrackingId = resultSet.getString(++i);
+        return new RecordCollection(bibliographicRecordId, agencyId, issueId,
+                issueText, expectedDelivery, readyForLoan, note,
+                complete, created, modified, colTrackingId, this);
     }
 
     // CPD-OFF
@@ -660,8 +758,21 @@ public class HoldingsItemsDAO {
 
     private static final String VALIDATE_SCHEMA = "SELECT warning FROM version WHERE version=?";
 
-    private static final String SELECT_COLLECTION = "SELECT issueText, expectedDelivery, readyForLoan, note, complete, created, modified, trackingId" +
-                                                    " FROM holdingsitemscollection WHERE agencyId=? AND bibliographicRecordId=? AND issueId=?";
+    private static final String SELECT_COLLECTION_FIELDS = "hic.issueText, hic.expectedDelivery, hic.readyForLoan, hic.note, hic.complete, hic.created, hic.modified, hic.trackingId, hic.issueId, hic.bibliographicRecordId, hic.agencyId";
+    private static final String SELECT_ITEM_FIELDS = "itemId, branch, department, location, subLocation, circulationRule, accessionDate, status, created, modified, trackingId, agencyId";
+
+    private static final String SELECT_HOLDING_AGENCY_ITEM =
+                "SELECT " + SELECT_COLLECTION_FIELDS +
+                " FROM holdingsitemscollection hic JOIN holdingsitemsitem hii USING (agencyId, bibliographicRecordId, issueId) WHERE" +
+                " hii.itemId=? AND hic.agencyId=?";
+
+    private static final String SELECT_COLLECTION_AGENCY_BIBLIOGRAPHICRECORDID =
+            "SELECT " + SELECT_COLLECTION_FIELDS +
+            " FROM holdingsitemscollection hic WHERE agencyId=? AND bibliographicRecordId=?";
+
+    private static final String SELECT_COLLECTION = "SELECT " + SELECT_COLLECTION_FIELDS +
+            " FROM holdingsitemscollection hic WHERE agencyId=? AND bibliographicRecordId=? AND issueId=?";
+
     private static final String SELECT_COLLECTION_FOR_UPDATE = SELECT_COLLECTION + " FOR UPDATE";
     private static final String UPDATE_COLLECTION = "UPDATE holdingsitemscollection" +
                                                     " SET issueText=?, expectedDelivery=?, readyForLoan=?, note=?, complete=?, modified=?, trackingId=?" +
@@ -672,8 +783,10 @@ public class HoldingsItemsDAO {
     private static final String INSERT_COLLECTION = "INSERT INTO holdingsitemscollection" +
                                                     " (agencyId, bibliographicRecordId, issueId, issueText, expectedDelivery, readyForLoan, note, complete, created, modified, trackingId)" +
                                                     " VALUES (?, ?, ?, ?, ?, ?, ?, ?, timeofday()::timestamp, ?, ?)";
-    private static final String SELECT_ITEM = "SELECT itemId, branch, department, location, subLocation, circulationRule, accessionDate, status, created, modified, trackingId" +
-                                              " FROM holdingsitemsitem WHERE agencyId=? AND bibliographicRecordId=? AND issueId=?";
+    private static final String SELECT_ITEM = "SELECT " + SELECT_ITEM_FIELDS +
+            " FROM holdingsitemsitem WHERE agencyId=? AND bibliographicRecordId=? AND issueId=?";
+    private static final String SELECT_ITEM_ID = "SELECT " + SELECT_ITEM_FIELDS +
+            " FROM holdingsitemsitem WHERE agencyId=? AND bibliographicRecordId=? AND issueId=? AND itemId=?";
     private static final String UPDATE_ITEM = "UPDATE holdingsitemsitem" +
                                               " SET branch=?, department=?, location=?, subLocation=?, circulationRule=?, accessionDate=?, status=?," +
                                               " modified=?, trackingId=?" +
