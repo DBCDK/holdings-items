@@ -200,6 +200,32 @@ public class ContentIT {
         }
     }
 
+    @Test(timeout = 30_000L)
+    public void testGetPidEntitiesNonExistingPid() throws Exception {
+        System.out.println("Test getItemByPid endpoint, one pid");
+        try (Connection connection = dataSource.getConnection()) {
+            HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(connection, "track1", true);
+            RecordCollection issue1 = dao.getRecordCollection("12345678", 654321, "Issue#1");
+            issue1.setIssueText("#1");
+            issue1.setNote("");
+            issue1.setReadyForLoan(1);
+            record(issue1, "1234", "OnShelf");
+            record(issue1, "2345", "OnLoan");
+            issue1.save(Timestamp.from(Instant.now()));
+
+            System.out.println("Calling service...");
+            Response response = contentResource.getItemEntities(654321, Arrays.asList("hest:123456789"), "tracktwack");
+            ContentServicePidResponse pidResponse = (ContentServicePidResponse) response.getEntity();
+            assertNotNull(pidResponse);
+            assertEquals(pidResponse.trackingId, "tracktwack");
+            Map<String, List<ResponseHoldingEntity>> holdingsMap = pidResponse.holdings;
+            assertTrue(holdingsMap.containsKey("hest:123456789"));
+            List<ResponseHoldingEntity> holdings = holdingsMap.get("hest:123456789");
+            assertNotNull(holdings);
+            assertEquals(holdings.size(), 0);
+        }
+    }
+
     private void record(RecordCollection collection, String itemId, String status) {
         Record rec = collection.findRecord(itemId);
         rec.setAccessionDate(new Date());
@@ -210,6 +236,4 @@ public class ContentIT {
         rec.setSubLocation("sublocation");
         rec.setCirculationRule("");
     }
-
-
 }
