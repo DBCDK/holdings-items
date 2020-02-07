@@ -40,8 +40,7 @@ public class ContentResource {
     public Response getItemEntity(
             @QueryParam("agency") Integer agencyId,
             @QueryParam("itemId") String itemId,
-            @QueryParam("trackingId") String trackingId)
-    {
+            @QueryParam("trackingId") String trackingId) {
         { // argument validation
             if (agencyId == null || agencyId < 0) {
                 return Response.status(Response.Status.BAD_REQUEST.getStatusCode(), "agency ID is required!").build();
@@ -68,16 +67,15 @@ public class ContentResource {
     public Response getItemEntities(
             @QueryParam("agency") Integer agencyId,
             @QueryParam("pid") List<String> pids,
-            @QueryParam("trackingId") String trackingId)
-    {
+            @QueryParam("trackingId") String trackingId) {
         { // argument validation
             if (agencyId == null || agencyId < 0) {
                 return Response.status(Response.Status.BAD_REQUEST.getStatusCode(), "agency ID is required!").build();
             }
-            if (!pids.stream().allMatch(s -> s.contains(":") && s.chars().filter(ch -> ch == ':').count() == 1))
-                return Response.status(Response.Status.BAD_REQUEST.getStatusCode(), "All argument pids must contain exactly one colon").build();
-            List<String> bibliographicRecordIds = pids.stream().map(s -> s.split(":")[1]).collect(Collectors.toList());
-            HashSet<String> uniqueBibliographicRecordIds = new HashSet<String>(bibliographicRecordIds);
+            if (!pids.stream().allMatch(s -> s.contains(":")))
+                return Response.status(Response.Status.BAD_REQUEST.getStatusCode(), "All argument pids must contain at least one colon").build();
+            List<String> bibliographicRecordIds = pids.stream().map(s -> s.split(":",2)[0]).collect(Collectors.toList());
+            HashSet<String> uniqueBibliographicRecordIds = new HashSet<>(bibliographicRecordIds);
             if (uniqueBibliographicRecordIds.size() < bibliographicRecordIds.size()) {
                 return Response.status(Response.Status.BAD_REQUEST.getStatusCode(), "BibliographicRecordIds in request pids must be unique").build();
             }
@@ -85,7 +83,7 @@ public class ContentResource {
         log.debug("holdings-by-pid called with agency {}, pids: {}, trackingId: {}", agencyId, pids, trackingId);
         Map<String, String> pidMap = new HashMap<>();
         for (String p : pids) {
-            pidMap.put(p, p.split(":")[1]);
+            pidMap.put(p, p.split(":", 2)[1]);
         }
         Map<String, RecordCollection> res = new HashMap<>();
         try (Connection connection = dataSource.getConnection()) {

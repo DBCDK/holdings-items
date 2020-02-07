@@ -8,10 +8,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+@SuppressFBWarnings("URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD")
 public class ContentServicePidResponse {
-    @SuppressFBWarnings("URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD")
     public String trackingId;
-    @SuppressFBWarnings("URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD")
     public Map<String, List<ResponseHoldingEntity>> holdings;
 
     public ContentServicePidResponse(String trackingId, Map<String, RecordCollection> holdingsMap) {
