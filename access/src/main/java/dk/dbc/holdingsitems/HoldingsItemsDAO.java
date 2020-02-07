@@ -684,7 +684,6 @@ public class HoldingsItemsDAO {
         Timestamp created = resultSet.getTimestamp(++i);
         Timestamp modified = resultSet.getTimestamp(++i);
         String colTrackingId = resultSet.getString(++i);
-//        Integer colAgencyId = resultSet.getInt(++i);
         return new RecordCollection(bibliographicRecordId, agencyId, issueId,
                 issueText, expectedDelivery, readyForLoan, note,
                 complete, created, modified, colTrackingId, this);
