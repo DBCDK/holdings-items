@@ -22,9 +22,19 @@ import dk.dbc.pgqueue.PreparedQueueSupplier;
 import dk.dbc.pgqueue.QueueSupplier;
 import org.slf4j.LoggerFactory;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.Types;
+import java.sql.Timestamp;
+import java.sql.Savepoint;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.Date;
-import java.util.*;
+
 
 /**
  *
@@ -318,7 +328,7 @@ public class HoldingsItemsDAO {
      * @throws HoldingsItemsException When database communication fails
      */
     public Set<Integer> getAgenciesThatHasHoldingsFor(String bibliographicRecordId) throws HoldingsItemsException {
-        HashSet agencies = new HashSet();
+        HashSet agencies = new HashSet<Integer>();
 
         try (PreparedStatement stmt = connection.prepareStatement(AGENCIES_WITH_BIBLIOGRAPHICRECORDID)) {
             stmt.setString(1, bibliographicRecordId);
@@ -370,7 +380,7 @@ public class HoldingsItemsDAO {
     void saveRecordCollection(RecordCollection collection, Timestamp modified) throws HoldingsItemsException {
         updateOrInsertCollection(collection, modified);
         try (PreparedStatement insert = connection.prepareStatement(INSERT_ITEM) ;
-             PreparedStatement update = connection.prepareStatement(UPDATE_ITEM);) {
+             PreparedStatement update = connection.prepareStatement(UPDATE_ITEM)) {
             for (Record record : collection) {
                 if (record.isModified() || record.isOriginal() || collection.isOriginal()) {
                     log.debug("record = " + record);
