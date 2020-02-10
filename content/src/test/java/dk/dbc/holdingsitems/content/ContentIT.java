@@ -10,8 +10,6 @@ import dk.dbc.holdingsitems.content.response.ContentServicePidResponse;
 import dk.dbc.holdingsitems.content.response.ResponseHoldingEntity;
 import org.junit.Before;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
 import javax.ws.rs.core.Response;
@@ -25,11 +23,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 public class ContentIT {
-    private static final Logger log = LoggerFactory.getLogger(ContentIT.class);
-
     private PostgresITDataSource pg;
     private DataSource dataSource;
     private ContentResource contentResource;
@@ -48,17 +46,14 @@ public class ContentIT {
         contentResource.dataSource = dataSource;
     }
 
-
     @Test(timeout = 30_000L)
     public void testGetItemEntityNoData() throws Exception {
         System.out.println("Test getItemEntity endpoint, no data...");
-        try (Connection connection = dataSource.getConnection()) {
-            Response response = contentResource.getItemEntity(654322, "1234", "track1");
-            ContentServiceItemResponse itemResponse = (ContentServiceItemResponse) response.getEntity();
-            assertNotNull(itemResponse);
-            assertEquals(itemResponse.trackingId, "track1");
-            assertEquals(itemResponse.holdings.size(), 0);
-        }
+        Response response = contentResource.getItemEntity(654322, "1234", "track1");
+        ContentServiceItemResponse itemResponse = (ContentServiceItemResponse) response.getEntity();
+        assertNotNull(itemResponse);
+        assertEquals(itemResponse.trackingId, "track1");
+        assertEquals(itemResponse.holdings.size(), 0);
     }
 
     @Test(timeout = 30_000L)
@@ -101,7 +96,6 @@ public class ContentIT {
         }
     }
 
-
     @Test(timeout = 30_000L)
     public void testGetItemEntity() throws Exception {
         System.out.println("Test getItemEntity endpoint...");
@@ -114,13 +108,27 @@ public class ContentIT {
             record(issue1, "1234", "OnShelf");
             record(issue1, "2345", "OnLoan");
             issue1.save(Timestamp.from(Instant.now()));
-            Response response = contentResource.getItemEntity(654321, "1234", "track1");
+            Response response = contentResource.getItemEntity(654321, "1234", "trackItemEntity");
             ContentServiceItemResponse itemResponse = (ContentServiceItemResponse) response.getEntity();
             assertNotNull(itemResponse);
-            assertEquals(itemResponse.trackingId, "track1");
+            assertEquals(itemResponse.trackingId, "trackItemEntity");
             ResponseHoldingEntity rhe = itemResponse.holdings.get(0);
             assertEquals(rhe.itemId, "1234");
         }
+    }
+
+    @Test(timeout = 30_000L)
+    public void testGetItemEntitiesNoAgency() throws Exception {
+        System.out.println("Test getItemEntity endpoint, no agency argument");
+        Response response = contentResource.getItemEntity(null, "123456", "trackItemNoAgency");
+        assertEquals(response.getStatusInfo().getStatusCode(), Response.Status.BAD_REQUEST.getStatusCode());
+    }
+
+    @Test(timeout = 30_000L)
+    public void testGetItemEntitiesNoItem() throws Exception {
+        System.out.println("Test getItemEntity endpoint, no itemId argument");
+        Response response = contentResource.getItemEntity(654321, "", "trackItemNoItem");
+        assertEquals(response.getStatusInfo().getStatusCode(), Response.Status.BAD_REQUEST.getStatusCode());
     }
 
     @Test(timeout = 30_000L)
@@ -136,11 +144,10 @@ public class ContentIT {
             record(issue1, "2345", "OnLoan");
             issue1.save(Timestamp.from(Instant.now()));
 
-            System.out.println("Calling service...");
-            Response response = contentResource.getItemEntities(654321, Arrays.asList("hest:12345678"), "tracktwack");
+            Response response = contentResource.getItemEntities(654321, Arrays.asList("hest:12345678"), "trackPidOnePid");
             ContentServicePidResponse pidResponse = (ContentServicePidResponse) response.getEntity();
             assertNotNull(pidResponse);
-            assertEquals(pidResponse.trackingId, "tracktwack");
+            assertEquals(pidResponse.trackingId, "trackPidOnePid");
             Map<String, List<ResponseHoldingEntity>> holdingsMap = pidResponse.holdings;
             assertTrue(holdingsMap.containsKey("hest:12345678"));
             List<ResponseHoldingEntity> holdings = holdingsMap.get("hest:12345678");
@@ -174,11 +181,10 @@ public class ContentIT {
             record(issue2, "4321", "OnShelf");
             issue2.save(Timestamp.from(Instant.now()));
 
-            System.out.println("Calling service...");
-            Response response = contentResource.getItemEntities(654321, Arrays.asList("hest:12345678", "fest:87654321"), "tracktwack");
+            Response response = contentResource.getItemEntities(654321, Arrays.asList("hest:12345678", "fest:87654321"), "trackPidTwoPids");
             ContentServicePidResponse pidResponse = (ContentServicePidResponse) response.getEntity();
             assertNotNull(pidResponse);
-            assertEquals(pidResponse.trackingId, "tracktwack");
+            assertEquals(pidResponse.trackingId, "trackPidTwoPids");
             Map<String, List<ResponseHoldingEntity>> holdingsMap = pidResponse.holdings;
             assertTrue(holdingsMap.containsKey("hest:12345678"));
             List<ResponseHoldingEntity> holdingsHest = holdingsMap.get("hest:12345678");
@@ -202,7 +208,7 @@ public class ContentIT {
 
     @Test(timeout = 30_000L)
     public void testGetPidEntitiesNonExistingPid() throws Exception {
-        System.out.println("Test getItemByPid endpoint, one pid");
+        System.out.println("Test getItemByPid endpoint, non-existing pid");
         try (Connection connection = dataSource.getConnection()) {
             HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(connection, "track1", true);
             RecordCollection issue1 = dao.getRecordCollection("12345678", 654321, "Issue#1");
@@ -213,17 +219,30 @@ public class ContentIT {
             record(issue1, "2345", "OnLoan");
             issue1.save(Timestamp.from(Instant.now()));
 
-            System.out.println("Calling service...");
-            Response response = contentResource.getItemEntities(654321, Arrays.asList("hest:123456789"), "tracktwack");
+            Response response = contentResource.getItemEntities(654321, Arrays.asList("hest:123456789"), "trackPidNonExistingPid");
             ContentServicePidResponse pidResponse = (ContentServicePidResponse) response.getEntity();
             assertNotNull(pidResponse);
-            assertEquals(pidResponse.trackingId, "tracktwack");
+            assertEquals(pidResponse.trackingId, "trackPidNonExistingPid");
             Map<String, List<ResponseHoldingEntity>> holdingsMap = pidResponse.holdings;
             assertTrue(holdingsMap.containsKey("hest:123456789"));
             List<ResponseHoldingEntity> holdings = holdingsMap.get("hest:123456789");
             assertNotNull(holdings);
             assertEquals(holdings.size(), 0);
         }
+    }
+
+    @Test(timeout = 30_000L)
+    public void testGetPidEntitiesRepeatedPid() throws Exception {
+        System.out.println("Test getItemByPid endpoint, repeated pid");
+        Response response = contentResource.getItemEntities(654321, Arrays.asList("hest:12345678", "fest:12345678"), "trackPidRepeatedPid");
+        assertEquals(response.getStatusInfo().getStatusCode(), Response.Status.BAD_REQUEST.getStatusCode());
+    }
+
+    @Test(timeout = 30_000L)
+    public void testGetPidEntitiesNoAgency() throws Exception {
+        System.out.println("Test getItemByPid endpoint, no agency");
+        Response response = contentResource.getItemEntities(null, Arrays.asList("hest:12345678"), "trackPidNoAgency");
+        assertEquals(response.getStatusInfo().getStatusCode(), Response.Status.BAD_REQUEST.getStatusCode());
     }
 
     private void record(RecordCollection collection, String itemId, String status) {
