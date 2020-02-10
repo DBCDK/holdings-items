@@ -43,10 +43,12 @@ public class ContentResource {
             @QueryParam("trackingId") String trackingId) {
         { // argument validation
             if (agencyId == null || agencyId < 0) {
-                return Response.status(Response.Status.BAD_REQUEST.getStatusCode(), "agency ID is required!").build();
+                log.error("holdings-by-item-id called with no agency");
+                return Response.status(Response.Status.BAD_REQUEST).build();
             }
             if (!(itemId.trim().length() > 0)) {
-                return Response.status(Response.Status.BAD_REQUEST.getStatusCode(), "itemId is required!").build();
+                log.error("holdings-by-item-id called with no item");
+                return Response.status(Response.Status.BAD_REQUEST).build();
             }
         }
         log.debug("holdings-by-item-id called with agency: {}, itemId: {}, trackingId: {}", agencyId, itemId, trackingId);
@@ -70,14 +72,17 @@ public class ContentResource {
             @QueryParam("trackingId") String trackingId) {
         { // argument validation
             if (agencyId == null || agencyId < 0) {
-                return Response.status(Response.Status.BAD_REQUEST.getStatusCode(), "agency ID is required!").build();
+                log.error("holdings-by-pid called with no agency");
+                return Response.status(Response.Status.BAD_REQUEST.getStatusCode()).build();
             }
-            if (!pids.stream().allMatch(s -> s.contains(":")))
-                return Response.status(Response.Status.BAD_REQUEST.getStatusCode(), "All argument pids must contain at least one colon").build();
-            List<String> bibliographicRecordIds = pids.stream().map(s -> s.split(":",2)[0]).collect(Collectors.toList());
+            if (!pids.stream().allMatch(s -> s.contains(":"))) {
+                log.error("holdings-by-pid: All argument pids must contain at least one colon");
+                return Response.status(Response.Status.BAD_REQUEST.getStatusCode()).build();
+            }
+            List<String> bibliographicRecordIds = pids.stream().map(s -> s.split(":",2)[1]).collect(Collectors.toList());
             HashSet<String> uniqueBibliographicRecordIds = new HashSet<>(bibliographicRecordIds);
             if (uniqueBibliographicRecordIds.size() < bibliographicRecordIds.size()) {
-                return Response.status(Response.Status.BAD_REQUEST.getStatusCode(), "BibliographicRecordIds in request pids must be unique").build();
+                return Response.status(Response.Status.BAD_REQUEST).build();
             }
         }
         log.debug("holdings-by-pid called with agency {}, pids: {}, trackingId: {}", agencyId, pids, trackingId);
