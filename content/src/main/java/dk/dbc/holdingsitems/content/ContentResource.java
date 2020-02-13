@@ -5,11 +5,13 @@ import dk.dbc.holdingsitems.HoldingsItemsException;
 import dk.dbc.holdingsitems.RecordCollection;
 import dk.dbc.holdingsitems.content.response.ContentServiceItemResponse;
 import dk.dbc.holdingsitems.content.response.ContentServicePidResponse;
+import dk.dbc.holdingsitems.content.response.IndexHtml;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Resource;
 import javax.ejb.Stateless;
+import javax.inject.Inject;
 import javax.sql.DataSource;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -32,6 +34,9 @@ public class ContentResource {
 
     @Resource(lookup = ContentServiceConfiguration.DATABASE)
     DataSource dataSource;
+
+    @Inject
+    public IndexHtml indexHtml;
 
     private static final Logger log = LoggerFactory.getLogger(ContentResource.class);
 
@@ -102,6 +107,16 @@ public class ContentResource {
             log.error("Database issues: ", ex);
             return Response.serverError().build();
         }
+    }
+
+    @GET
+    @Path("doc")
+    public Response getDocumentation() {
+        log.info("index.html");
+        return Response.ok()
+                .type(MediaType.TEXT_HTML_TYPE)
+                .entity(indexHtml.getInputStream())
+                .build();
     }
 
 }

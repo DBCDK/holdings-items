@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>HoldingsItems Content Service</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+    <h1>Holdings Items Content Service - Overview</h1>
+    <p>&nbsp;</p>
+    <h2>Endpoint 1 (itemId):</h2>
+    <p>
+        <code>http://service/api/holdings-by-item-id?agency=123456&amp;itemId=xxx[&amp;trackingId=....]</code></p>
+    <ul>
+        <li>
+            <p>.holdings</p>
+            <ul>
+                <li><p>will be an empty list if there is no item with the provided itemId</p></li>
+                <li><p>will normally contain at most one holding item</p></li>
+                <li><p>will contain more than one holding item if the same itemId is related to more than one bibliographicRecordId/issueId (this will under normal circumstances be an error, maybe an issue has a changed id and an old issuehas not yet been deleted)</p></li>
+            </ul>
+        </li>
+    </ul>
+    <pre>
+        <code>
+    "trackingId": "....",    // from request trackingId or generated
+    "holdings": [
+        {
+            "bibliographicRecordId": "",
+            "issueId":"",
+            "itemId": "xxx",
+            "branchId": "", // when available in the database
+            "branch": "",
+            "department":"",
+            "location":"",
+            "subLocation":"",
+            "issueText": "",
+            "status": "",
+            "circulationRule":"",
+            "readyForLoan": 0,
+            "note":""
+        },
+        ....
+    ]
+        </code>
+    </pre>
+    <h2>Endpoint 2 (Pid):</h2><h2><code>http://service/api/holdings-by-item-id?agency=123456&amp;pid=xxx[,yyy][&amp;trackingId=....]</code></h2>
+    <ul>
+        <li><p>.holdings</p>
+            <ul>
+                <li><p>the key in the JSON map is the pid that came in with the request</p></li>
+                <li><p>The value is a list of all holding items that the librart has that match the bibliographicRecordId that is after the <code>:</code> in the pid.</p></li>
+                <li><p>The value is an empty list if there are no holding items on the given bibliographicRecordId</p></li>
+            </ul>
+        </li>
+    </ul>
+    <p>If more than one pid derive the same bibliographicRecordId eg. <code>pid=870970-basis:xxxx,700000-katalog:xxxx </code> the result will be a  <code>400 Bad Request</code>.
+        In practice, this is  2 requests against the same holdings, which will result in redundant JSON nodes (and potentially very large responses).
+        The need for a repeated response is seen as a source problem, since there are overlapping ids.</p>
+    <pre>
+        <code>
+    {
+    "trackingId": "....",    // from request trackingId or generated
+    "holdings": {
+        "pid1": [
+            {
+                "bibliographicRecordId": "",
+                "issueId":"",
+                "itemId": "",
+                "branchId": "", // When available in the database
+                "branch": "",
+                "department":"",
+                "location":"",
+                "subLocation":"",
+                "issueText": "",
+                "status": "",
+                "circulationRule":"",
+                "readyForLoan": 0,
+                "note":""
+            },
+            ....
+        ],
+        "pid2": [
+        ]
+    }
+        </code>
+    </pre>
+
+</body>
+</html>
