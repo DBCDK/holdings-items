@@ -16,8 +16,8 @@
             <p>.holdings</p>
             <ul>
                 <li><p>will be an empty list if there is no item with the provided itemId</p></li>
-                <li><p>will normally contain at most one holding item</p></li>
-                <li><p>will contain more than one holding item if the same itemId is related to more than one bibliographicRecordId/issueId (this will under normal circumstances be an error, maybe an issue has a changed id and an old issuehas not yet been deleted)</p></li>
+                <li><p>will normally contain at most one holdings item</p></li>
+                <li><p>will contain more than one holdings item if the same itemId is related to more than one bibliographicRecordId/issueId (this will under normal circumstances be an error, maybe an issue has a changed id and an old issue has not yet been deleted)</p></li>
             </ul>
         </li>
     </ul>
@@ -52,8 +52,8 @@
         <li><p>.holdings</p>
             <ul>
                 <li><p>the key in the JSON map is the pid that came in with the request</p></li>
-                <li><p>The value is a list of all holding items that the librart has that match the bibliographicRecordId that is after the <code>:</code> in the pid.</p></li>
-                <li><p>The value is an empty list if there are no holding items on the given bibliographicRecordId</p></li>
+                <li><p>The value is a list of all holdings items that the librart has that match the bibliographicRecordId that is after the <code>:</code> in the pid.</p></li>
+                <li><p>The value is an empty list if there are no holdings items on the given bibliographicRecordId</p></li>
             </ul>
         </li>
     </ul>
