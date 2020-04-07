@@ -43,6 +43,7 @@
         <module>postgres-content</module>
         <module>kafka-bridge</module>
         <module>purge-tool</module>
+        <module>content</module>
     </modules>
 
     <build>

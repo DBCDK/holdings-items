@@ -90,7 +90,7 @@ public class BibliographicItemEntity implements Serializable {
     transient EntityManager em;
 
     @Transient
-    transient boolean pessimistic; // If entities fectked by this entity should be pessimistic_write locked
+    transient boolean pessimistic; // If entities fetched by this entity should be pessimistic_write locked
 
     public static BibliographicItemEntity from(EntityManager em, int agencyId, String bibliographicRecordId, Instant modified, LocalDate firstAccessionDate) {
         return from(em, new BibliographicItemKey(agencyId, bibliographicRecordId), modified, firstAccessionDate, LockModeType.PESSIMISTIC_WRITE);
