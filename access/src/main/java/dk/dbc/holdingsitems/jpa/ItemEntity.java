@@ -88,7 +88,8 @@ public class ItemEntity implements Serializable {
     private Date accessionDate;
 
     @Column(nullable = false)
-    private String loanRestriction;
+    @Convert(converter = LoanRestrictionConverter.class)
+    private LoanRestriction loanRestriction;
 
     @Column(nullable = false)
     @Convert(converter = StatusConverter.class)
@@ -132,7 +133,7 @@ public class ItemEntity implements Serializable {
         this.issueId = owner.getIssueId();
         this.itemId = itemId;
         this.status = Status.UNKNOWN;
-        this.loanRestriction = "";
+        this.loanRestriction = LoanRestriction.EMP;
         this.owner = owner;
         this.persist = true;
     }
@@ -194,11 +195,11 @@ public class ItemEntity implements Serializable {
         return this;
     }
 
-    public String getLoanRestriction() {
+    public LoanRestriction getLoanRestriction() {
         return loanRestriction;
     }
 
-    public ItemEntity setLoanRestriction(String loanRestriction) {
+    public ItemEntity setLoanRestriction(LoanRestriction loanRestriction) {
         this.loanRestriction = loanRestriction;
         return this;
     }

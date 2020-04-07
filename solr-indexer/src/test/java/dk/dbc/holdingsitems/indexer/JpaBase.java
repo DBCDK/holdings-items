@@ -24,6 +24,7 @@ import dk.dbc.holdingsitems.DatabaseMigrator;
 import dk.dbc.holdingsitems.jpa.BibliographicItemEntity;
 import dk.dbc.holdingsitems.jpa.IssueEntity;
 import dk.dbc.holdingsitems.jpa.ItemEntity;
+import dk.dbc.holdingsitems.jpa.LoanRestriction;
 import dk.dbc.holdingsitems.jpa.Status;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -189,7 +190,7 @@ public class JpaBase extends JpaIntegrationTest {
                 .setCirculationRule("")
                 .setStatus(Status.ON_SHELF)
                 .setAccessionDate(LocalDate.now().minusDays(1))
-                .setLoanRestriction("")
+                .setLoanRestriction(LoanRestriction.EMP)
                 .setModified(Instant.now())
                 .setCreated(Instant.now())
                 .setTrackingId("Some-Id");

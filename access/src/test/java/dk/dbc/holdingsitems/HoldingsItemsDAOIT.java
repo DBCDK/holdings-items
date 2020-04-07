@@ -248,7 +248,7 @@ public class HoldingsItemsDAOIT extends JpaBase {
     }
 
     @Test(timeout = 2_000L)
-    public void accessByBiliographicItem() throws Exception {
+    public void accessByBibliographicItem() throws Exception {
         System.out.println("accessByBiliographicItem");
         jpa(em -> {
 

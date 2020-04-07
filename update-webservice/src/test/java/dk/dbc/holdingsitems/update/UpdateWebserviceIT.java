@@ -26,6 +26,7 @@ import dk.dbc.forsrights.client.ForsRightsException;
 import dk.dbc.holdingsitems.HoldingsItemsDAO;
 import dk.dbc.holdingsitems.jpa.BibliographicItemEntity;
 import dk.dbc.holdingsitems.jpa.ItemEntity;
+import dk.dbc.holdingsitems.jpa.LoanRestriction;
 import dk.dbc.oss.ns.holdingsitemsupdate.Authentication;
 import dk.dbc.oss.ns.holdingsitemsupdate.BibliographicItem;
 import dk.dbc.oss.ns.holdingsitemsupdate.CompleteBibliographicItem;
@@ -347,7 +348,7 @@ public class UpdateWebserviceIT extends JpaBase {
             });
             ItemEntity itemNotSet = notSet.stream().findFirst().orElseThrow(() -> new RuntimeException("No issues"))
                     .stream().findFirst().orElseThrow(() -> new RuntimeException("No items"));
-            assertEquals("", itemNotSet.getLoanRestriction());
+            assertEquals(LoanRestriction.EMP, itemNotSet.getLoanRestriction());
         }
 
         // Set to X
@@ -356,7 +357,7 @@ public class UpdateWebserviceIT extends JpaBase {
             jpa(em -> {
                 HoldingsItem item = item("it1-1", branch, "234567", department, location, subLocation, circulationRule,
                                          StatusType.ON_SHELF, date("2017-01-01"));
-                item.setLoanRestriction("X");
+                item.setLoanRestriction("e");
                 HoldingsItemsUpdateRequest req =
                         holdingsItemsUpdateRequest(101010, null, "track-update-1",
                                                    bibliographicItem("12345678", modified("2017-09-07T09:09:01.000Z"), "Original Note",
@@ -364,13 +365,13 @@ public class UpdateWebserviceIT extends JpaBase {
                 mockUpdateWebservice(em).holdingsItemsUpdate(req);
             });
 
-            BibliographicItemEntity setToX = jpa(em -> {
+            BibliographicItemEntity setToE = jpa(em -> {
                 HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em);
                 return dao.getRecordCollectionUnLocked("12345678", 101010, Instant.now());
             });
-            ItemEntity itemSetToX = setToX.stream().findFirst().orElseThrow(() -> new RuntimeException("No issues"))
+            ItemEntity itemSetToX = setToE.stream().findFirst().orElseThrow(() -> new RuntimeException("No issues"))
                     .stream().findFirst().orElseThrow(() -> new RuntimeException("No items"));
-            assertEquals("X", itemSetToX.getLoanRestriction());
+            assertEquals(LoanRestriction.E, itemSetToX.getLoanRestriction());
         }
 
         // Set to null
@@ -393,7 +394,7 @@ public class UpdateWebserviceIT extends JpaBase {
             });
             ItemEntity itemRetain = retain.stream().findFirst().orElseThrow(() -> new RuntimeException("No issues"))
                     .stream().findFirst().orElseThrow(() -> new RuntimeException("No items"));
-            assertEquals("X", itemRetain.getLoanRestriction());
+            assertEquals(LoanRestriction.E, itemRetain.getLoanRestriction());
             assertEquals(Instant.parse("2017-09-07T09:09:02.000Z"), itemRetain.getModified());
         }
     }

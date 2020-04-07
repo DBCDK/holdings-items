@@ -21,6 +21,8 @@ package dk.dbc.holdingsitems.indexer.logic;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import dk.dbc.holdingsitems.jpa.IssueEntity;
 import dk.dbc.holdingsitems.jpa.ItemEntity;
+import dk.dbc.holdingsitems.jpa.LoanRestriction;
+
 import java.time.LocalDate;
 import java.util.Objects;
 
@@ -43,7 +45,7 @@ public class UniqueFields {
     private final String subLocation;
     private final String circulationRule;
     private final LocalDate accessionDate;
-    private final String loanRestriction;
+    private final LoanRestriction loanRestriction;
 
     public UniqueFields(IssueEntity collection, ItemEntity record) {
         this.agencyId = collection.getAgencyId();
@@ -78,8 +80,8 @@ public class UniqueFields {
         node.putArray(SolrFields.SUBLOCATION.getFieldName()).add(subLocation);
         node.putArray(SolrFields.CIRCULATION_RULE.getFieldName()).add(circulationRule);
         node.putArray(SolrFields.ACCESSION_DATE.getFieldName()).add(String.valueOf(accessionDate) + "T00:00:00.000Z");
-        if (!loanRestriction.isEmpty())
-            node.putArray(SolrFields.LOAN_RESTRICTION.getFieldName()).add(loanRestriction);
+        if (!loanRestriction.toString().isEmpty())
+            node.putArray(SolrFields.LOAN_RESTRICTION.getFieldName()).add(loanRestriction.toString());
         node.putArray(SolrFields.COLLECTION_ID.getFieldName()).add(String.valueOf(agencyId) + "-" + bibliographicRecordId.replaceAll("[^0-9a-zA-Z]", "_"));
     }
 

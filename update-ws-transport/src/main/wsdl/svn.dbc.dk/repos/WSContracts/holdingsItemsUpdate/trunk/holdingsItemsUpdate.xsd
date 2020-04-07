@@ -111,7 +111,10 @@
             <xs:element ref="tns:branchId"/>
             <xs:element ref="tns:branch"/>
             <xs:element ref="tns:department"/>
+            <xs:element ref="tns:loanRestriction"/>
+<!--
             <xs:element ref="tns:loanRestriction" minOccurs="0" />
+-->
             <xs:element ref="tns:location"/>
             <xs:element ref="tns:subLocation"/>
             <xs:element ref="tns:circulationRule"/>

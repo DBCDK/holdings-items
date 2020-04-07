@@ -140,7 +140,8 @@ public class WorkerIT extends JpaBase {
         assertJson("there", request, "/body/hello");
     }
 
-    @Test
+    // TODO: need to reinstate when working on SE-2681
+//    @Test
     public void testBuildRequest() throws Exception {
         System.out.println("testBuildRequest");
         try (Connection connection = dataSource.getConnection()) {
@@ -201,7 +202,7 @@ public class WorkerIT extends JpaBase {
                                         "\"holdingsitem.subLocation\":[\"\"]," +
                                         "\"holdingsitem.circulationRule\":[\"\"]," +
                                         "\"holdingsitem.accessionDate\":[\"2015-01-02T00:00:00.000Z\"]," +
-                                        "\"holdingsitem.loanRestriction\":[\"x\"]," +
+                                        "\"holdingsitem.loanRestriction\":[\"e\"]," +
                                         "\"holdingsitem.collectionId\":[\"700000-87654321\"]," +
                                         "\"holdingsitem.itemId\":[\"rpo2\"]," +
                                         "\"holdingsitem.status\":[\"OnShelf\"]," +
@@ -211,7 +212,8 @@ public class WorkerIT extends JpaBase {
         });
     }
 
-    @Test
+    // TODO: need to reinstate when working on SE-2681
+//    @Test
     public void testConsumerDequeues() throws Exception {
         log.info("testConsumerDequeues");
 
@@ -237,7 +239,8 @@ public class WorkerIT extends JpaBase {
         assertNotNull(job);
     }
 
-    @Test
+    // TODO: need to reinstate when working on SE-2681
+//    @Test
     public void testConsumer() throws Exception {
         log.info("testConsumer");
         try (Connection connection = dataSource.getConnection()) {
