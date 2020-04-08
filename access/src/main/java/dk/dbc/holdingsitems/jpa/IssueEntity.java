@@ -122,6 +122,10 @@ public class IssueEntity implements Serializable {
     @ManyToOne(cascade = CascadeType.ALL)
     BibliographicItemEntity owner;
 
+    public BibliographicItemEntity getOwner() {
+        return owner;
+    }
+
     @Transient
     transient boolean persist;
 
@@ -129,7 +133,7 @@ public class IssueEntity implements Serializable {
     transient EntityManager em;
 
     @Transient
-    transient boolean pessimistic; // If entities fectked by this entity should be pessimistic_write locked
+    transient boolean pessimistic; // If entities fetched by this entity should be pessimistic_write locked
 
     public static List<IssueEntity> byAgencyBibliographic(EntityManager em, int agencyId, String bibliographicRecordId) {
         List<IssueEntity> list = em.createNamedQuery("byAgencyBibliographic", IssueEntity.class)

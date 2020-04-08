@@ -1,12 +1,18 @@
 package dk.dbc.holdingsitems.content;
 
+import dk.dbc.holdingsitems.HoldingsItemsDAO;
+import dk.dbc.holdingsitems.content.response.ContentServiceItemResponse;
+import dk.dbc.holdingsitems.content.response.ContentServicePidResponse;
 import dk.dbc.holdingsitems.content.response.IndexHtml;
+import dk.dbc.holdingsitems.jpa.IssueEntity;
+import dk.dbc.holdingsitems.jpa.ItemEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Resource;
 import javax.ejb.Stateless;
 import javax.inject.Inject;
+import javax.persistence.EntityManager;
 import javax.sql.DataSource;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -18,6 +24,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Stateless
@@ -26,6 +33,9 @@ import java.util.stream.Collectors;
 public class ContentResource {
     @Resource(lookup = ContentServiceConfiguration.DATABASE)
     DataSource dataSource;
+
+    @Inject
+    EntityManager em;
 
     @Inject
     public IndexHtml indexHtml;
@@ -50,7 +60,11 @@ public class ContentResource {
             }
         }
         log.debug("holdings-by-item-id called with agency: {}, itemId: {}, trackingId: {}", agencyId, itemId, trackingId);
-        return Response.ok().build();
+        HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, trackingId);
+        Set<ItemEntity> itemEntities = dao.getItemsFromAgencyIdAndItemId(agencyId, itemId);
+        ContentServiceItemResponse res = new ContentServiceItemResponse(trackingId, itemEntities);
+        // todo: exception handling?
+        return Response.ok(res, MediaType.APPLICATION_JSON_TYPE).build();
     }
 
     @GET
@@ -75,11 +89,17 @@ public class ContentResource {
             }
         }
         log.debug("holdings-by-pid called with agency {}, pids: {}, trackingId: {}", agencyId, pids, trackingId);
+        HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, trackingId);
         Map<String, String> pidMap = new HashMap<>();
         for (String p : pids) {
             pidMap.put(p, p.split(":", 2)[1]);
         }
-        return Response.ok().build();
+        Map<String, Iterable<ItemEntity>> res = new HashMap<>();
+        for (Map.Entry<String, String> e : pidMap.entrySet()) {
+            Set<ItemEntity> pidItems = dao.getItemsFromAgencyAndBibliographicRecordId(agencyId, e.getValue());
+            res.put(e.getKey(), pidItems);
+        }
+        return Response.ok(new ContentServicePidResponse(trackingId, res)).build();
     }
 
     @GET

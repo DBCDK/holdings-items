@@ -1,5 +1,6 @@
 package dk.dbc.holdingsitems.content.response;
 
+import dk.dbc.holdingsitems.jpa.ItemEntity;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.util.List;
@@ -10,9 +11,9 @@ public class ContentServiceItemResponse {
     public String trackingId;
     public List<ResponseHoldingEntity> holdings;
 
-    public ContentServiceItemResponse(String trackingId) {
+    public ContentServiceItemResponse(String trackingId, Iterable<ItemEntity> holdingsItems) {
         this.trackingId = generateTrackingIdIfNullOrEmpty(trackingId);
-        //this.holdings = ResponseHoldingEntity.listFromRecordCollection(recordCollection);
+        this.holdings = ResponseHoldingEntity.listFromItems(holdingsItems);
     }
 
     protected static String generateTrackingIdIfNullOrEmpty(String trackingId) {

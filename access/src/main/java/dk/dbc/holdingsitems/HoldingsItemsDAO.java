@@ -19,6 +19,8 @@
 package dk.dbc.holdingsitems;
 
 import dk.dbc.holdingsitems.jpa.BibliographicItemEntity;
+import dk.dbc.holdingsitems.jpa.IssueEntity;
+import dk.dbc.holdingsitems.jpa.ItemEntity;
 import dk.dbc.holdingsitems.jpa.Status;
 import dk.dbc.pgqueue.PreparedQueueSupplier;
 import dk.dbc.pgqueue.QueueSupplier;
@@ -165,6 +167,70 @@ public class HoldingsItemsDAO {
                 .setParameter("bibliographicRecordId", bibliographicId)
                 .getResultList();
         return new HashSet<>(list);
+    }
+
+    /**
+     * Find all item entities that match the given agencyId and itemId.
+     * Normally there will be at most one, but there can be more if the same item id is connected to the same
+     * issueId / bibliographicRecordId. That is normally a data problem.
+     * @param agencyId
+     * @param itemId
+     * @return a collection of ItemEntity objects that match the parameters.
+     */
+    public Set<ItemEntity> getItemsFromAgencyIdAndItemId(int agencyId, String itemId) {
+        List<ItemEntity> itemList =
+                em.createQuery("select h from ItemEntity h where h.agencyId = :agencyId and h.itemId = :itemId", ItemEntity.class)
+                .setParameter("agencyId", agencyId)
+                .setParameter("itemId", itemId)
+                .getResultList();
+        return new HashSet<>(itemList);
+    }
+
+    /**
+     * Find all issue entities that match the given agencyId and item id.
+     * @param agencyId id of agency in question
+     * @param bibliographicRecordId
+     * @return the issue entities that match the provided arguments.
+     */
+    private Set<IssueEntity> getIssuesFromAgencyAndBibliographicRecordId(int agencyId, String bibliographicRecordId) {
+        List<IssueEntity> issueList =
+                em.createQuery("select h from IssueEntity h where h.agencyId = :agencyId and h.bibliographicRecordId = :bibliographicRecordId", IssueEntity.class)
+                .setParameter("agencyId", agencyId)
+                .setParameter("bibliographicRecordId", bibliographicRecordId)
+                .getResultList();
+        return new HashSet<>(issueList);
+    }
+
+    /**
+     * Get all holding items that match a given combination of agencyId, bibliographicRecordId, and issueId
+     * @param agencyId id of a library (int)
+     * @param bibliographicRecordId bibliographic record id (string)
+     * @param issueId issue id (string)
+     * @return the set of holding item entities that match the arguments.
+     */
+    private Set<ItemEntity> getItemsFromAgencyAndBibiliographicRecordIdAndIssueId(int agencyId, String bibliographicRecordId, String issueId) {
+        List<ItemEntity> itemList =
+                em.createQuery("select h from ItemEntity h where h.agencyId = :agencyId and h.bibliographicRecordId = :bibliographicRecordId and h.issueId = :issueId", ItemEntity.class)
+                .setParameter("agencyId", agencyId)
+                .setParameter("bibliographicRecordId", bibliographicRecordId)
+                .setParameter("issueId", issueId)
+                .getResultList();
+        return new HashSet<>(itemList);
+    }
+
+    /**
+     * Get all items that match a given combination of agencyId and bibliographicRecordId
+     * @param agencyId id of a library (int)
+     * @param bibliographicRecordId id of a bibliographic record (string)
+     * @return the set of holdings items that match the arguments.
+     */
+    public Set<ItemEntity> getItemsFromAgencyAndBibliographicRecordId(int agencyId, String bibliographicRecordId) {
+        Set<ItemEntity> res = new HashSet<ItemEntity>();
+        Set<IssueEntity> issues = getIssuesFromAgencyAndBibliographicRecordId(agencyId, bibliographicRecordId);
+        for (IssueEntity i : issues) {
+            res.addAll(getItemsFromAgencyAndBibiliographicRecordIdAndIssueId(agencyId, bibliographicRecordId, i.getIssueId()));
+        }
+        return res;
     }
 
     /**
