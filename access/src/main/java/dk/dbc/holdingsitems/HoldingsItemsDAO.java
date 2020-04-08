@@ -173,8 +173,8 @@ public class HoldingsItemsDAO {
      * Find all item entities that match the given agencyId and itemId.
      * Normally there will be at most one, but there can be more if the same item id is connected to the same
      * issueId / bibliographicRecordId. That is normally a data problem.
-     * @param agencyId
-     * @param itemId
+     * @param agencyId id of library in question
+     * @param itemId item id to search for
      * @return a collection of ItemEntity objects that match the parameters.
      */
     public Set<ItemEntity> getItemsFromAgencyIdAndItemId(int agencyId, String itemId) {

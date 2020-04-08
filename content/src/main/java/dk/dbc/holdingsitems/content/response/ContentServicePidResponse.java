@@ -1,6 +1,5 @@
 package dk.dbc.holdingsitems.content.response;
 
-import dk.dbc.holdingsitems.jpa.IssueEntity;
 import dk.dbc.holdingsitems.jpa.ItemEntity;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
