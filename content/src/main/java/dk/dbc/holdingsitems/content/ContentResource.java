@@ -4,16 +4,13 @@ import dk.dbc.holdingsitems.HoldingsItemsDAO;
 import dk.dbc.holdingsitems.content.response.ContentServiceItemResponse;
 import dk.dbc.holdingsitems.content.response.ContentServicePidResponse;
 import dk.dbc.holdingsitems.content.response.IndexHtml;
-import dk.dbc.holdingsitems.jpa.IssueEntity;
 import dk.dbc.holdingsitems.jpa.ItemEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Resource;
 import javax.ejb.Stateless;
 import javax.inject.Inject;
 import javax.persistence.EntityManager;
-import javax.sql.DataSource;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -31,11 +28,8 @@ import java.util.stream.Collectors;
 @Path("/")
 @Produces("application/json")
 public class ContentResource {
-    @Resource(lookup = ContentServiceConfiguration.DATABASE)
-    DataSource dataSource;
-
     @Inject
-    EntityManager em;
+    public EntityManager em;
 
     @Inject
     public IndexHtml indexHtml;

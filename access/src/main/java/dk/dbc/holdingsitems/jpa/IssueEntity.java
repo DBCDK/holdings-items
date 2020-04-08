@@ -149,14 +149,6 @@ public class IssueEntity implements Serializable {
         this.persist = false;
     }
 
-    IssueEntity(int agencyId, String bibliographicRecordId, String issueId) {
-        this.pk = new IssueKey();
-        this.agencyId = agencyId;
-        this.bibliographicRecordId = bibliographicRecordId;
-        this.issueId = issueId;
-        this.persist = true;
-    }
-
     IssueEntity(BibliographicItemEntity owner, String issueId) {
         this.pk = new IssueKey();
         this.agencyId = owner.getAgencyId();
@@ -164,6 +156,20 @@ public class IssueEntity implements Serializable {
         this.issueId = issueId;
         this.owner = owner;
         this.persist = true;
+    }
+
+    public static IssueEntity from(EntityManager em, BibliographicItemEntity owner, String issueId) {
+        IssueEntity res = em.find(IssueEntity.class, new IssueKey(owner.getAgencyId(), owner.getBibliographicRecordId(), issueId));
+        if (res == null) {
+            res = new IssueEntity(owner, issueId);
+            res.setComplete(Instant.now());
+            res.setModified(Instant.now());
+            res.setCreated(Instant.now());
+            res.setUpdated(Instant.now());
+        }
+        res.em = em;
+        res.pessimistic = owner.pessimistic;
+        return res;
     }
 
     /**
