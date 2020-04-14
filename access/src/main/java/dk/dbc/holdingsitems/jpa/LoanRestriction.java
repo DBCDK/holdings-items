@@ -19,7 +19,6 @@
 package dk.dbc.holdingsitems.jpa;
 
 import java.util.EnumSet;
-import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
