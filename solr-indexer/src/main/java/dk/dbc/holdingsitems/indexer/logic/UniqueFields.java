@@ -80,7 +80,7 @@ public class UniqueFields {
         node.putArray(SolrFields.SUBLOCATION.getFieldName()).add(subLocation);
         node.putArray(SolrFields.CIRCULATION_RULE.getFieldName()).add(circulationRule);
         node.putArray(SolrFields.ACCESSION_DATE.getFieldName()).add(String.valueOf(accessionDate) + "T00:00:00.000Z");
-        if (!loanRestriction.toString().isEmpty())
+        if (loanRestriction != null && !loanRestriction.toString().isEmpty())
             node.putArray(SolrFields.LOAN_RESTRICTION.getFieldName()).add(loanRestriction.toString());
         node.putArray(SolrFields.COLLECTION_ID.getFieldName()).add(String.valueOf(agencyId) + "-" + bibliographicRecordId.replaceAll("[^0-9a-zA-Z]", "_"));
     }
