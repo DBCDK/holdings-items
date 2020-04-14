@@ -137,7 +137,7 @@ public class ItemEntity implements Serializable {
         this.issueId = owner.getIssueId();
         this.itemId = itemId;
         this.status = Status.UNKNOWN;
-        this.loanRestriction = LoanRestriction.EMP;
+        this.loanRestriction = LoanRestriction.EMPTY;
         this.owner = owner;
         this.persist = true;
     }

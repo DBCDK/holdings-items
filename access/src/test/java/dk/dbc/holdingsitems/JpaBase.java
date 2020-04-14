@@ -173,7 +173,7 @@ public class JpaBase extends JpaIntegrationTest {
                 .setCirculationRule("")
                 .setStatus(Status.ON_SHELF)
                 .setAccessionDate(LocalDate.now().minusDays(1))
-                .setLoanRestriction(LoanRestriction.EMP)
+                .setLoanRestriction(LoanRestriction.EMPTY)
                 .setModified(Instant.now())
                 .setCreated(Instant.now())
                 .setTrackingId("Some-Id");

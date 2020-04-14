@@ -362,9 +362,7 @@ public abstract class UpdateRequest {
                 item.setStatus(Status.parse(status.value()));
             }
             String lr = holdingsItem.getLoanRestriction();
-            if (lr != null) {
-                item.setLoanRestriction(LoanRestriction.parse(lr));
-            }
+            item.setLoanRestriction(LoanRestriction.parse(lr));
             item.setModified(modified);
             copyValue(holdingsItem::getBranch, item::setBranch);
             copyValue(holdingsItem::getBranchId, item::setBranchId);
