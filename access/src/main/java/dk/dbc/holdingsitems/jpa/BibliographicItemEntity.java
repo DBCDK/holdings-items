@@ -163,7 +163,7 @@ public class BibliographicItemEntity implements Serializable {
 
     public IssueEntity issue(String issueId, Instant modified) {
         IssueEntity issue = em.find(IssueEntity.class, new IssueKey(agencyId, bibliographicRecordId, issueId),
-                                                       pessimistic ? LockModeType.PESSIMISTIC_WRITE : LockModeType.NONE);
+                                    pessimistic ? LockModeType.PESSIMISTIC_WRITE : LockModeType.NONE);
         if (issue == null) {
             if (issues == null)
                 issues = new HashSet<>();

@@ -84,8 +84,6 @@ ALTER TABLE holdingsitemscollection
 ALTER TABLE holdingsitemscollection DROP COLUMN note;
 ALTER TABLE holdingsitemscollection RENAME TO issue;
 
-CREATE VIEW holdingsitemscollection AS SELECT c.agencyid, c.bibliographicrecordid, c.issueid, c.issuetext, c.expecteddelivery, c.readyforloan, b.note, c.complete, c.created, c.modified, c.trackingid, c.updated FROM issue AS c JOIN bibliographicitem AS b USING (agencyid, bibliographicrecordid);
-
 ALTER TABLE holdingsitemsitem RENAME TO item;
 CREATE VIEW holdingsitemsitem AS SELECT * FROM item;
 
