@@ -430,6 +430,7 @@ public class UpdateWebservice {
                         }
                         if (rec.isNew()) {
                             rec.setBranch("");
+                            rec.setBranchId("");
                             rec.setDepartment("");
                             rec.setLocation("");
                             rec.setSubLocation("");
