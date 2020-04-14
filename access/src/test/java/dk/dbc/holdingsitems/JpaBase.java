@@ -23,6 +23,7 @@ import dk.dbc.commons.persistence.JpaTestEnvironment;
 import dk.dbc.holdingsitems.jpa.BibliographicItemEntity;
 import dk.dbc.holdingsitems.jpa.IssueEntity;
 import dk.dbc.holdingsitems.jpa.ItemEntity;
+import dk.dbc.holdingsitems.jpa.LoanRestriction;
 import dk.dbc.holdingsitems.jpa.Status;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -165,12 +166,14 @@ public class JpaBase extends JpaIntegrationTest {
     protected ItemEntity fill(ItemEntity item) {
         return item
                 .setBranch("mybr")
+                .setBranchId("123456")
                 .setDepartment("dep")
                 .setLocation("fiction")
                 .setSubLocation("thriller")
                 .setCirculationRule("")
                 .setStatus(Status.ON_SHELF)
                 .setAccessionDate(LocalDate.now().minusDays(1))
+                .setLoanRestriction(LoanRestriction.EMPTY)
                 .setModified(Instant.now())
                 .setCreated(Instant.now())
                 .setTrackingId("Some-Id");

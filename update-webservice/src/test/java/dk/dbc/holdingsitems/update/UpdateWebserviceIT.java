@@ -23,6 +23,10 @@ import com.codahale.metrics.Timer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dk.dbc.forsrights.client.ForsRightsException;
+import dk.dbc.holdingsitems.HoldingsItemsDAO;
+import dk.dbc.holdingsitems.jpa.BibliographicItemEntity;
+import dk.dbc.holdingsitems.jpa.ItemEntity;
+import dk.dbc.holdingsitems.jpa.LoanRestriction;
 import dk.dbc.oss.ns.holdingsitemsupdate.Authentication;
 import dk.dbc.oss.ns.holdingsitemsupdate.BibliographicItem;
 import dk.dbc.oss.ns.holdingsitemsupdate.CompleteBibliographicItem;
@@ -43,6 +47,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -85,7 +90,7 @@ public class UpdateWebserviceIT extends JpaBase {
         assertEquals("Expected items", 3, countAllItems());
         assertEquals("Expected on shelf", 2, countItems(StatusType.ON_SHELF));
         assertEquals("Expected on order", 1, countItems(StatusType.ON_ORDER));
-        HashMap<String, String> row = checkRow("101010", "12345678", "I1", "it1-1");
+        HashMap<String, String> row = checkRow(101010, "12345678", "I1", "it1-1");
         assertNotNull("Expected a row", row);
         assertEquals("complete time same as original modified", "2017-09-07T09:09:00Z", row.get("c.complete"));
         System.out.println("OK");
@@ -300,7 +305,7 @@ public class UpdateWebserviceIT extends JpaBase {
         assertEquals("Expected items", 5, countAllItems());
         assertEquals("Expected decommissioned", 3, countItems(StatusType.DECOMMISSIONED));
         assertEquals("Expected online", 1, countItems(StatusType.ONLINE));
-        HashMap<String, String> row = checkRow("101010", "12345678", "I1", "it1-1");
+        HashMap<String, String> row = checkRow(101010, "12345678", "I1", "it1-1");
         assertNotNull("Expected a row", row);
         assertEquals("complete time as new update", "2017-09-07T09:09:01.001Z", row.get("c.complete"));
     }
@@ -311,125 +316,198 @@ public class UpdateWebserviceIT extends JpaBase {
         jpa(em -> {
             mockUpdateWebservice(em).holdingsItemsUpdate(updateReqNote1());
         });
-        String noteBefore = checkRow("101010", "12345678", "I1", "it1-1").getOrDefault("b.note", "N/A");
+        String noteBefore = checkRow(101010, "12345678", "I1", "it1-1").getOrDefault("b.note", "N/A");
         assertEquals("Original Note", noteBefore);
         jpa(em -> {
             mockUpdateWebservice(em).holdingsItemsUpdate(updateReqNote2());
         });
-        String noteAfter = checkRow("101010", "12345678", "I1", "it1-1").getOrDefault("b.note", "N/A");
+        String noteAfter = checkRow(101010, "12345678", "I1", "it1-1").getOrDefault("b.note", "N/A");
         assertEquals("Updated Note", noteAfter);
+    }
+
+    @Test(timeout = 2_000L)
+    public void testLoanRestrictionUpdate() throws Exception {
+        System.out.println("testLoanRestrictionUpdate");
+
+        // Default value
+        {
+            jpa(em -> {
+                HoldingsItem item = item("it1-1", branch, "234567", department, location, subLocation, circulationRule,
+                                         StatusType.ON_SHELF, date("2017-01-01"));
+                item.setLoanRestriction(null);
+                HoldingsItemsUpdateRequest req =
+                        holdingsItemsUpdateRequest(101010, null, "track-update-1",
+                                                   bibliographicItem("12345678", modified("2017-09-07T09:09:00.000Z"), "Original Note",
+                                                                     holding("I1", "Issue #1", date("2199-01-01"), 0, item)));
+                mockUpdateWebservice(em).holdingsItemsUpdate(req);
+            });
+
+            BibliographicItemEntity notSet = jpa(em -> {
+                HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em);
+                return dao.getRecordCollectionUnLocked("12345678", 101010, Instant.now());
+            });
+            ItemEntity itemNotSet = notSet.stream().findFirst().orElseThrow(() -> new RuntimeException("No issues"))
+                    .stream().findFirst().orElseThrow(() -> new RuntimeException("No items"));
+            assertEquals(LoanRestriction.EMPTY, itemNotSet.getLoanRestriction());
+        }
+
+        // Set to X
+        System.out.println("Set loanRestriction to 'X'");
+        {
+            jpa(em -> {
+                HoldingsItem item = item("it1-1", branch, "234567", department, location, subLocation, circulationRule,
+                                         StatusType.ON_SHELF, date("2017-01-01"));
+                item.setLoanRestriction("e");
+                HoldingsItemsUpdateRequest req =
+                        holdingsItemsUpdateRequest(101010, null, "track-update-1",
+                                                   bibliographicItem("12345678", modified("2017-09-07T09:09:01.000Z"), "Original Note",
+                                                                     holding("I1", "Issue #1", date("2199-01-01"), 0, item)));
+                mockUpdateWebservice(em).holdingsItemsUpdate(req);
+            });
+
+            BibliographicItemEntity setToE = jpa(em -> {
+                HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em);
+                return dao.getRecordCollectionUnLocked("12345678", 101010, Instant.now());
+            });
+            ItemEntity itemSetToX = setToE.stream().findFirst().orElseThrow(() -> new RuntimeException("No issues"))
+                    .stream().findFirst().orElseThrow(() -> new RuntimeException("No items"));
+            assertEquals(LoanRestriction.e, itemSetToX.getLoanRestriction());
+        }
+
+        // Set to null
+        System.out.println("Set loanRestriction to unspecified (retain)");
+        {
+            jpa(em -> {
+                HoldingsItem item = item("it1-1", branch, "234567", department, location, subLocation, circulationRule,
+                                         StatusType.ON_SHELF, date("2017-01-01"));
+                item.setLoanRestriction(null);
+                HoldingsItemsUpdateRequest req =
+                        holdingsItemsUpdateRequest(101010, null, "track-update-1",
+                                                   bibliographicItem("12345678", modified("2017-09-07T09:09:02.000Z"), "Original Note",
+                                                                     holding("I1", "Issue #1", date("2199-01-01"), 0, item)));
+                mockUpdateWebservice(em).holdingsItemsUpdate(req);
+            });
+
+            BibliographicItemEntity retain = jpa(em -> {
+                HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em);
+                return dao.getRecordCollectionUnLocked("12345678", 101010, Instant.now());
+            });
+            ItemEntity itemRetain = retain.stream().findFirst().orElseThrow(() -> new RuntimeException("No issues"))
+                    .stream().findFirst().orElseThrow(() -> new RuntimeException("No items"));
+            assertEquals(LoanRestriction.EMPTY, itemRetain.getLoanRestriction());
+            assertEquals(Instant.parse("2017-09-07T09:09:02.000Z"), itemRetain.getModified());
+        }
     }
 
     public HoldingsItemsUpdateRequest updateReq1() throws DatatypeConfigurationException {
         return holdingsItemsUpdateRequest(
-                "101010", null, "track-update-1",
+                101010, null, "track-update-1",
                 bibliographicItem(
                         "12345678", modified("2017-09-07T09:09:00.000Z"), "Some Note",
                         holding("I1", "Issue #1", date("2199-01-01"), 0,
-                                item("it1-1", branch, department, location, subLocation, circulationRule,
+                                item("it1-1", branch, "234567", department, location, subLocation, circulationRule,
                                      StatusType.ON_SHELF, date("2017-01-01")),
-                                item("it1-2", branch, department, location, subLocation, circulationRule,
+                                item("it1-2", branch, "234567", department, location, subLocation, circulationRule,
                                      StatusType.ON_SHELF, date("2017-01-01"))),
                         holding("I2", "Issue #2", null, 1,
-                                item("it2-1", branch, department, location, subLocation, circulationRule,
+                                item("it2-1", branch, "234567", department, location, subLocation, circulationRule,
                                      StatusType.ON_ORDER, date("2017-01-01")))
                 ));
     }
 
     public HoldingsItemsUpdateRequest updateReq2() throws DatatypeConfigurationException {
         return holdingsItemsUpdateRequest(
-                "101010", null, "track-update-2",
+                101010, null, "track-update-2",
                 bibliographicItem(
                         "12345678", modified("2017-09-07T09:09:00.001Z"), "Some Note",
                         holding("I1", "Issue #1", date("2199-01-01"), 0,
-                                item("it1-1", branch, department, location, subLocation, circulationRule,
+                                item("it1-1", branch, "234567", department, location, subLocation, circulationRule,
                                      StatusType.ON_SHELF, date("2017-01-01")),
-                                item("it1-2", branch, department, location, subLocation, circulationRule,
-                                     StatusType.ON_LOAN, date("2017-01-01"))), // Changed
-                        holding("I2", "Issue #2", null, 1,
-                                item("it2-1", branch, department, location, subLocation, circulationRule,
-                                     StatusType.ON_ORDER, date("2017-01-01")))),
+                                item("it1-2", branch, "234567", department, location, subLocation, circulationRule,
+                                     StatusType.ON_LOAN, date("2017-01-01"))), holding("I2", "Issue #2", null, 1,
+                                                                                       item("it2-1", branch, "234567", department, location, subLocation, circulationRule,
+                                                                                            StatusType.ON_ORDER, date("2017-01-01")))),
                 bibliographicItem(
                         "87654321", modified("2017-09-07T09:09:00.001Z"), "Some Note",
                         holding("I1", "Issue #1", date("2199-01-01"), 0,
-                                item("it3-1", branch, department, location, subLocation, circulationRule,
+                                item("it3-1", branch, "234567", department, location, subLocation, circulationRule,
                                      StatusType.ON_LOAN, date("2017-01-01")))) // new
         );
     }
 
     private OnlineHoldingsItemsUpdateRequest onlineReqCreate() throws DatatypeConfigurationException {
         return onlineHoldingsItemsUpdateRequest(
-                "101010", null, "track-online-1",
+                101010, null, "track-online-1",
                 onlineBibliographicItem("12345678", modified("2017-09-07T09:10:00.765Z"), true));
     }
 
     private OnlineHoldingsItemsUpdateRequest onlineReqDelete() throws DatatypeConfigurationException {
         return onlineHoldingsItemsUpdateRequest(
-                "101010", null, "track-online-2",
+                101010, null, "track-online-2",
                 onlineBibliographicItem("12345678", modified("2017-09-07T09:10:21.765Z"), false));
     }
 
     private CompleteHoldingsItemsUpdateRequest completeReq1() throws DatatypeConfigurationException {
         return completeHoldingsItemsUpdateRequest(
-                "101010", null, "track-complete-1",
+                101010, null, "track-complete-1",
                 completeBibliographicItem(
                         "12345678", modified("2017-09-07T09:09:01.001Z"), "Other Note",
                         holding("I3", "Issue #3", null, 1,
-                                item("it3-1", branch, department, location, subLocation, circulationRule,
+                                item("it3-1", branch, "234567", department, location, subLocation, circulationRule,
                                      StatusType.ON_LOAN, date("2017-01-01")))));
     }
 
     private CompleteHoldingsItemsUpdateRequest completeReq2() throws DatatypeConfigurationException {
         return completeHoldingsItemsUpdateRequest(
-                "101010", null, "track-complete-1",
+                101010, null, "track-complete-1",
                 completeBibliographicItem(
                         "12345678", modified("2017-09-07T09:09:02.001Z"), "Other Note",
                         holding("I3", "Issue #3", null, 1,
-                                item("it3-1", branch, department, location, subLocation, circulationRule,
+                                item("it3-1", branch, "234567", department, location, subLocation, circulationRule,
                                      StatusType.ON_LOAN, date("2017-01-01"))),
                         holding("I4", "Issue #4", null, 1,
-                                item("it4-1", branch, department, location, subLocation, circulationRule,
+                                item("it4-1", branch, "234567", department, location, subLocation, circulationRule,
                                      StatusType.ON_LOAN, date("2017-01-01")))));
     }
 
     private CompleteHoldingsItemsUpdateRequest completeReq3() throws DatatypeConfigurationException {
         return completeHoldingsItemsUpdateRequest(
-                "101010", null, "track-complete-1",
+                101010, null, "track-complete-1",
                 completeBibliographicItem(
                         "12345678", modified("2017-09-07T09:09:03.001Z"), "Other Note",
                         holding("I3", "Issue #3", null, 1,
-                                item("it3-1", branch, department, location, subLocation, circulationRule,
+                                item("it3-1", branch, "234567", department, location, subLocation, circulationRule,
                                      StatusType.ON_LOAN, date("2017-01-01"))),
                         holding("I3", "Issue #3", null, 1,
-                                item("it3-2", branch, department, location, subLocation, circulationRule,
+                                item("it3-2", branch, "234567", department, location, subLocation, circulationRule,
                                      StatusType.ON_LOAN, date("2017-01-01")))));
     }
 
     private CompleteHoldingsItemsUpdateRequest completeReqEmpty() throws DatatypeConfigurationException {
         return completeHoldingsItemsUpdateRequest(
-                "101010", null, "track-complete-empty", completeBibliographicItem(
+                101010, null, "track-complete-empty", completeBibliographicItem(
                         "12345678", modified("2017-09-07T09:09:04.001Z"), "Other Note"));
 
     }
 
     public HoldingsItemsUpdateRequest updateReqNote1() throws DatatypeConfigurationException {
         return holdingsItemsUpdateRequest(
-                "101010", null, "track-update-1",
+                101010, null, "track-update-1",
                 bibliographicItem(
                         "12345678", modified("2017-09-07T09:09:00.000Z"), "Original Note",
                         holding("I1", "Issue #1", date("2199-01-01"), 0,
-                                item("it1-1", branch, department, location, subLocation, circulationRule,
+                                item("it1-1", branch, "234567", department, location, subLocation, circulationRule,
                                      StatusType.ON_SHELF, date("2017-01-01")))
                 ));
     }
 
     public HoldingsItemsUpdateRequest updateReqNote2() throws DatatypeConfigurationException {
         return holdingsItemsUpdateRequest(
-                "101010", null, "track-update-2",
+                101010, null, "track-update-2",
                 bibliographicItem(
                         "12345678", modified("2017-09-07T09:09:00.100Z"), "Updated Note",
                         holding("I2", "Issue #2", date("2199-01-01"), 0,
-                                item("it2-1", branch, department, location, subLocation, circulationRule,
+                                item("it2-1", branch, "234567", department, location, subLocation, circulationRule,
                                      StatusType.ON_SHELF, date("2017-01-01")))
                 ));
     }
@@ -508,7 +586,7 @@ public class UpdateWebserviceIT extends JpaBase {
                           "RIGHTS_GROUP=common");
     }
 
-    private HoldingsItemsUpdateRequest holdingsItemsUpdateRequest(String agencyId, Authentication authentication, String trackingId, BibliographicItem... bibliographicItems) {
+    private HoldingsItemsUpdateRequest holdingsItemsUpdateRequest(int agencyId, Authentication authentication, String trackingId, BibliographicItem... bibliographicItems) {
         HoldingsItemsUpdateRequest req = new HoldingsItemsUpdateRequest();
         req.setAgencyId(agencyId);
         req.setAuthentication(authentication);
@@ -517,7 +595,7 @@ public class UpdateWebserviceIT extends JpaBase {
         return req;
     }
 
-    private CompleteHoldingsItemsUpdateRequest completeHoldingsItemsUpdateRequest(String agencyId, Authentication authentication, String trackingId, CompleteBibliographicItem bibliographicItem) {
+    private CompleteHoldingsItemsUpdateRequest completeHoldingsItemsUpdateRequest(int agencyId, Authentication authentication, String trackingId, CompleteBibliographicItem bibliographicItem) {
         CompleteHoldingsItemsUpdateRequest req = new CompleteHoldingsItemsUpdateRequest();
         req.setAgencyId(agencyId);
         req.setAuthentication(authentication);
@@ -526,7 +604,7 @@ public class UpdateWebserviceIT extends JpaBase {
         return req;
     }
 
-    private OnlineHoldingsItemsUpdateRequest onlineHoldingsItemsUpdateRequest(String agencyId, Authentication authentication, String trackingId, OnlineBibliographicItem... bibliographicItems) {
+    private OnlineHoldingsItemsUpdateRequest onlineHoldingsItemsUpdateRequest(int agencyId, Authentication authentication, String trackingId, OnlineBibliographicItem... bibliographicItems) {
         OnlineHoldingsItemsUpdateRequest req = new OnlineHoldingsItemsUpdateRequest();
         req.setAgencyId(agencyId);
         req.setAuthentication(authentication);
@@ -571,10 +649,11 @@ public class UpdateWebserviceIT extends JpaBase {
         return hold;
     }
 
-    private HoldingsItem item(String itemId, String branch, String department, String location, String subLocation, String circulationRule, StatusType status, XMLGregorianCalendar accessionDate) {
+    private HoldingsItem item(String itemId, String branch, String branchId, String department, String location, String subLocation, String circulationRule, StatusType status, XMLGregorianCalendar accessionDate) {
         HoldingsItem item = new HoldingsItem();
         item.setItemId(itemId);
         item.setBranch(branch);
+        item.setBranchId(branchId);
         item.setDepartment(department);
         item.setLocation(location);
         item.setSubLocation(subLocation);
@@ -596,14 +675,6 @@ public class UpdateWebserviceIT extends JpaBase {
         mod.setModificationDateTime(xmlCalendar);
         mod.setModificationMilliSeconds(millis);
         return mod;
-    }
-
-    private Authentication authentication(String user, String group, String password) {
-        Authentication auth = new Authentication();
-        auth.setUserIdAut(user);
-        auth.setGroupIdAut(group);
-        auth.setPasswordAut(password);
-        return auth;
     }
 
     private int countAllCollections() throws SQLException {
@@ -641,7 +712,7 @@ public class UpdateWebserviceIT extends JpaBase {
         return -1;
     }
 
-    private HashMap<String, String> checkRow(String agencyId, String bibliographicRecordId, String issueId, String itemId) throws SQLException {
+    private HashMap<String, String> checkRow(int agencyId, String bibliographicRecordId, String issueId, String itemId) throws SQLException {
         try (Connection db = dataSource.getConnection() ;
              PreparedStatement stmt = db.prepareStatement(
                      "SELECT " +
@@ -682,7 +753,7 @@ public class UpdateWebserviceIT extends JpaBase {
                      "bibliographicrecordid=? AND " +
                      "issueid=? AND " +
                      "itemid=? ")) {
-            stmt.setInt(1, Integer.parseInt(agencyId));
+            stmt.setInt(1, agencyId);
             stmt.setString(2, bibliographicRecordId);
             stmt.setString(3, issueId);
             stmt.setString(4, itemId);

@@ -27,6 +27,7 @@ import dk.dbc.holdingsitems.HoldingsItemsException;
 import dk.dbc.holdingsitems.jpa.BibliographicItemEntity;
 import dk.dbc.holdingsitems.jpa.IssueEntity;
 import dk.dbc.holdingsitems.jpa.ItemEntity;
+import dk.dbc.holdingsitems.jpa.LoanRestriction;
 import dk.dbc.holdingsitems.jpa.Status;
 import dk.dbc.log.LogWith;
 import dk.dbc.oss.ns.holdingsitemsupdate.Authentication;
@@ -75,7 +76,7 @@ public abstract class UpdateRequest {
      *
      * @return agency id
      */
-    public abstract String getAgencyId();
+    public abstract int getAgencyId();
 
     /**
      * extract tracking id from incoming request
@@ -360,7 +361,11 @@ public abstract class UpdateRequest {
                         .update(Status.parse(status.value()), modified);
                 item.setStatus(Status.parse(status.value()));
             }
+            String lr = holdingsItem.getLoanRestriction();
+            item.setLoanRestriction(LoanRestriction.parse(lr));
+            item.setModified(modified);
             copyValue(holdingsItem::getBranch, item::setBranch);
+            copyValue(holdingsItem::getBranchId, item::setBranchId);
             copyValue(holdingsItem::getCirculationRule, item::setCirculationRule);
             copyValue(holdingsItem::getDepartment, item::setDepartment);
             copyValue(holdingsItem::getLocation, item::setLocation);

@@ -91,6 +91,7 @@
                     <redirectTestOutputToFile>false</redirectTestOutputToFile>
                     <systemPropertyVariables>
                         <hornetq.port>${hornetq.port}</hornetq.port>
+                        <hornetq.data>${project.build.directory}/hornetq-data</hornetq.data>
                     </systemPropertyVariables>
                 </configuration>
                 <executions>
@@ -164,7 +165,7 @@
         <dependency>
             <groupId>org.hornetq</groupId>
             <artifactId>hornetq-jms-server</artifactId>
-            <version>2.4.0.Final</version>
+            <version>2.4.7.Final</version>
             <scope>test</scope>
         </dependency>
 
