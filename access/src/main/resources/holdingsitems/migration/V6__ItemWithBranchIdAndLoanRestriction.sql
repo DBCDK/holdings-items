@@ -13,5 +13,5 @@ INSERT INTO item_loanRestriction (loanRestriction) VALUES ('f');
 INSERT INTO item_loanRestriction (loanRestriction) VALUES ('g');
 
 ALTER TABLE item ADD COLUMN branchId TEXT NOT NULL;
-ALTER TABLE item ADD COLUMN loanRestriction VARCHAR(1) default null;
+ALTER TABLE item ADD COLUMN loanRestriction VARCHAR(1) default '';
 ALTER TABLE item ADD CONSTRAINT item_loanRestriction_fk FOREIGN KEY (loanRestriction) REFERENCES item_loanRestriction (loanRestriction);
