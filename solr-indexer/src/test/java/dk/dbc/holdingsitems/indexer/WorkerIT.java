@@ -201,7 +201,7 @@ public class WorkerIT extends JpaBase {
                                         "\"holdingsitem.subLocation\":[\"\"]," +
                                         "\"holdingsitem.circulationRule\":[\"\"]," +
                                         "\"holdingsitem.accessionDate\":[\"2015-01-02T00:00:00.000Z\"]," +
-                                        "\"holdingsitem.loanRestriction\":[\"E\"]," +
+                                        "\"holdingsitem.loanRestriction\":[\"e\"]," +
                                         "\"holdingsitem.collectionId\":[\"700000-87654321\"]," +
                                         "\"holdingsitem.itemId\":[\"rpo2\"]," +
                                         "\"holdingsitem.status\":[\"OnShelf\"]," +

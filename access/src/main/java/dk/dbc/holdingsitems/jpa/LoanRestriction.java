@@ -27,14 +27,14 @@ import java.util.stream.Collectors;
  * @author Noah Torp-Smith (nots@dbc.dk)
  */
 public enum LoanRestriction {
-    A("A"),
-    B("B"),
-    C("C"),
-    D("D"),
-    E("E"),
-    F("F"),
-    G("G"),
-    EMP("");
+    a("a"),
+    b("b"),
+    c("c"),
+    d("d"),
+    e("e"),
+    f("f"),
+    g("g"),
+    EMPTY("");
 
     private final String name;
 
@@ -50,10 +50,7 @@ public enum LoanRestriction {
     private static final Map<String, LoanRestriction> LOOKUP =
         EnumSet.allOf(LoanRestriction.class)
                 .stream()
-                .collect(Collectors.toMap(e -> {
-                    if (e == EMP) {return "";}
-                    return e.toString().toLowerCase(Locale.ROOT);
-                }
+                .collect(Collectors.toMap(e -> e.toString().toLowerCase(Locale.ROOT)
                 , e -> e));
 
     public static LoanRestriction parse(String value) {

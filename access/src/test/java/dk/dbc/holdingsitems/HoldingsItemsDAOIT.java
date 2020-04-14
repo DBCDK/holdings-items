@@ -249,7 +249,7 @@ public class HoldingsItemsDAOIT extends JpaBase {
 
     @Test(timeout = 2_000L)
     public void accessByBibliographicItem() throws Exception {
-        System.out.println("accessByBiliographicItem");
+        System.out.println("accessByBibliographicItem");
         jpa(em -> {
 
             BibliographicItemEntity b1 = BibliographicItemEntity.from(em, 870970, "25912233", Instant.MIN, LocalDate.now());
