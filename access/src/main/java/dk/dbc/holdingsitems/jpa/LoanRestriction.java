@@ -48,14 +48,13 @@ public enum LoanRestriction {
     }
 
     private static final Map<String, LoanRestriction> LOOKUP =
-
-            EnumSet.allOf(LoanRestriction.class)
-                    .stream()
-                    .collect(Collectors.toMap(e -> {
-                        if (e == EMP) {return "";}
-                        return e.toString().toLowerCase(Locale.ROOT);
-                    }
-                    ,e -> e));
+        EnumSet.allOf(LoanRestriction.class)
+                .stream()
+                .collect(Collectors.toMap(e -> {
+                    if (e == EMP) {return "";}
+                    return e.toString().toLowerCase(Locale.ROOT);
+                }
+                , e -> e));
 
     public static LoanRestriction parse(String value) {
         if (value == null) {
