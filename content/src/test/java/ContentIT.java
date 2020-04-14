@@ -276,6 +276,7 @@ public class ContentIT extends JpaBase {
         itemEntity.setAccessionDate(localNow());
         itemEntity.setStatus(status);
         itemEntity.setBranch("branch");
+        itemEntity.setBranchId("9876");
         itemEntity.setDepartment("department");
         itemEntity.setLocation("location");
         itemEntity.setSubLocation("subLocation");
