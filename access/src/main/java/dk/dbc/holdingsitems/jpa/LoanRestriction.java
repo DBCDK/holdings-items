@@ -50,12 +50,11 @@ public enum LoanRestriction {
     private static final Map<String, LoanRestriction> LOOKUP =
         EnumSet.allOf(LoanRestriction.class)
                 .stream()
-                .collect(Collectors.toMap(e -> e.toString().toLowerCase(Locale.ROOT)
-                , e -> e));
+                .collect(Collectors.toMap(e -> e.toString(), e -> e));
 
     public static LoanRestriction parse(String value) {
         if (value == null) {
-            return null;
+            return EMPTY;
         }
         LoanRestriction res = LOOKUP.get(value);
         if (res == null) {

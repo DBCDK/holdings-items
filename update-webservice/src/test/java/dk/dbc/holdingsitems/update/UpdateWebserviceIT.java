@@ -394,7 +394,7 @@ public class UpdateWebserviceIT extends JpaBase {
             });
             ItemEntity itemRetain = retain.stream().findFirst().orElseThrow(() -> new RuntimeException("No issues"))
                     .stream().findFirst().orElseThrow(() -> new RuntimeException("No items"));
-            assertEquals(LoanRestriction.e, itemRetain.getLoanRestriction());
+            assertEquals(LoanRestriction.EMPTY, itemRetain.getLoanRestriction());
             assertEquals(Instant.parse("2017-09-07T09:09:02.000Z"), itemRetain.getModified());
         }
     }
