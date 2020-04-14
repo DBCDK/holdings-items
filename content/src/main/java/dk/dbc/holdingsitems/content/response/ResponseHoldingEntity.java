@@ -38,7 +38,7 @@ public class ResponseHoldingEntity {
         this.location = holdingsItem.getLocation();
         this.subLocation = holdingsItem.getSubLocation();
         this.issueText = collection.getIssueText();
-        this.status = holdingsItem.getStatus().toString(); // todo: check
+        this.status = holdingsItem.getStatus().toString();
         this.circulationRule = holdingsItem.getCirculationRule();
         this.readyForLoan = collection.getReadyForLoan();
         this.note = bibliographicItemEntity.getNote();
