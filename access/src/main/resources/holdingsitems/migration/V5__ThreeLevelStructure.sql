@@ -41,7 +41,8 @@ CREATE TABLE bibliographicitem AS
          note_of(agencyid, bibliographicrecordid) AS note,
          firstAccessionDate_of(agencyid, bibliographicrecordid) AS firstaccessiondate,
          modified_of(agencyid, bibliographicrecordid) AS modified,
-         'migrate' AS trackingId, 0 as version
+         'migrate' AS trackingId,
+         0 AS version
    FROM holdingsitemscollection GROUP BY agencyid, bibliographicrecordid;
 -- 36 / 32
 -- 15:51.136 / 16:36.570
