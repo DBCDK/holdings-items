@@ -59,7 +59,6 @@ import javax.xml.datatype.DatatypeFactory;
 import javax.xml.datatype.XMLGregorianCalendar;
 import javax.xml.ws.WebServiceContext;
 import javax.xml.ws.handler.MessageContext;
-import org.hamcrest.Matchers;
 import org.junit.Test;
 
 import static org.hamcrest.Matchers.containsString;
@@ -319,7 +318,7 @@ public class UpdateWebserviceIT extends JpaBase {
         // Default value
         {
             jpa(em -> {
-                HoldingsItem item = item("it1-1", branch, "234567", department, location, subLocation, circulationRule,
+                HoldingsItem item = item("it1-1", branch, department, location, subLocation, circulationRule,
                                          StatusType.ON_SHELF, date("2017-01-01"));
                 HoldingsItemsUpdateRequest req =
                         holdingsItemsUpdateRequest("101010", null, "track-update-1",
@@ -361,7 +360,7 @@ public class UpdateWebserviceIT extends JpaBase {
         System.out.println("Set loanRestriction to unspecified (same as empty)");
         {
             jpa(em -> {
-                HoldingsItem item = item("it1-1", branch, "234567", department, location, subLocation, circulationRule,
+                HoldingsItem item = item("it1-1", branch, department, location, subLocation, circulationRule,
                                          StatusType.ON_SHELF, date("2017-01-01"));
                 HoldingsItemsUpdateRequest req =
                         holdingsItemsUpdateRequest("101010", null, "track-update-1",
@@ -388,7 +387,7 @@ public class UpdateWebserviceIT extends JpaBase {
         {
             clearQueue();
             jpa(em -> {
-                HoldingsItem item = item("it1-1", branch, "234567", department, location, subLocation, circulationRule,
+                HoldingsItem item = item("it1-1", branch, department, location, subLocation, circulationRule,
                                          StatusType.ON_SHELF, date("2017-01-01"));
                 HoldingsItemsUpdateRequest req =
                         holdingsItemsUpdateRequest("101010", null, "track-update-1",
@@ -408,7 +407,7 @@ public class UpdateWebserviceIT extends JpaBase {
         {
             clearQueue();
             jpa(em -> {
-                HoldingsItem item = item("it1-1", branch, "234567", department, location, subLocation, circulationRule,
+                HoldingsItem item = item("it1-1", branch, department, location, subLocation, circulationRule,
                                          StatusType.DECOMMISSIONED, date("2017-01-01"));
                 HoldingsItemsUpdateRequest req =
                         holdingsItemsUpdateRequest("101010", null, "track-update-1",
@@ -433,12 +432,12 @@ public class UpdateWebserviceIT extends JpaBase {
                 bibliographicItem(
                         "12345678", modified("2017-09-07T09:09:00.000Z"), "Some Note",
                         holding("I1", "Issue #1", date("2199-01-01"), 0,
-                                item("it1-1", branch, "234567", department, location, subLocation, circulationRule,
+                                item("it1-1", branch, department, location, subLocation, circulationRule,
                                      StatusType.ON_SHELF, date("2017-01-01")),
-                                item("it1-2", branch, "234567", department, location, subLocation, circulationRule,
+                                item("it1-2", branch, department, location, subLocation, circulationRule,
                                      StatusType.ON_SHELF, date("2017-01-01"))),
                         holding("I2", "Issue #2", null, 1,
-                                item("it2-1", branch, "234567", department, location, subLocation, circulationRule,
+                                item("it2-1", branch, department, location, subLocation, circulationRule,
                                      StatusType.ON_ORDER, date("2017-01-01")))
                 ));
     }
@@ -449,16 +448,16 @@ public class UpdateWebserviceIT extends JpaBase {
                 bibliographicItem(
                         "12345678", modified("2017-09-07T09:09:00.001Z"), "Some Note",
                         holding("I1", "Issue #1", date("2199-01-01"), 0,
-                                item("it1-1", branch, "234567", department, location, subLocation, circulationRule,
+                                item("it1-1", branch, department, location, subLocation, circulationRule,
                                      StatusType.ON_SHELF, date("2017-01-01")),
-                                item("it1-2", branch, "234567", department, location, subLocation, circulationRule,
+                                item("it1-2", branch, department, location, subLocation, circulationRule,
                                      StatusType.ON_LOAN, date("2017-01-01"))), holding("I2", "Issue #2", null, 1,
-                                                                                       item("it2-1", branch, "234567", department, location, subLocation, circulationRule,
+                                                                                       item("it2-1", branch, department, location, subLocation, circulationRule,
                                                                                             StatusType.ON_ORDER, date("2017-01-01")))),
                 bibliographicItem(
                         "87654321", modified("2017-09-07T09:09:00.001Z"), "Some Note",
                         holding("I1", "Issue #1", date("2199-01-01"), 0,
-                                item("it3-1", branch, "234567", department, location, subLocation, circulationRule,
+                                item("it3-1", branch, department, location, subLocation, circulationRule,
                                      StatusType.ON_LOAN, date("2017-01-01")))) // new
         );
     }
@@ -481,7 +480,7 @@ public class UpdateWebserviceIT extends JpaBase {
                 completeBibliographicItem(
                         "12345678", modified("2017-09-07T09:09:01.001Z"), "Other Note",
                         holding("I3", "Issue #3", null, 1,
-                                item("it3-1", branch, "234567", department, location, subLocation, circulationRule,
+                                item("it3-1", branch, department, location, subLocation, circulationRule,
                                      StatusType.ON_LOAN, date("2017-01-01")))));
     }
 
@@ -491,10 +490,10 @@ public class UpdateWebserviceIT extends JpaBase {
                 completeBibliographicItem(
                         "12345678", modified("2017-09-07T09:09:02.001Z"), "Other Note",
                         holding("I3", "Issue #3", null, 1,
-                                item("it3-1", branch, "234567", department, location, subLocation, circulationRule,
+                                item("it3-1", branch, department, location, subLocation, circulationRule,
                                      StatusType.ON_LOAN, date("2017-01-01"))),
                         holding("I4", "Issue #4", null, 1,
-                                item("it4-1", branch, "234567", department, location, subLocation, circulationRule,
+                                item("it4-1", branch, department, location, subLocation, circulationRule,
                                      StatusType.ON_LOAN, date("2017-01-01")))));
     }
 
@@ -504,10 +503,10 @@ public class UpdateWebserviceIT extends JpaBase {
                 completeBibliographicItem(
                         "12345678", modified("2017-09-07T09:09:03.001Z"), "Other Note",
                         holding("I3", "Issue #3", null, 1,
-                                item("it3-1", branch, "234567", department, location, subLocation, circulationRule,
+                                item("it3-1", branch, department, location, subLocation, circulationRule,
                                      StatusType.ON_LOAN, date("2017-01-01"))),
                         holding("I3", "Issue #3", null, 1,
-                                item("it3-2", branch, "234567", department, location, subLocation, circulationRule,
+                                item("it3-2", branch, department, location, subLocation, circulationRule,
                                      StatusType.ON_LOAN, date("2017-01-01")))));
     }
 
@@ -524,7 +523,7 @@ public class UpdateWebserviceIT extends JpaBase {
                 bibliographicItem(
                         "12345678", modified("2017-09-07T09:09:00.000Z"), "Original Note",
                         holding("I1", "Issue #1", date("2199-01-01"), 0,
-                                item("it1-1", branch, "234567", department, location, subLocation, circulationRule,
+                                item("it1-1", branch, department, location, subLocation, circulationRule,
                                      StatusType.ON_SHELF, date("2017-01-01")))
                 ));
     }
@@ -535,7 +534,7 @@ public class UpdateWebserviceIT extends JpaBase {
                 bibliographicItem(
                         "12345678", modified("2017-09-07T09:09:00.100Z"), "Updated Note",
                         holding("I2", "Issue #2", date("2199-01-01"), 0,
-                                item("it2-1", branch, "234567", department, location, subLocation, circulationRule,
+                                item("it2-1", branch, department, location, subLocation, circulationRule,
                                      StatusType.ON_SHELF, date("2017-01-01")))
                 ));
     }
@@ -685,7 +684,7 @@ public class UpdateWebserviceIT extends JpaBase {
         return hold;
     }
 
-    private HoldingsItem item(String itemId, String branch, String branchId, String department, String location, String subLocation, String circulationRule, StatusType status, XMLGregorianCalendar accessionDate) {
+    private HoldingsItem item(String itemId, String branch, String department, String location, String subLocation, String circulationRule, StatusType status, XMLGregorianCalendar accessionDate) {
         HoldingsItem item = new HoldingsItem();
         item.setItemId(itemId);
         item.setBranch(branch);
