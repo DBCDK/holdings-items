@@ -1,320 +1,278 @@
 <?xml version="1.0" encoding="utf-8"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:tns="http://oss.dbc.dk/ns/holdingsItemsUpdate" elementFormDefault="qualified" targetNamespace="http://oss.dbc.dk/ns/holdingsItemsUpdate">
-    <!-- request / response -->
-    <xs:element name="holdingsItemsUpdate">
-        <xs:complexType>
-            <xs:sequence>
-                <xs:element name="holdingsItemsUpdateRequest" type="tns:HoldingsItemsUpdateRequest"/>
-            </xs:sequence>
-        </xs:complexType>
-    </xs:element>
-    <xs:element name="HoldingsItemsUpdateRequest" type="tns:HoldingsItemsUpdateRequest"/>
-    <xs:complexType name="HoldingsItemsUpdateRequest">
-        <xs:sequence>
-            <xs:element name="authentication" type="tns:Authentication" minOccurs="0"/>
-            <xs:element ref="tns:agencyId"/>
-            <xs:element name="bibliographicItem" type="tns:BibliographicItem" maxOccurs="100"/>
-            <xs:element ref="tns:trackingId" minOccurs="0"/>
-        </xs:sequence>
+  <!-- request / response -->
+  <xs:element name="holdingsItemsUpdate">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="holdingsItemsUpdateRequest" type="tns:HoldingsItemsUpdateRequest"/>
+      </xs:sequence>
     </xs:complexType>
+  </xs:element>
+  <xs:element name="HoldingsItemsUpdateRequest" type="tns:HoldingsItemsUpdateRequest"/>
+  <xs:complexType name="HoldingsItemsUpdateRequest">
+    <xs:sequence>
+      <xs:element name="authentication" type="tns:Authentication" minOccurs="0"/>
+      <xs:element ref="tns:agencyId"/>
+      <xs:element name="bibliographicItem" type="tns:BibliographicItem" maxOccurs="100"/>
+      <xs:element ref="tns:trackingId" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
 
-    <xs:element name="completeHoldingsItemsUpdate">
-        <xs:complexType>
-            <xs:sequence>
-                <xs:element name="completeHoldingsItemsUpdateRequest" type="tns:CompleteHoldingsItemsUpdateRequest"/>
-            </xs:sequence>
-        </xs:complexType>
-    </xs:element>
-    <xs:element name="CompleteHoldingsItemsUpdateRequest" type="tns:CompleteHoldingsItemsUpdateRequest"/>
-    <xs:complexType name="CompleteHoldingsItemsUpdateRequest">
-        <xs:sequence>
-            <xs:element name="authentication" type="tns:Authentication" minOccurs="0"/>
-            <xs:element ref="tns:agencyId"/>
-            <xs:element name="completeBibliographicItem" type="tns:CompleteBibliographicItem"/>
-            <xs:element ref="tns:trackingId" minOccurs="0"/>
-        </xs:sequence>
+  <xs:element name="completeHoldingsItemsUpdate">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="completeHoldingsItemsUpdateRequest" type="tns:CompleteHoldingsItemsUpdateRequest"/>
+      </xs:sequence>
     </xs:complexType>
+  </xs:element>
+  <xs:element name="CompleteHoldingsItemsUpdateRequest" type="tns:CompleteHoldingsItemsUpdateRequest"/>
+  <xs:complexType name="CompleteHoldingsItemsUpdateRequest">
+    <xs:sequence>
+      <xs:element name="authentication" type="tns:Authentication" minOccurs="0"/>
+      <xs:element ref="tns:agencyId"/>
+      <xs:element name="completeBibliographicItem" type="tns:CompleteBibliographicItem"/>
+      <xs:element ref="tns:trackingId" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
 
-    <xs:element name="onlineHoldingsItemsUpdate">
-        <xs:complexType>
-            <xs:sequence>
-                <xs:element name="onlineHoldingsItemsUpdateRequest" type="tns:OnlineHoldingsItemsUpdateRequest"/>
-            </xs:sequence>
-        </xs:complexType>
-    </xs:element>
-    <xs:element name="OnlineHoldingsItemsUpdateRequest" type="tns:OnlineHoldingsItemsUpdateRequest"/>
-    <xs:complexType name="OnlineHoldingsItemsUpdateRequest">
-        <xs:sequence>
-            <xs:element name="authentication" type="tns:Authentication" minOccurs="0"/>
-            <xs:element ref="tns:agencyId"/>
-            <xs:element name="onlineBibliographicItem" type="tns:OnlineBibliographicItem" minOccurs="0" maxOccurs="100"/>
-            <xs:element ref="tns:trackingId" minOccurs="0"/>
-        </xs:sequence>
+  <xs:element name="onlineHoldingsItemsUpdate">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="onlineHoldingsItemsUpdateRequest" type="tns:OnlineHoldingsItemsUpdateRequest"/>
+      </xs:sequence>
     </xs:complexType>
+  </xs:element>
+  <xs:element name="OnlineHoldingsItemsUpdateRequest" type="tns:OnlineHoldingsItemsUpdateRequest"/>
+  <xs:complexType name="OnlineHoldingsItemsUpdateRequest">
+    <xs:sequence>
+      <xs:element name="authentication" type="tns:Authentication" minOccurs="0"/>
+      <xs:element ref="tns:agencyId"/>
+      <xs:element name="onlineBibliographicItem" type="tns:OnlineBibliographicItem" minOccurs="0" maxOccurs="100"/>
+      <xs:element ref="tns:trackingId" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
 
-    <xs:element name="holdingsItemsUpdateResponse">
-        <xs:complexType>
-            <xs:sequence>
-                <xs:element name="holdingsItemsUpdateResult" type="tns:HoldingsItemsUpdateResult"/>
-            </xs:sequence>
-        </xs:complexType>
-    </xs:element>
-    <xs:element name="HoldingsItemsUpdateResult" nillable="true" type="tns:HoldingsItemsUpdateResult"/>
-    <xs:complexType name="HoldingsItemsUpdateResult">
-        <xs:sequence>
-            <xs:element ref="tns:holdingsItemsUpdateStatus"/>
-            <xs:element ref="tns:holdingsItemsUpdateStatusMessage" minOccurs="0"/>
-        </xs:sequence>
+  <xs:element name="holdingsItemsUpdateResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="holdingsItemsUpdateResult" type="tns:HoldingsItemsUpdateResult"/>
+      </xs:sequence>
     </xs:complexType>
+  </xs:element>
+  <xs:element name="HoldingsItemsUpdateResult" nillable="true" type="tns:HoldingsItemsUpdateResult"/>
+  <xs:complexType name="HoldingsItemsUpdateResult">
+    <xs:sequence>
+      <xs:element ref="tns:holdingsItemsUpdateStatus"/>
+      <xs:element ref="tns:holdingsItemsUpdateStatusMessage" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
 
-    <!-- structs -->
-    <xs:element name="Authentication" type="tns:Authentication"/>
-    <xs:complexType name="Authentication">
-        <xs:sequence>
-            <xs:element ref="tns:groupIdAut"/>
-            <xs:element ref="tns:passwordAut"/>
-            <xs:element ref="tns:userIdAut"/>
-        </xs:sequence>
-    </xs:complexType>
-    <xs:element name="BibliographicItem" type="tns:BibliographicItem"/>
-    <xs:complexType name="BibliographicItem">
-        <xs:sequence>
-            <xs:element ref="tns:bibliographicRecordId"/>
-            <xs:element ref="tns:note" minOccurs="0"/>
-            <xs:element name="modificationTimeStamp" type="tns:ModificationTimeStamp"/>
-            <xs:element name="holding" type="tns:Holding" minOccurs="0" maxOccurs="100"/>
-        </xs:sequence>
-    </xs:complexType>
-    <xs:element name="CompleteBibliographicItem" type="tns:CompleteBibliographicItem"/>
-    <xs:complexType name="CompleteBibliographicItem">
-        <xs:sequence>
-            <xs:element ref="tns:bibliographicRecordId"/>
-            <xs:element ref="tns:note" minOccurs="0"/>
-            <xs:element name="modificationTimeStamp" type="tns:ModificationTimeStamp"/>
-            <xs:element name="holding" type="tns:Holding" minOccurs="0" maxOccurs="unbounded"/>
-        </xs:sequence>
-    </xs:complexType>
-    <xs:element name="Holding" type="tns:Holding"/>
-    <xs:complexType name="Holding">
-        <xs:sequence>
-            <xs:element ref="tns:expectedDeliveryDate" minOccurs="0"/>
-            <xs:element ref="tns:readyForLoan"/>
-            <xs:element ref="tns:issueId"/>
-            <xs:element ref="tns:issueText"/>
-            <xs:element name="holdingsItem" type="tns:HoldingsItem" minOccurs="0" maxOccurs="unbounded"/>
-        </xs:sequence>
-    </xs:complexType>
-    <xs:element name="HoldingsItem" type="tns:HoldingsItem"/>
-    <xs:complexType name="HoldingsItem">
-        <xs:sequence>
-            <xs:element ref="tns:itemId"/>
-            <xs:element ref="tns:branchId"/>
-            <xs:element ref="tns:branch"/>
-            <xs:element ref="tns:department"/>
-            <xs:element ref="tns:loanRestriction" minOccurs="0" />
-            <xs:element ref="tns:location"/>
-            <xs:element ref="tns:subLocation"/>
-            <xs:element ref="tns:circulationRule"/>
-            <xs:element ref="tns:status"/>
-            <xs:element ref="tns:accessionDate"/>
-        </xs:sequence>
-    </xs:complexType>
-    <xs:element name="ModificationTimeStamp" type="tns:ModificationTimeStamp"/>
-    <xs:complexType name="ModificationTimeStamp">
-        <xs:sequence>
-            <xs:element ref="tns:modificationDateTime"/>
-            <xs:element ref="tns:modificationMilliSeconds"/>
-        </xs:sequence>
-    </xs:complexType>
-    <xs:element name="OnlineBibliographicItem" type="tns:OnlineBibliographicItem"/>
-    <xs:complexType name="OnlineBibliographicItem">
-        <xs:sequence>
-            <xs:element ref="tns:bibliographicRecordId"/> 
-            <xs:element name="modificationTimeStamp" type="tns:ModificationTimeStamp"/>
-            <xs:element name="hasOnlineHolding" type="xs:boolean"/>
-        </xs:sequence>
-    </xs:complexType>
+  <!-- structs -->
+  <xs:element name="Authentication" type="tns:Authentication"/>
+  <xs:complexType name="Authentication">
+    <xs:sequence>
+      <xs:element ref="tns:groupIdAut"/>
+      <xs:element ref="tns:passwordAut"/>
+      <xs:element ref="tns:userIdAut"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="BibliographicItem" type="tns:BibliographicItem"/>
+  <xs:complexType name="BibliographicItem">
+    <xs:sequence>
+      <xs:element ref="tns:bibliographicRecordId"/>
+      <xs:element ref="tns:note" minOccurs="0"/>
+      <xs:element name="modificationTimeStamp" type="tns:ModificationTimeStamp"/>
+      <xs:element name="holding" type="tns:Holding" minOccurs="0" maxOccurs="100"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="CompleteBibliographicItem" type="tns:CompleteBibliographicItem"/>
+  <xs:complexType name="CompleteBibliographicItem">
+    <xs:sequence>
+      <xs:element ref="tns:bibliographicRecordId"/>
+      <xs:element ref="tns:note" minOccurs="0"/>
+      <xs:element name="modificationTimeStamp" type="tns:ModificationTimeStamp"/>
+      <xs:element name="holding" type="tns:Holding" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="Holding" type="tns:Holding"/>
+  <xs:complexType name="Holding">
+    <xs:sequence>
+      <xs:element ref="tns:expectedDeliveryDate" minOccurs="0"/>
+      <xs:element ref="tns:readyForLoan"/>
+      <xs:element ref="tns:issueId"/>
+      <xs:element ref="tns:issueText"/>
+      <xs:element name="holdingsItem" type="tns:HoldingsItem" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="HoldingsItem" type="tns:HoldingsItem"/>
+  <xs:complexType name="HoldingsItem">
+    <xs:sequence>
+      <xs:element ref="tns:itemId"/>
+      <xs:element ref="tns:branch"/>
+      <xs:element ref="tns:department"/>
+      <xs:element ref="tns:location"/>
+      <xs:element ref="tns:subLocation"/>
+      <xs:element ref="tns:circulationRule"/>
+      <xs:element ref="tns:status"/>
+      <xs:element ref="tns:accessionDate"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="ModificationTimeStamp" type="tns:ModificationTimeStamp"/>
+  <xs:complexType name="ModificationTimeStamp">
+    <xs:sequence>
+      <xs:element ref="tns:modificationDateTime"/>
+      <xs:element ref="tns:modificationMilliSeconds"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="OnlineBibliographicItem" type="tns:OnlineBibliographicItem"/>
+  <xs:complexType name="OnlineBibliographicItem">
+    <xs:sequence>
+      <xs:element ref="tns:bibliographicRecordId"/> 
+      <xs:element name="modificationTimeStamp" type="tns:ModificationTimeStamp"/>
+      <xs:element name="hasOnlineHolding" type="xs:boolean"/>
+    </xs:sequence>
+  </xs:complexType>
 
 
-    <!-- types -->
-    <xs:element name="accessionDate" type="xs:date">
-        <xs:annotation>
-            <xs:documentation xml:lang="en">Accession date for the specific copy.</xs:documentation>
-        </xs:annotation>
-    </xs:element>
-    <xs:element name="agencyId" type="tns:sixDigit">
-        <xs:annotation>
-            <xs:documentation xml:lang="en">Library code.</xs:documentation>
-        </xs:annotation>
-    </xs:element>
-    <xs:element name="bibliographicRecordId" type="xs:string">
-        <xs:annotation>
-            <xs:documentation xml:lang="en">Unique identifier of bibliographic record (Often faustnumber).</xs:documentation>
-        </xs:annotation>
-    </xs:element>
-    <xs:element name="branch" type="xs:string">
-        <xs:annotation>
-            <xs:documentation xml:lang="en">Separate geographic place (filialnavn)</xs:documentation>
-        </xs:annotation>
-    </xs:element>
-    <xs:element name="branchId" type="tns:identifier">
-        <xs:annotation>
-            <xs:documentation xml:lang="en">Branch code (filialnummer)</xs:documentation>
-        </xs:annotation>
-    </xs:element>
-    <xs:element name="circulationRule" type="xs:string">
-        <xs:annotation>
-            <xs:documentation xml:lang="en">Circulation rule (Udlånsregel)</xs:documentation>
-        </xs:annotation>
-    </xs:element>
-    <xs:element name="department" type="xs:string">
-        <xs:annotation>
-            <xs:documentation xml:lang="en">ie. books, music, ... (Afdeling)</xs:documentation>
-        </xs:annotation>
-    </xs:element>
-    <xs:element name="expectedDeliveryDate" type="xs:date">
-        <xs:annotation>
-            <xs:documentation xml:lang="en">Used if one or more copies are available for loan.</xs:documentation>
-        </xs:annotation>
-    </xs:element>
-    <xs:element name="groupIdAut" type="xs:string">
-        <xs:annotation>
-            <xs:documentation xml:lang="en">Identifier of the group (most often a library number) the user belongs to (for authentication purposes)</xs:documentation>
-        </xs:annotation>
-    </xs:element>
-    <xs:element name="holdingsItemsUpdateStatus" type="tns:holdingsItemsUpdateStatusEnum">
-        <xs:annotation>
-            <xs:documentation xml:lang="en">Status for the update.</xs:documentation>
-        </xs:annotation>
-    </xs:element>
-    <xs:element name="holdingsItemsUpdateStatusMessage" type="xs:string">
-        <xs:annotation>
-            <xs:documentation xml:lang="en">Further info if holdingsUpdateStatus differs from ok</xs:documentation>
-        </xs:annotation>
-    </xs:element>
-    <xs:element name="issueId" type="xs:string">
-        <xs:annotation>
-            <xs:documentation xml:lang="en">Unique id of the holding. Normally used when issueing an order for the material</xs:documentation>
-        </xs:annotation>
-    </xs:element>
-    <xs:element name="issueText" type="xs:string">
-        <xs:annotation>
-            <xs:documentation xml:lang="en">Display text for the issueId</xs:documentation>
-        </xs:annotation>
-    </xs:element>
-    <xs:element name="itemId" type="xs:string">
-        <xs:annotation>
-            <xs:documentation xml:lang="en">Unique id of the item. Id of the specific copy of the item</xs:documentation>
-        </xs:annotation>
-    </xs:element>
-    <xs:element name="loanRestriction" type="tns:loanRestrictionEnum">
-        <xs:annotation>
-            <xs:documentation xml:lang="en">Loan restriction status code matching DanMarc field 096*r</xs:documentation>
-        </xs:annotation>
-    </xs:element>
-    <xs:element name="location" type="xs:string">
-        <xs:annotation>
-            <xs:documentation xml:lang="en">(Opstilling)</xs:documentation>
-        </xs:annotation>
-    </xs:element>
-    <xs:element name="modificationDateTime" type="xs:dateTime">
-        <xs:annotation>
-            <xs:documentation xml:lang="en">Date and time for modification</xs:documentation>
-        </xs:annotation>
-    </xs:element>
-    <xs:element name="modificationMilliSeconds">
-        <xs:annotation>
-            <xs:documentation xml:lang="en">Number of milliseconds (0-999)</xs:documentation>
-        </xs:annotation>
-        <xs:simpleType>
-            <xs:restriction base="xs:integer">
-                <xs:minInclusive value="0"/>
-                <xs:maxInclusive value="999"/>
-            </xs:restriction>
-        </xs:simpleType>
-    </xs:element>
-    <xs:element name="note" type="xs:string">
-        <xs:annotation>
-            <xs:documentation xml:lang="en">Note for bibliographic item. For serials, this can be used to describe which volumes are kept/loanable, like: Last 3 volumes</xs:documentation>
-        </xs:annotation>
-    </xs:element>
-    <xs:element name="passwordAut" type="xs:string">
-        <xs:annotation>
-            <xs:documentation xml:lang="en">Password (for authentication purposes)</xs:documentation>
-        </xs:annotation>
-    </xs:element>
-    <xs:element name="readyForLoan" type="xs:integer">
-        <xs:annotation>
-            <xs:documentation xml:lang="en">Used if one or more copies are available for loan. -1 if no items are available for loan</xs:documentation>
-        </xs:annotation>
-    </xs:element>
-    <xs:element name="status" type="tns:statusType"/>
-    <xs:element name="subLocation" type="xs:string">
-        <xs:annotation>
-            <xs:documentation xml:lang="en">(delopstilling)</xs:documentation>
-        </xs:annotation>
-    </xs:element>
-    <xs:element name="trackingId" type="xs:string">
-        <xs:annotation>
-            <xs:documentation xml:lang="en">Unique id to track this request</xs:documentation>
-        </xs:annotation>
-    </xs:element>
-    <xs:element name="userIdAut" type="xs:string">
-        <xs:annotation>
-            <xs:documentation xml:lang="en">User identifier (for authentication purposes)</xs:documentation>
-        </xs:annotation>
-    </xs:element>
-
-    <!-- restricted types -->
-    <xs:simpleType name="sixDigit">
-        <xs:annotation>
-            <xs:documentation xml:lang="en">6-digit number</xs:documentation>
-        </xs:annotation>
-        <xs:restriction base="xs:integer">
-            <xs:minInclusive value="100000"/>
-            <xs:maxInclusive value="999999"/>
-        </xs:restriction>
+  <!-- types -->
+  <xs:element name="accessionDate" type="xs:date">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Accession date for the specific copy.</xs:documentation>
+    </xs:annotation>
+  </xs:element>
+  <xs:element name="agencyId" type="xs:string">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Library code.</xs:documentation>
+    </xs:annotation>
+  </xs:element>
+  <xs:element name="bibliographicRecordId" type="xs:string">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Unique identifier of bibliographic record (Often faustnumber).</xs:documentation>
+    </xs:annotation>
+  </xs:element>
+  <xs:element name="branch" type="xs:string">
+      <xs:annotation>
+          <xs:documentation xml:lang="en">Separate geographic place (filial)</xs:documentation>
+      </xs:annotation>
+  </xs:element>
+  <xs:element name="circulationRule" type="xs:string">
+      <xs:annotation>
+          <xs:documentation xml:lang="en">Circulation rule (Udlånsregel)</xs:documentation>
+      </xs:annotation>
+  </xs:element>
+  <xs:element name="department" type="xs:string">
+      <xs:annotation>
+          <xs:documentation xml:lang="en">ie. books, music, ... (Afdeling)</xs:documentation>
+      </xs:annotation>
+  </xs:element>
+  <xs:element name="expectedDeliveryDate" type="xs:date">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Used if one or more copies are available for loan.</xs:documentation>
+    </xs:annotation>
+  </xs:element>
+  <xs:element name="groupIdAut" type="xs:string">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Identifier of the group (most often a library number) the user belongs to (for authentication purposes)</xs:documentation>
+    </xs:annotation>
+  </xs:element>
+  <xs:element name="holdingsItemsUpdateStatus" type="tns:holdingsItemsUpdateStatusEnum">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Status for the update.</xs:documentation>
+    </xs:annotation>
+  </xs:element>
+  <xs:element name="holdingsItemsUpdateStatusMessage" type="xs:string">
+      <xs:annotation>
+          <xs:documentation xml:lang="en">Further info if holdingsUpdateStatus differs from ok</xs:documentation>
+      </xs:annotation>
+  </xs:element>
+  <xs:element name="issueId" type="xs:string">
+      <xs:annotation>
+          <xs:documentation xml:lang="en">Unique id of the holding. Normally used when issueing an order for the material</xs:documentation>
+      </xs:annotation>
+  </xs:element>
+  <xs:element name="issueText" type="xs:string">
+      <xs:annotation>
+          <xs:documentation xml:lang="en">Display text for the issueId</xs:documentation>
+      </xs:annotation>
+  </xs:element>
+  <xs:element name="itemId" type="xs:string">
+      <xs:annotation>
+          <xs:documentation xml:lang="en">Unique id of the item. Id of the specific copy of the item</xs:documentation>
+      </xs:annotation>
+  </xs:element>
+  <xs:element name="location" type="xs:string">
+      <xs:annotation>
+          <xs:documentation xml:lang="en">(Opstilling)</xs:documentation>
+      </xs:annotation>
+  </xs:element>
+  <xs:element name="modificationDateTime" type="xs:dateTime">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Date and time for modification</xs:documentation>
+    </xs:annotation>
+  </xs:element>
+  <xs:element name="modificationMilliSeconds">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Number of milliseconds (0-999)</xs:documentation>
+    </xs:annotation>
+    <xs:simpleType>
+      <xs:restriction base="xs:integer">
+        <xs:minInclusive value="0"/>
+        <xs:maxInclusive value="999"/>
+      </xs:restriction>
     </xs:simpleType>
-    <xs:simpleType name="identifier">
-        <xs:annotation>
-            <xs:documentation xml:lang="en">None empty string without whitespaces</xs:documentation>
-        </xs:annotation>
-        <xs:restriction base="xs:string">
-            <xs:pattern value="\S+"/>
-        </xs:restriction>
-    </xs:simpleType>
+  </xs:element>
+  <xs:element name="note" type="xs:string">
+      <xs:annotation>
+          <xs:documentation xml:lang="en">Note for bibliographic item. For serials, this can be used to describe which volumes are kept/loanable, like: Last 3 volumes</xs:documentation>
+      </xs:annotation>
+  </xs:element>
+  <xs:element name="passwordAut" type="xs:string">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Password (for authentication purposes)</xs:documentation>
+    </xs:annotation>
+  </xs:element>
+  <xs:element name="readyForLoan" type="xs:integer">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Used if one or more copies are available for loan. -1 if no items are available for loan</xs:documentation>
+    </xs:annotation>
+  </xs:element>
+  <xs:element name="status" type="tns:statusType"/>
+  <xs:element name="subLocation" type="xs:string">
+      <xs:annotation>
+          <xs:documentation xml:lang="en">(delopstilling)</xs:documentation>
+      </xs:annotation>
+  </xs:element>
+  <xs:element name="trackingId" type="xs:string">
+      <xs:annotation>
+          <xs:documentation xml:lang="en">Unique id to track this request</xs:documentation>
+      </xs:annotation>
+  </xs:element>
+  <xs:element name="userIdAut" type="xs:string">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">User identifier (for authentication purposes)</xs:documentation>
+    </xs:annotation>
+  </xs:element>
 
-    <!-- enums -->
-    <xs:simpleType name="holdingsItemsUpdateStatusEnum">
-        <xs:restriction base="xs:string">
-            <xs:enumeration value="ok"/>
-            <xs:enumeration value="authentication_error"/>
-            <xs:enumeration value="failed_invalid_agency"/>
-            <xs:enumeration value="failed_invalid_delivery_date"/>
-            <xs:enumeration value="failed_update_internal_error"/>
-        </xs:restriction>
-    </xs:simpleType>
-    <xs:simpleType name="statusType">
-        <xs:restriction base="xs:string">
-            <xs:enumeration value="NotForLoan"/>
-            <xs:enumeration value="OnLoan"/>
-            <xs:enumeration value="OnOrder"/>
-            <xs:enumeration value="OnShelf"/>
-            <xs:enumeration value="Online"/>
-            <xs:enumeration value="Decommissioned"/>
-        </xs:restriction>
-    </xs:simpleType>
-    <xs:simpleType name="loanRestrictionEnum">
-        <xs:restriction base="xs:string">
-            <xs:enumeration value=""/>
-            <xs:enumeration value="a"/>
-            <xs:enumeration value="b"/>
-            <xs:enumeration value="c"/>
-            <xs:enumeration value="d"/>
-            <xs:enumeration value="e"/>
-            <xs:enumeration value="f"/>
-            <xs:enumeration value="g"/>
-        </xs:restriction>
-    </xs:simpleType>
+
+  <!-- enums -->
+  <xs:simpleType name="holdingsItemsUpdateStatusEnum">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="ok"/>
+      <xs:enumeration value="authentication_error"/>
+      <xs:enumeration value="failed_invalid_agency"/>
+      <xs:enumeration value="failed_invalid_delivery_date"/>
+      <xs:enumeration value="failed_update_internal_error"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="statusType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="NotForLoan"/>
+      <xs:enumeration value="OnLoan"/>
+      <xs:enumeration value="OnOrder"/>
+      <xs:enumeration value="OnShelf"/>
+      <xs:enumeration value="Online"/>
+      <xs:enumeration value="Decommissioned"/>
+    </xs:restriction>
+  </xs:simpleType>
 
 </xs:schema>
