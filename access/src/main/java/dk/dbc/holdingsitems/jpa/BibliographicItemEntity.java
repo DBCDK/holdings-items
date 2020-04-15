@@ -172,7 +172,6 @@ public class BibliographicItemEntity implements Serializable {
             if (issues == null)
                 issues = new HashSet<>();
             issue = new IssueEntity(this, issueId);
-            issue.em = em;
             issue.setComplete(modified);
             issue.setCreated(modified);
             issue.setModified(modified);
@@ -180,6 +179,7 @@ public class BibliographicItemEntity implements Serializable {
             issues.add(issue);
         }
         issue.optimisticForceIncrement = optimisticForceIncrement;
+        issue.em = em;
         issue.owner = this;
         return issue;
     }

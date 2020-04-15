@@ -327,7 +327,6 @@ public abstract class UpdateRequest {
             collection.setModified(modified);
             collection.setUpdated(Instant.now());
             collection.save();
-            System.out.println("collection = " + collection + " <--------------------------------------------");
         }
     }
 
@@ -352,7 +351,7 @@ public abstract class UpdateRequest {
             StatusType status = holdingsItem.getStatus();
             if (status != null) {
                 if (status == StatusType.ONLINE) {
-                    throw new FailedUpdateInternalException("Use endpoint onlineHoldingsItemsUpdate got status ONLINE");
+                    throw new FailedUpdateInternalException("Use endpoint onlineHoldingsItemsUpdate - got status ONLINE");
                 }
                 oldItemStatus.computeIfAbsent(issue.getBibliographicRecordId(),
                                               f -> new HashMap<>())
@@ -425,24 +424,15 @@ public abstract class UpdateRequest {
     /**
      * Used for sorting bibliographic items/holdings to avoid deadlocks
      */
-    protected static final Comparator<BibliographicItem> BIBLIOGRAPHICITEM_SORT_COMPARE = new Comparator<BibliographicItem>() {
-        @Override
-        public int compare(BibliographicItem o1, BibliographicItem o2) {
-            return o1.getBibliographicRecordId().compareTo(o2.getBibliographicRecordId());
-        }
-    };
-    protected static final Comparator<Holding> HOLDINGS_SORT_COMPARE = new Comparator<Holding>() {
-        @Override
-        public int compare(Holding o1, Holding o2) {
-            return o1.getIssueId().compareTo(o2.getIssueId());
-        }
-    };
-    protected static final Comparator<OnlineBibliographicItem> ONLINE_BIBLIOGRAPHICITEM_SORT_COMPARE = new Comparator<OnlineBibliographicItem>() {
-        @Override
-        public int compare(OnlineBibliographicItem l, OnlineBibliographicItem r) {
-            return l.getBibliographicRecordId().compareTo(r.getBibliographicRecordId());
-        }
-    };
+    protected static final Comparator<BibliographicItem> BIBLIOGRAPHICITEM_SORT_COMPARE =
+            (BibliographicItem o1, BibliographicItem o2) ->
+            o1.getBibliographicRecordId().compareTo(o2.getBibliographicRecordId());
+    protected static final Comparator<Holding> HOLDINGS_SORT_COMPARE =
+            (Holding o1, Holding o2) ->
+            o1.getIssueId().compareTo(o2.getIssueId());
+    protected static final Comparator<OnlineBibliographicItem> ONLINE_BIBLIOGRAPHICITEM_SORT_COMPARE =
+            (OnlineBibliographicItem l, OnlineBibliographicItem r) ->
+            l.getBibliographicRecordId().compareTo(r.getBibliographicRecordId());
 
     /**
      * Simple queue entry wrapper, only data structure, no logic
