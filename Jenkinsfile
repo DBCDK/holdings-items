@@ -38,6 +38,9 @@ pipeline {
                     if (! env.BRANCH_NAME) {
                         currentBuild.rawBuild.result = Result.ABORTED
                         throw new hudson.AbortException('Job Started from non MultiBranch Build')
+                    } else if (env.BRANCH_NAME == "master") {
+                        currentBuild.rawBuild.result = Result.ABORTED
+                        throw new hudson.AbortException('BRANCH SHOULD NOT HAVE BEEN MERGED INTO master')
                     } else {
                         println(" Building BRANCH_NAME == ${BRANCH_NAME}")
                     }
