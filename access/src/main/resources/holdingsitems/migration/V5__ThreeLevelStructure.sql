@@ -41,7 +41,7 @@ CREATE TABLE bibliographicitem AS
          note_of(agencyid, bibliographicrecordid) AS note,
          firstAccessionDate_of(agencyid, bibliographicrecordid) AS firstaccessiondate,
          modified_of(agencyid, bibliographicrecordid) AS modified,
-         'migrate' AS trackingId
+         'migrate' AS trackingId, 0 as version
    FROM holdingsitemscollection GROUP BY agencyid, bibliographicrecordid;
 -- 36 / 32
 -- 15:51.136 / 16:36.570
@@ -63,7 +63,9 @@ ALTER TABLE bibliographicitem
 ALTER TABLE bibliographicitem
   ALTER COLUMN trackingid SET NOT NULL;
 ALTER TABLE bibliographicitem
-    ADD COLUMN version INTEGER NOT NULL DEFAULT 0;
+    ALTER COLUMN version SET NOT NULL;
+ALTER TABLE bibliographicitem
+    ALTER COLUMN version SET DEFAULT 0;
 ALTER TABLE bibliographicitem
   ADD CONSTRAINT bibliographicitem_pkey
     PRIMARY KEY (agencyid, bibliographicrecordid);
