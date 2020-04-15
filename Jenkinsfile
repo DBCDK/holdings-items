@@ -164,7 +164,7 @@ pipeline {
 //                script {
 //                    dir("deploy") {
 //                        sh "set-new-version services/search/holdings-items-indexer.yml ${env.GITLAB_PRIVATE_TOKEN} metascrum/dit-gitops-secrets ${DOCKER_PUSH_TAG} -b master"
-//                        sh "set-new-version migrator/holdings-items-content-service.yml ${env.GITLAB_PRIVATE_TOKEN} metascrum/dit-gitops-secrets ${DOCKER_PUSH_TAG} -b master"
+//                        sh "set-new-version services/search/holdings-items-content-service.yml ${env.GITLAB_PRIVATE_TOKEN} metascrum/dit-gitops-secrets ${DOCKER_PUSH_TAG} -b master"
 //                        sh "set-new-version migrator/holdings-items-update-1-1.yml ${env.GITLAB_PRIVATE_TOKEN} metascrum/dit-gitops-secrets ${DOCKER_PUSH_TAG} -b master"
 //                    }
 //                }
