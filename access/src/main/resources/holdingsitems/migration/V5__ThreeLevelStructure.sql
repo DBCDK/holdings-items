@@ -63,6 +63,8 @@ ALTER TABLE bibliographicitem
 ALTER TABLE bibliographicitem
   ALTER COLUMN trackingid SET NOT NULL;
 ALTER TABLE bibliographicitem
+    ADD COLUMN version INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE bibliographicitem
   ADD CONSTRAINT bibliographicitem_pkey
     PRIMARY KEY (agencyid, bibliographicrecordid);
 
@@ -76,6 +78,9 @@ DROP FUNCTION firstAccessionDate_of(NUMERIC(6,0), TEXT);
 DROP FUNCTION modified_of(NUMERIC(6,0), TEXT);
 
 ALTER TABLE holdingsitemscollection
+    ADD COLUMN version INTEGER NOT NULL DEFAULT 0;
+
+ALTER TABLE holdingsitemscollection
   ADD CONSTRAINT issue_agencyidbibliographicrecordid_fk
     FOREIGN KEY (agencyid, bibliographicrecordid)
       REFERENCES bibliographicitem(agencyid, bibliographicrecordid);
@@ -83,6 +88,9 @@ ALTER TABLE holdingsitemscollection
 
 ALTER TABLE holdingsitemscollection DROP COLUMN note;
 ALTER TABLE holdingsitemscollection RENAME TO issue;
+
+ALTER TABLE holdingsitemsitem
+    ADD COLUMN version INTEGER NOT NULL DEFAULT 0;
 
 ALTER TABLE holdingsitemsitem RENAME TO item;
 CREATE VIEW holdingsitemsitem AS SELECT * FROM item;
