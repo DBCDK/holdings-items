@@ -128,6 +128,8 @@ public class ItemEntity implements Serializable {
     public ItemEntity() {
         this.pk = new ItemKey();
         this.persist = false;
+        this.branchId = ""; // Newly created - branchId not part of 1.1
+        this.loanRestriction = LoanRestriction.EMPTY;
     }
 
     ItemEntity(IssueEntity owner, String itemId) {
@@ -137,6 +139,7 @@ public class ItemEntity implements Serializable {
         this.issueId = owner.getIssueId();
         this.itemId = itemId;
         this.status = Status.UNKNOWN;
+        this.branchId = ""; // Newly created - branchId not part of 1.1
         this.loanRestriction = LoanRestriction.EMPTY;
         this.owner = owner;
         this.persist = true;
