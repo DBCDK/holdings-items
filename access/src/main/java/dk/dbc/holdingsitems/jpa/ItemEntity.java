@@ -118,6 +118,10 @@ public class ItemEntity implements Serializable {
     @ManyToOne(cascade = CascadeType.ALL)
     IssueEntity owner;
 
+    public IssueEntity getOwner() {
+        return owner;
+    }
+
     @Transient
     transient boolean persist;
 
