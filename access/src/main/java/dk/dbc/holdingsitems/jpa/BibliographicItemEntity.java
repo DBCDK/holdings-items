@@ -168,13 +168,13 @@ public class BibliographicItemEntity implements Serializable {
             if (issues == null)
                 issues = new HashSet<>();
             issue = new IssueEntity(this, issueId);
-            issue.em = em;
             issue.setComplete(modified);
             issue.setCreated(modified);
             issue.setModified(modified);
             issue.setTrackingId(trackingId);
             issues.add(issue);
         }
+        issue.em = em;
         issue.pessimistic = pessimistic;
         issue.owner = this;
         return issue;
