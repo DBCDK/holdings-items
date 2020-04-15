@@ -73,8 +73,11 @@ public class UniqueFields {
         if (expectedDelivery != null)
             node.putArray(SolrFields.EXPECTED_DELIVERY.getFieldName()).add(expectedDelivery.toString());
         node.putArray(SolrFields.READY_FOR_LOAN.getFieldName()).add(String.valueOf(readyForLoan));
+        // TODO then all have branchId move branch to RepeatedFields
         node.putArray(SolrFields.BRANCH.getFieldName()).add(branch);
-        node.putArray(SolrFields.BRANCH_ID.getFieldName()).add(String.valueOf(branchId));
+        // TODO - whan all have branchId this check isn't nessecary
+        if (branchId != null && !branchId.isEmpty())
+            node.putArray(SolrFields.BRANCH_ID.getFieldName()).add(String.valueOf(branchId));
         node.putArray(SolrFields.DEPARTMENT.getFieldName()).add(department);
         node.putArray(SolrFields.LOCATION.getFieldName()).add(location);
         node.putArray(SolrFields.SUBLOCATION.getFieldName()).add(subLocation);
