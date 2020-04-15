@@ -27,7 +27,6 @@ import dk.dbc.holdingsitems.HoldingsItemsException;
 import dk.dbc.holdingsitems.jpa.BibliographicItemEntity;
 import dk.dbc.holdingsitems.jpa.IssueEntity;
 import dk.dbc.holdingsitems.jpa.ItemEntity;
-import dk.dbc.holdingsitems.jpa.LoanRestriction;
 import dk.dbc.holdingsitems.jpa.Status;
 import dk.dbc.log.LogWith;
 import dk.dbc.oss.ns.holdingsitemsupdate.Authentication;
