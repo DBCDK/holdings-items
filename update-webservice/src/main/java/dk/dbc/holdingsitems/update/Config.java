@@ -55,7 +55,7 @@ public class Config {
     private String completeQueueList;
     private String onlineQueueListOld;
     private String onlineQueueList;
-    private Set<Integer> shouldLogXmlAgenciesSet;
+    private Set<String> shouldLogXmlAgenciesSet;
     private boolean disableAuthentication;
     private String forsRightsUrl;
     private long maxAgeMs;
@@ -87,6 +87,7 @@ public class Config {
         shouldLogXmlAgenciesSet = Arrays.stream(get("DEBUG_XML_AGENCIES", "").split(";"))
                 .filter(s -> !s.isEmpty())
                 .map(Integer::parseUnsignedInt)
+                .map(Object::toString)
                 .collect(Collectors.toSet());
         log.debug("shouldLogXmlAgenciesSet = {}", shouldLogXmlAgenciesSet);
         disableAuthentication = Boolean.valueOf(get("DISABLE_AUTHENTICATION", "false"));
@@ -165,7 +166,7 @@ public class Config {
         return rightsName;
     }
 
-    public boolean shouldLogXml(int agencyId) {
+    public boolean shouldLogXml(String agencyId) {
         return shouldLogXmlAgenciesSet.contains(agencyId);
     }
 

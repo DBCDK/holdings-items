@@ -360,11 +360,13 @@ public abstract class UpdateRequest {
                         .update(Status.parse(status.value()), modified);
                 item.setStatus(Status.parse(status.value()));
             }
-            String lr = holdingsItem.getLoanRestriction();
-            item.setLoanRestriction(LoanRestriction.parse(lr));
+// No loanRestriction in 1.1
+//            String lr = holdingsItem.getLoanRestriction();
+//            item.setLoanRestriction(LoanRestriction.parse(lr));
             item.setModified(modified);
             copyValue(holdingsItem::getBranch, item::setBranch);
-            copyValue(holdingsItem::getBranchId, item::setBranchId);
+// No branchId in 1.1
+//            copyValue(holdingsItem::getBranchId, item::setBranchId);
             copyValue(holdingsItem::getCirculationRule, item::setCirculationRule);
             copyValue(holdingsItem::getDepartment, item::setDepartment);
             copyValue(holdingsItem::getLocation, item::setLocation);

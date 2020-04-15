@@ -184,6 +184,8 @@ public class UpdateWebservice {
             logXml(req.getAgencyId(), req, req.getAuthentication());
             return handleRequest(new UpdateRequest(this) {
 
+                int agencyId = Integer.parseUnsignedInt(req.getAgencyId());
+
                 @Override
                 public Authentication getAuthentication() {
                     return req.getAuthentication();
@@ -191,7 +193,7 @@ public class UpdateWebservice {
 
                 @Override
                 public int getAgencyId() {
-                    return req.getAgencyId();
+                    return agencyId;
                 }
 
                 @Override
@@ -265,6 +267,8 @@ public class UpdateWebservice {
             logXml(req.getAgencyId(), req, req.getAuthentication());
             return handleRequest(new UpdateRequest(this) {
 
+                int agencyId = Integer.parseUnsignedInt(req.getAgencyId());
+
                 @Override
                 public Authentication getAuthentication() {
                     return req.getAuthentication();
@@ -272,7 +276,7 @@ public class UpdateWebservice {
 
                 @Override
                 public int getAgencyId() {
-                    return req.getAgencyId();
+                    return agencyId;
                 }
 
                 @Override
@@ -371,6 +375,8 @@ public class UpdateWebservice {
             logXml(req.getAgencyId(), req, req.getAuthentication());
             return handleRequest(new UpdateRequest(this) {
 
+                int agencyId = Integer.parseUnsignedInt(req.getAgencyId());
+
                 @Override
                 public Authentication getAuthentication() {
                     return req.getAuthentication();
@@ -378,7 +384,7 @@ public class UpdateWebservice {
 
                 @Override
                 public int getAgencyId() {
-                    return req.getAgencyId();
+                    return agencyId;
                 }
 
                 @Override
@@ -449,7 +455,7 @@ public class UpdateWebservice {
     }
 
     // CPD-ON
-    private void logXml(int agencyId, Object req, Authentication auth) {
+    private void logXml(String agencyId, Object req, Authentication auth) {
         if (config.shouldLogXml(agencyId)) {
             if (auth != null) {
                 String password = auth.getPasswordAut();
