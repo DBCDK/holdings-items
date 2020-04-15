@@ -59,8 +59,10 @@ import javax.xml.datatype.DatatypeFactory;
 import javax.xml.datatype.XMLGregorianCalendar;
 import javax.xml.ws.WebServiceContext;
 import javax.xml.ws.handler.MessageContext;
+import org.hamcrest.Matchers;
 import org.junit.Test;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.*;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.*;
@@ -172,12 +174,7 @@ public class UpdateWebserviceIT extends JpaBase {
                     .holdingsItemsUpdate(updateReq1());
         });
         getQueue(); // Just for logging
-
-        try (Connection connection = dataSource.getConnection() ;
-             Statement stmt = connection.createStatement()) {
-            stmt.executeUpdate("TRUNCATE q");
-            stmt.executeUpdate("TRUNCATE queue");
-        }
+        clearQueue();
 
         jpa(em -> {
             mockUpdateWebservice(em)
@@ -211,12 +208,7 @@ public class UpdateWebserviceIT extends JpaBase {
                     .completeHoldingsItemsUpdate(completeReq1());
         });
         getQueue(); // Just for logging
-
-        try (Connection connection = dataSource.getConnection() ;
-             Statement stmt = connection.createStatement()) {
-            stmt.executeUpdate("TRUNCATE q");
-            stmt.executeUpdate("TRUNCATE queue");
-        }
+        clearQueue();
 
         jpa(em -> {
             mockUpdateWebservice(em)
@@ -248,12 +240,7 @@ public class UpdateWebserviceIT extends JpaBase {
                     .completeHoldingsItemsUpdate(completeReq1());
         });
         getQueue(); // Just for logging
-
-        try (Connection connection = dataSource.getConnection() ;
-             Statement stmt = connection.createStatement()) {
-            stmt.executeUpdate("TRUNCATE q");
-            stmt.executeUpdate("TRUNCATE queue");
-        }
+        clearQueue();
 
         jpa(em -> {
             mockUpdateWebservice(em)
@@ -351,8 +338,8 @@ public class UpdateWebserviceIT extends JpaBase {
             assertEquals(LoanRestriction.EMPTY, itemNotSet.getLoanRestriction());
         }
 
-        // Set to X
-        System.out.println("Set loanRestriction to 'X'");
+        // Set to e
+        System.out.println("Set loanRestriction to 'e'");
         {
             jpa(em -> {
                 HoldingsItem item = item("it1-1", branch, "234567", department, location, subLocation, circulationRule,
@@ -375,7 +362,7 @@ public class UpdateWebserviceIT extends JpaBase {
         }
 
         // Set to null
-        System.out.println("Set loanRestriction to unspecified (retain)");
+        System.out.println("Set loanRestriction to unspecified (same as empty)");
         {
             jpa(em -> {
                 HoldingsItem item = item("it1-1", branch, "234567", department, location, subLocation, circulationRule,
@@ -396,6 +383,54 @@ public class UpdateWebserviceIT extends JpaBase {
                     .stream().findFirst().orElseThrow(() -> new RuntimeException("No items"));
             assertEquals(LoanRestriction.EMPTY, itemRetain.getLoanRestriction());
             assertEquals(Instant.parse("2017-09-07T09:09:02.000Z"), itemRetain.getModified());
+        }
+    }
+
+    @Test(timeout = 2_000L)
+    public void testDecommissionedInQueueJson() throws Exception {
+        System.out.println("testDecommissionedInQueueJson");
+
+        {
+            clearQueue();
+            jpa(em -> {
+                HoldingsItem item = item("it1-1", branch, "234567", department, location, subLocation, circulationRule,
+                                         StatusType.ON_SHELF, date("2017-01-01"));
+                item.setLoanRestriction(null);
+                HoldingsItemsUpdateRequest req =
+                        holdingsItemsUpdateRequest(101010, null, "track-update-1",
+                                                   bibliographicItem("12345678", modified("2017-09-07T09:09:00.000Z"), "Original Note",
+                                                                     holding("I1", "Issue #1", date("2199-01-01"), 0, item)));
+                mockUpdateWebservice(em).holdingsItemsUpdate(req);
+            });
+
+            HashMap<String, Set<String>> queue = getQueue();
+            assertTrue(queue.containsKey("update"));
+            assertEquals(1, queue.get("update").size());
+            String queued = queue.get("update").iterator().next();
+            String json = queued.substring(queued.lastIndexOf('|') + 1);
+            assertThat(json, containsString("\"newStatus\":\"OnShelf\""));
+            assertThat(json, containsString("\"oldStatus\":\"UNKNOWN\""));
+        }
+        {
+            clearQueue();
+            jpa(em -> {
+                HoldingsItem item = item("it1-1", branch, "234567", department, location, subLocation, circulationRule,
+                                         StatusType.DECOMMISSIONED, date("2017-01-01"));
+                item.setLoanRestriction(null);
+                HoldingsItemsUpdateRequest req =
+                        holdingsItemsUpdateRequest(101010, null, "track-update-1",
+                                                   bibliographicItem("12345678", modified("2017-09-07T09:09:00.001Z"), "Original Note",
+                                                                     holding("I1", "Issue #1", date("2199-01-01"), 0, item)));
+                mockUpdateWebservice(em).holdingsItemsUpdate(req);
+            });
+
+            HashMap<String, Set<String>> queue = getQueue();
+            assertTrue(queue.containsKey("update"));
+            assertEquals(1, queue.get("update").size());
+            String queued = queue.get("update").iterator().next();
+            String json = queued.substring(queued.lastIndexOf('|') + 1);
+            assertThat(json, containsString("\"newStatus\":\"Decommissioned\""));
+            assertThat(json, containsString("\"oldStatus\":\"OnShelf\""));
         }
     }
 
@@ -541,6 +576,14 @@ public class UpdateWebserviceIT extends JpaBase {
         doCallRealMethod().when(mock).completeHoldingsItemsUpdate(anyObject());
         doCallRealMethod().when(mock).onlineHoldingsItemsUpdate(anyObject());
         return mock;
+    }
+
+    private void clearQueue() throws SQLException {
+        try (Connection connection = dataSource.getConnection() ;
+             Statement stmt = connection.createStatement()) {
+            stmt.executeUpdate("TRUNCATE q");
+            stmt.executeUpdate("TRUNCATE queue");
+        }
     }
 
     private HashMap<String, Set<String>> getQueue() throws SQLException {
