@@ -17,7 +17,7 @@ public class DatabaseMigratorStartup {
 
     private static final Logger log = LoggerFactory.getLogger(DatabaseMigratorStartup.class);
 
-    @Resource(lookup = "jdbc/holdingsitems")
+    @Resource(lookup = "jdbc/holdings-items")
     DataSource dataSource;
 
     @PostConstruct

@@ -49,6 +49,6 @@ public class C {
 //    public static final String DEBUG_XML_AGENCIES = "debugXmlAgencies";
 //    public static final String DEBUG_XML_AGENCIES_DEFAULT = "";
 
-    public static final String DATASOURCE = "jdbc/holdingsitems";
+    public static final String DATASOURCE = "jdbc/holdings-items";
 
 }
