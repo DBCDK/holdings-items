@@ -45,6 +45,7 @@ import javax.persistence.NamedQuery;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.persistence.Transient;
+import javax.persistence.Version;
 
 import static java.util.Collections.EMPTY_SET;
 
@@ -126,6 +127,9 @@ public class IssueEntity implements Serializable {
         return owner;
     }
 
+    @Version
+    int version;
+
     @Transient
     transient boolean persist;
 
@@ -133,7 +137,7 @@ public class IssueEntity implements Serializable {
     transient EntityManager em;
 
     @Transient
-    transient boolean pessimistic; // If entities fetched by this entity should be pessimistic_write locked
+    transient boolean optimisticForceIncrement; // If entities fetched by this entity should be optiistic_force_increment locked
 
     public static List<IssueEntity> byAgencyBibliographic(EntityManager em, int agencyId, String bibliographicRecordId) {
         List<IssueEntity> list = em.createNamedQuery("byAgencyBibliographic", IssueEntity.class)
@@ -168,7 +172,7 @@ public class IssueEntity implements Serializable {
             res.setUpdated(Instant.now());
         }
         res.em = em;
-        res.pessimistic = owner.pessimistic;
+        res.optimisticForceIncrement = owner.optimisticForceIncrement;
         return res;
     }
 
@@ -220,7 +224,7 @@ public class IssueEntity implements Serializable {
      */
     public ItemEntity item(String itemId, Instant modified) {
         ItemEntity item = em.find(ItemEntity.class, new ItemKey(agencyId, bibliographicRecordId, issueId, itemId),
-                                  pessimistic ? LockModeType.PESSIMISTIC_WRITE : LockModeType.NONE);
+                                  optimisticForceIncrement ? LockModeType.OPTIMISTIC_FORCE_INCREMENT : LockModeType.NONE);
         if (item == null) {
             if (items == null)
                 items = new HashSet<>();

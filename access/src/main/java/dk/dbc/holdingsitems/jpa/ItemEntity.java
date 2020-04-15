@@ -35,6 +35,7 @@ import javax.persistence.ManyToOne;
 import javax.persistence.MapsId;
 import javax.persistence.Table;
 import javax.persistence.Transient;
+import javax.persistence.Version;
 
 /**
  *
@@ -103,6 +104,9 @@ public class ItemEntity implements Serializable {
 
     @Column(nullable = false)
     private String trackingId;
+
+    @Version
+    int version;
 
     @MapsId("collection") // Refers to pk(ItemKey).collection
     // Columns needs to be insertable=false, updatable=false to not collide with mirrored fields
