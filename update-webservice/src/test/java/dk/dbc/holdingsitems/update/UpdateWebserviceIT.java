@@ -59,6 +59,7 @@ import javax.xml.datatype.DatatypeFactory;
 import javax.xml.datatype.XMLGregorianCalendar;
 import javax.xml.ws.WebServiceContext;
 import javax.xml.ws.handler.MessageContext;
+import org.hamcrest.Matchers;
 import org.junit.Test;
 
 import static org.hamcrest.Matchers.containsString;
