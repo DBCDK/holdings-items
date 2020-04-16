@@ -24,7 +24,6 @@ public class ResponseHoldingEntity {
     public String circulationRule;
     public int readyForLoan;
     public String note;
-    public String loanRestriction;
 
     public ResponseHoldingEntity(ItemEntity holdingsItem) {
         IssueEntity collection = holdingsItem.getOwner();
@@ -42,7 +41,6 @@ public class ResponseHoldingEntity {
         this.circulationRule = holdingsItem.getCirculationRule();
         this.readyForLoan = collection.getReadyForLoan();
         this.note = bibliographicItemEntity.getNote();
-        this.loanRestriction = holdingsItem.getLoanRestriction().toString();
     }
 
     public static List<ResponseHoldingEntity> listFromItems(Iterable<ItemEntity> holdingsItems) {
