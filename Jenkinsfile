@@ -140,7 +140,7 @@ pipeline {
                 script {
                     if (env.BRANCH_NAME ==~ /master|trunk|1-1-99/) {
                         sh """
-                            mvn -Dmaven.repo.local=\$WORKSPACE/.repo jar:jar deploy:deploy
+                            mvn -Dmaven.repo.local=\$WORKSPACE/.repo -DskipTests -DskipITs package deploy:deploy
                         """
                     }
                 }
