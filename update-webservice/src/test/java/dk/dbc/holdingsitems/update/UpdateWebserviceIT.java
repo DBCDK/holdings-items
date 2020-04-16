@@ -434,6 +434,68 @@ public class UpdateWebserviceIT extends JpaBase {
         }
     }
 
+    @Test(timeout = 2_000L)
+    public void testThat114TypeGetAgenciesThatHasHoldingsForWorks() throws Exception {
+        System.out.println("testThat114TypeGetAgenciesThatHasHoldingsForWorks");
+
+        jpa(em -> {
+            HoldingsItem item = item("it1-1", branch, "234567", department, location, subLocation, circulationRule,
+                                     StatusType.DECOMMISSIONED, date("2017-01-01"));
+            item.setLoanRestriction(null);
+            HoldingsItemsUpdateRequest req =
+                    holdingsItemsUpdateRequest(101010, null, "track-update-1",
+                                               bibliographicItem("12345678", modified("2017-09-07T09:09:00.001Z"), "Original Note",
+                                                                 holding("I1", "Issue #1", date("2199-01-01"), 0, item)));
+            mockUpdateWebservice(em).holdingsItemsUpdate(req);
+        });
+        jpa(em -> {
+            HoldingsItem item = item("it1-1", branch, "234567", department, location, subLocation, circulationRule,
+                                     StatusType.ON_LOAN, date("2017-01-01"));
+            item.setLoanRestriction(null);
+            HoldingsItemsUpdateRequest req =
+                    holdingsItemsUpdateRequest(101011, null, "track-update-1",
+                                               bibliographicItem("12345678", modified("2017-09-07T09:09:00.001Z"), "Original Note",
+                                                                 holding("I1", "Issue #1", date("2199-01-01"), 0, item)));
+            mockUpdateWebservice(em).holdingsItemsUpdate(req);
+        });
+        jpa(em -> {
+            HoldingsItem item = item("it1-1", branch, "234567", department, location, subLocation, circulationRule,
+                                     StatusType.ON_SHELF, date("2017-01-01"));
+            item.setLoanRestriction(null);
+            HoldingsItemsUpdateRequest req =
+                    holdingsItemsUpdateRequest(101012, null, "track-update-1",
+                                               bibliographicItem("12345678", modified("2017-09-07T09:09:00.001Z"), "Original Note",
+                                                                 holding("I1", "Issue #1", date("2199-01-01"), 0, item)));
+            mockUpdateWebservice(em).holdingsItemsUpdate(req);
+        });
+
+        try (Connection connection = dataSource.getConnection()) {
+            Set<Integer> agencies = getAgenciesThatHasHoldingsFor114(connection, "12345678");
+            assertThat(agencies, Matchers.containsInAnyOrder(101011, 101012));
+        }
+    }
+
+    // 1.1.4 START
+    private static final String AGENCIES_WITH_BIBLIOGRAPHICRECORDID = "SELECT DISTINCT agencyId FROM holdingsitemscollection" +
+                                                                      " JOIN holdingsitemsitem USING(agencyId, bibliographicRecordId, issueId)" +
+                                                                      " WHERE bibliographicRecordId=? AND status != 'Decommissioned'";
+
+    public Set<Integer> getAgenciesThatHasHoldingsFor114(Connection connection, String bibliographicRecordId) throws SQLException {
+        HashSet agencies = new HashSet<Integer>();
+
+        try (PreparedStatement stmt = connection.prepareStatement(AGENCIES_WITH_BIBLIOGRAPHICRECORDID)) {
+            stmt.setString(1, bibliographicRecordId);
+            try (ResultSet resultSet = stmt.executeQuery()) {
+                while (resultSet.next()) {
+                    int agency = resultSet.getInt(1);
+                    agencies.add(agency);
+                }
+            }
+        }
+        return agencies;
+    }
+    // 1.1.4 END
+
     public HoldingsItemsUpdateRequest updateReq1() throws DatatypeConfigurationException {
         return holdingsItemsUpdateRequest(
                 101010, null, "track-update-1",
