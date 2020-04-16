@@ -96,5 +96,4 @@ ALTER TABLE holdingsitemsitem
     ADD COLUMN version INTEGER NOT NULL DEFAULT 0;
 
 ALTER TABLE holdingsitemsitem RENAME TO item;
-CREATE VIEW holdingsitemsitem AS SELECT * FROM item;
 
