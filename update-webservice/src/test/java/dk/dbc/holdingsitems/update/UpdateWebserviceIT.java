@@ -59,6 +59,7 @@ import javax.xml.datatype.DatatypeFactory;
 import javax.xml.datatype.XMLGregorianCalendar;
 import javax.xml.ws.WebServiceContext;
 import javax.xml.ws.handler.MessageContext;
+import org.hamcrest.Matchers;
 import org.junit.Test;
 
 import static org.hamcrest.Matchers.containsString;
@@ -431,31 +432,28 @@ public class UpdateWebserviceIT extends JpaBase {
         System.out.println("testThat114TypeGetAgenciesThatHasHoldingsForWorks");
 
         jpa(em -> {
-            HoldingsItem item = item("it1-1", branch, "234567", department, location, subLocation, circulationRule,
+            HoldingsItem item = item("it1-1", branch, department, location, subLocation, circulationRule,
                                      StatusType.DECOMMISSIONED, date("2017-01-01"));
-            item.setLoanRestriction(null);
             HoldingsItemsUpdateRequest req =
-                    holdingsItemsUpdateRequest(101010, null, "track-update-1",
+                    holdingsItemsUpdateRequest("101010", null, "track-update-1",
                                                bibliographicItem("12345678", modified("2017-09-07T09:09:00.001Z"), "Original Note",
                                                                  holding("I1", "Issue #1", date("2199-01-01"), 0, item)));
             mockUpdateWebservice(em).holdingsItemsUpdate(req);
         });
         jpa(em -> {
-            HoldingsItem item = item("it1-1", branch, "234567", department, location, subLocation, circulationRule,
+            HoldingsItem item = item("it1-1", branch, department, location, subLocation, circulationRule,
                                      StatusType.ON_LOAN, date("2017-01-01"));
-            item.setLoanRestriction(null);
             HoldingsItemsUpdateRequest req =
-                    holdingsItemsUpdateRequest(101011, null, "track-update-1",
+                    holdingsItemsUpdateRequest("101011", null, "track-update-1",
                                                bibliographicItem("12345678", modified("2017-09-07T09:09:00.001Z"), "Original Note",
                                                                  holding("I1", "Issue #1", date("2199-01-01"), 0, item)));
             mockUpdateWebservice(em).holdingsItemsUpdate(req);
         });
         jpa(em -> {
-            HoldingsItem item = item("it1-1", branch, "234567", department, location, subLocation, circulationRule,
+            HoldingsItem item = item("it1-1", branch, department, location, subLocation, circulationRule,
                                      StatusType.ON_SHELF, date("2017-01-01"));
-            item.setLoanRestriction(null);
             HoldingsItemsUpdateRequest req =
-                    holdingsItemsUpdateRequest(101012, null, "track-update-1",
+                    holdingsItemsUpdateRequest("101012", null, "track-update-1",
                                                bibliographicItem("12345678", modified("2017-09-07T09:09:00.001Z"), "Original Note",
                                                                  holding("I1", "Issue #1", date("2199-01-01"), 0, item)));
             mockUpdateWebservice(em).holdingsItemsUpdate(req);
