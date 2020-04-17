@@ -144,30 +144,6 @@ pipeline {
             }
         }
 
-        stage("Update DIT") {
-            agent {
-                docker {
-                    label workerNode
-                    image "docker.dbc.dk/build-env:latest"
-                    alwaysPull true
-                }
-            }
-            when {
-                expression {
-                    (currentBuild.result == null || currentBuild.result == 'SUCCESS') && env.BRANCH_NAME == '1-1-4'
-                }
-            }
-            steps {
-                script {
-                    dir("deploy") {
-                        sh "set-new-version services/search/holdings-items-indexer.yml ${env.GITLAB_PRIVATE_TOKEN} metascrum/dit-gitops-secrets ${DOCKER_PUSH_TAG} -b master"
-                        sh "set-new-version services/search/holdings-items-content-service.yml ${env.GITLAB_PRIVATE_TOKEN} metascrum/dit-gitops-secrets ${DOCKER_PUSH_TAG} -b master"
-                        sh "set-new-version migrator/holdings-items-update-1-1.yml ${env.GITLAB_PRIVATE_TOKEN} metascrum/dit-gitops-secrets ${DOCKER_PUSH_TAG} -b master"
-                    }
-                }
-            }
-        }
-
     }
     post {
         success {
