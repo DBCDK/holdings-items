@@ -46,21 +46,16 @@ public class MigrateMain {
 
         }
         String username = matcher.group(1);
-        System.out.println("username = " + username);
         String password = matcher.group(2);
-        System.out.println("password = " + password);
         String hostname = matcher.group(3);
-        System.out.println("hostname = " + hostname);
         String port = matcher.group(4);
-        System.out.println("port = " + port);
         String database = matcher.group(5);
-        System.out.println("database = " + database);
 
         PGSimpleDataSource ds = new PGSimpleDataSource();
         if (username != null)
             ds.setUser(username);
         if (password != null)
-            ds.setPassword(username);
+            ds.setPassword(password);
         ds.setServerName(hostname);
         if (port != null)
             ds.setPortNumber(Integer.parseUnsignedInt(port));
