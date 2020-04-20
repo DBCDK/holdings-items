@@ -165,7 +165,7 @@ public class WorkerIT extends JpaBase {
                 ObjectNode rpo1 = findSubDocContaining(subDocs, "/holdingsitem.itemId", "rpo1");
                 log.debug("rpo1 = {}", rpo1);
                 assertEquals(O.readTree("{\"holdingsitem.note\":[\"any-text\"]," +
-                                        "\"holdingsitem.firstAccessionDate\":[\"2019-03-04\"]," +
+                                        "\"holdingsitem.firstAccessionDate\":[\"2019-03-04T00:00:00Z\"]," +
                                         "\"holdingsitem.agencyId\":[\"700000\"]," +
                                         "\"holdingsitem.bibliographicRecordId\":[\"87654321\"]," +
                                         "\"rec.bibliographicRecordId\":[\"87654321\"]," +
@@ -178,7 +178,7 @@ public class WorkerIT extends JpaBase {
                                         "\"holdingsitem.location\":[\"\"]," +
                                         "\"holdingsitem.subLocation\":[\"\"]," +
                                         "\"holdingsitem.circulationRule\":[\"\"]," +
-                                        "\"holdingsitem.accessionDate\":[\"2016-02-03T00:00:00.000Z\"]," +
+                                        "\"holdingsitem.accessionDate\":[\"2016-02-03T00:00:00Z\"]," +
                                         "\"holdingsitem.collectionId\":[\"700000-87654321\"]," +
                                         "\"holdingsitem.itemId\":[\"rpo1\"]," +
                                         "\"holdingsitem.status\":[\"OnLoan\"]," +
@@ -187,7 +187,7 @@ public class WorkerIT extends JpaBase {
                 ObjectNode rpo2 = findSubDocContaining(subDocs, "/holdingsitem.itemId", "rpo2");
                 log.debug("rpo2 = {}", rpo2);
                 assertEquals(O.readTree("{\"holdingsitem.note\":[\"any-text\"]," +
-                                        "\"holdingsitem.firstAccessionDate\":[\"2019-03-04\"]," +
+                                        "\"holdingsitem.firstAccessionDate\":[\"2019-03-04T00:00:00Z\"]," +
                                         "\"holdingsitem.agencyId\":[\"700000\"]," +
                                         "\"holdingsitem.bibliographicRecordId\":[\"87654321\"]," +
                                         "\"rec.bibliographicRecordId\":[\"87654321\"]," +
@@ -200,7 +200,7 @@ public class WorkerIT extends JpaBase {
                                         "\"holdingsitem.location\":[\"\"]," +
                                         "\"holdingsitem.subLocation\":[\"\"]," +
                                         "\"holdingsitem.circulationRule\":[\"\"]," +
-                                        "\"holdingsitem.accessionDate\":[\"2015-01-02T00:00:00.000Z\"]," +
+                                        "\"holdingsitem.accessionDate\":[\"2015-01-02T00:00:00Z\"]," +
                                         "\"holdingsitem.loanRestriction\":[\"e\"]," +
                                         "\"holdingsitem.collectionId\":[\"700000-87654321\"]," +
                                         "\"holdingsitem.itemId\":[\"rpo2\"]," +
