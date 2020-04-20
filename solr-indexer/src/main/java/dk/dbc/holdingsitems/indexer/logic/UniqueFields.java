@@ -24,6 +24,8 @@ import dk.dbc.holdingsitems.jpa.ItemEntity;
 import dk.dbc.holdingsitems.jpa.LoanRestriction;
 
 import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.Objects;
 
 /**
@@ -71,7 +73,7 @@ public class UniqueFields {
         node.putArray(SolrFields.ISSUE_ID.getFieldName()).add(issueId);
         node.putArray(SolrFields.ISSUE_TEXT.getFieldName()).add(issueText);
         if (expectedDelivery != null)
-            node.putArray(SolrFields.EXPECTED_DELIVERY.getFieldName()).add(expectedDelivery.toString());
+            node.putArray(SolrFields.EXPECTED_DELIVERY.getFieldName()).add(isoDate(expectedDelivery));
         node.putArray(SolrFields.READY_FOR_LOAN.getFieldName()).add(String.valueOf(readyForLoan));
         // TODO then all have branchId move branch to RepeatedFields
         node.putArray(SolrFields.BRANCH.getFieldName()).add(branch);
@@ -82,10 +84,14 @@ public class UniqueFields {
         node.putArray(SolrFields.LOCATION.getFieldName()).add(location);
         node.putArray(SolrFields.SUBLOCATION.getFieldName()).add(subLocation);
         node.putArray(SolrFields.CIRCULATION_RULE.getFieldName()).add(circulationRule);
-        node.putArray(SolrFields.ACCESSION_DATE.getFieldName()).add(String.valueOf(accessionDate) + "T00:00:00.000Z");
+        node.putArray(SolrFields.ACCESSION_DATE.getFieldName()).add(isoDate(accessionDate));
         if (loanRestriction != null && !loanRestriction.toString().isEmpty())
             node.putArray(SolrFields.LOAN_RESTRICTION.getFieldName()).add(loanRestriction.toString());
         node.putArray(SolrFields.COLLECTION_ID.getFieldName()).add(String.valueOf(agencyId) + "-" + bibliographicRecordId.replaceAll("[^0-9a-zA-Z]", "_"));
+    }
+
+    static String isoDate(LocalDate date) {
+        return DateTimeFormatter.ISO_INSTANT.format(date.atStartOfDay().toInstant(ZoneOffset.UTC));
     }
 
     @Override
