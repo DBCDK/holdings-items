@@ -41,7 +41,7 @@ CREATE TABLE bibliographicitem AS
          note_of(agencyid, bibliographicrecordid) AS note,
          firstAccessionDate_of(agencyid, bibliographicrecordid) AS firstaccessiondate,
          modified_of(agencyid, bibliographicrecordid) AS modified,
-         'migrate' AS trackingId,
+         CAST('migrate' AS VARCHAR(256)) AS trackingId,
          0 AS version
    FROM holdingsitemscollection GROUP BY agencyid, bibliographicrecordid;
 -- 36 / 32
@@ -61,6 +61,8 @@ ALTER TABLE bibliographicitem
   ALTER COLUMN modified SET NOT NULL;
 ALTER TABLE bibliographicitem
   ALTER COLUMN modified SET DEFAULT timeofday()::timestamp;
+ALTER TABLE bibliographicitem
+    ALTER COLUMN trackingId SET DEFAULT '';
 ALTER TABLE bibliographicitem
   ALTER COLUMN trackingid SET NOT NULL;
 ALTER TABLE bibliographicitem
