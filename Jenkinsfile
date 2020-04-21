@@ -1,3 +1,5 @@
+def workerNode = 'devel10'
+
 if (env.BRANCH_NAME == 'master') {
     properties([
         disableConcurrentBuilds(),
@@ -12,7 +14,7 @@ if (env.BRANCH_NAME == 'master') {
     ])
 }
 pipeline {
-    agent { label "devel10" }
+    agent { label workerNode }
     tools {
         maven "maven 3.5"
     }
