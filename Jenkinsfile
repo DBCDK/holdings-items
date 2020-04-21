@@ -20,6 +20,8 @@ pipeline {
     }
     environment {
         MAVEN_OPTS = "-XX:+TieredCompilation -XX:TieredStopAtLevel=1"
+        DOCKER_PUSH_TAG = "${env.BUILD_NUMBER}"
+        GITLAB_PRIVATE_TOKEN = credentials("metascrum-gitlab-api-token")
     }
     triggers {
         pollSCM("H/3 * * * *")
