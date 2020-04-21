@@ -1,3 +1,5 @@
+def workerNode = 'devel10'
+
 if (env.BRANCH_NAME == 'master') {
     properties([
         disableConcurrentBuilds(),
@@ -12,7 +14,7 @@ if (env.BRANCH_NAME == 'master') {
     ])
 }
 pipeline {
-    agent { label "devel10" }
+    agent { label workerNode }
     tools {
         maven "maven 3.5"
     }
@@ -139,7 +141,32 @@ pipeline {
                 }
             }
         }
+        stage("Update DIT") {
+            agent {
+                docker {
+                    label workerNode
+                    image "docker.dbc.dk/build-env:latest"
+                    alwaysPull true
+                }
+            }
+            when {
+                expression {
+                    (currentBuild.result == null || currentBuild.result == 'SUCCESS') && env.BRANCH_NAME == 'master'
+                }
+            }
+            steps {
+                script {
+                    dir("deploy") {
+//                        sh "set-new-version databases/holdings-items-db.yml ${env.GITLAB_PRIVATE_TOKEN} metascrum/dit-gitops-secrets ${DOCKER_PUSH_TAG} -b master"
+//                        sh "set-new-version services/search/holdings-items-indexer.yml ${env.GITLAB_PRIVATE_TOKEN} metascrum/dit-gitops-secrets ${DOCKER_PUSH_TAG} -b master"
+//                        sh "set-new-version services/search/holdings-items-content-service.yml ${env.GITLAB_PRIVATE_TOKEN} metascrum/dit-gitops-secrets ${DOCKER_PUSH_TAG} -b master"
+                        sh "set-new-version migrator/holdings-items-update-1-2.yml ${env.GITLAB_PRIVATE_TOKEN} metascrum/dit-gitops-secrets ${DOCKER_PUSH_TAG} -b master"
+                    }
+                }
+            }
+        }
     }
+
     post {
         failure {
             script {
