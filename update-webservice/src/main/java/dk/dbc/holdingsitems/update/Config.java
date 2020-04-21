@@ -86,7 +86,7 @@ public class Config {
         splitQueue(get("ONLINE_QUEUE_LIST"), s -> onlineQueueList = s, s -> onlineQueueListOld = s);
         shouldLogXmlAgenciesSet = Arrays.stream(get("DEBUG_XML_AGENCIES", "").split(";"))
                 .filter(s -> !s.isEmpty())
-                .map(Integer::parseUnsignedInt)
+                .map(Integer::parseInt)
                 .map(Object::toString)
                 .collect(Collectors.toSet());
         log.debug("shouldLogXmlAgenciesSet = {}", shouldLogXmlAgenciesSet);

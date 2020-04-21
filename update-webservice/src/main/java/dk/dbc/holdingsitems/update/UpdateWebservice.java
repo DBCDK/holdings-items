@@ -456,7 +456,7 @@ public class UpdateWebservice {
 
     // CPD-ON
     private void logXml(String agencyId, Object req, Authentication auth) {
-        if (config.shouldLogXml(agencyId)) {
+        if (config.shouldLogXml(agencyId) || config.shouldLogXml("-1")) {
             if (auth != null) {
                 String password = auth.getPasswordAut();
                 auth.setPasswordAut("[REDACTED]");
