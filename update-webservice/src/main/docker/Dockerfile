@@ -15,6 +15,6 @@ LABEL HOLDINGS_ITEMS_POSTGRES_URL="Url pointing at holdings items postgres (requ
       RIGHTS_GROUP="Authentication group (required if authentication is enabled)" \
       RIGHTS_NAME="Authentication Name (required if authentication is enabled)" \
       MAX_POOL_SIZE="JDBC connection pool parameter (optional, default is 32)" \
-      DEBUG_XML_AGENCIES="List of agencies that should have logged requests"
+      DEBUG_XML_AGENCIES="List of agencies that should have logged requests, -1 is all (optional)"
 
 COPY target/${project.build.finalName}.war target/docker/app.json deployments/
