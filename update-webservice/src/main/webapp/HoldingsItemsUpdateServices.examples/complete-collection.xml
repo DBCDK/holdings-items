@@ -2,6 +2,7 @@
 <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:hol="http://oss.dbc.dk/ns/holdingsItemsUpdate">
     <soapenv:Header/>
     <soapenv:Body>
+
         <hol:completeHoldingsItemsUpdate>
             <hol:completeHoldingsItemsUpdateRequest>
                 <!-- optional -->
@@ -16,32 +17,43 @@
                     <hol:bibliographicRecordId>87654321</hol:bibliographicRecordId>
                     <!-- <hol:note> ? </hol:note> -->
                     <hol:modificationTimeStamp>
-                        <hol:modificationDateTime>2016-01-01T01:00:00Z</hol:modificationDateTime>
+                        <hol:modificationDateTime>%{ NOW(); }%</hol:modificationDateTime>
                         <hol:modificationMilliSeconds>0</hol:modificationMilliSeconds>
                     </hol:modificationTimeStamp>
                     <!--0 to 100 repetitions:-->
                     <hol:holding>
-                        <hol:expectedDeliveryDate>2199-12-31</hol:expectedDeliveryDate>
+                        <hol:expectedDeliveryDate>%{
+                            var daysFromNow = 3;
+                            var now = new Date().getTime();
+                            var then = now + daysFromNow * 24 * 60 * 60 * 1000;
+                            new Date(then).toISOString().replace(/T.*/, '');
+                            }%</hol:expectedDeliveryDate>
                         <hol:readyForLoan>-1</hol:readyForLoan>
                         <hol:issueId>10:01</hol:issueId>
                         <hol:issueText>Year #10 Issue #1</hol:issueText>
                         <hol:holdingsItem>
                             <hol:itemId>1</hol:itemId>
+                            <hol:branchId>a1</hol:branchId>
                             <hol:branch>The County</hol:branch>
                             <hol:department>The House</hol:department>
                             <hol:location>The Basement</hol:location>
-                            <hol:subLocation>The Self</hol:subLocation>
+                            <hol:subLocation>The Shelf</hol:subLocation>
                             <hol:circulationRule>Stays in the basement</hol:circulationRule>
+                            <!-- optional -->
+                            <hol:loanRestriction></hol:loanRestriction>
                             <hol:status>NotForLoan</hol:status>
                             <hol:accessionDate>2014-06-26</hol:accessionDate>
                         </hol:holdingsItem>
                         <hol:holdingsItem>
                             <hol:itemId>2</hol:itemId>
+                            <hol:branchId>a1</hol:branchId>
                             <hol:branch>The County</hol:branch>
                             <hol:department>The House</hol:department>
                             <hol:location>The Library</hol:location>
-                            <hol:subLocation>The Self</hol:subLocation>
+                            <hol:subLocation>The Shelf</hol:subLocation>
                             <hol:circulationRule>None</hol:circulationRule>
+                            <!-- optional -->
+                            <hol:loanRestriction></hol:loanRestriction>
                             <hol:status>OnShelf</hol:status>
                             <hol:accessionDate>2014-06-26</hol:accessionDate>
                         </hol:holdingsItem>

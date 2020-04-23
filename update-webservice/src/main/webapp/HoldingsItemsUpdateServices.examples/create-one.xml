@@ -16,21 +16,29 @@
                     <hol:bibliographicRecordId>87654321</hol:bibliographicRecordId>
                     <!-- <hol:note> ? </hol:note> -->
                     <hol:modificationTimeStamp>
-                        <hol:modificationDateTime>2015-01-01T00:00:00Z</hol:modificationDateTime>
+                        <hol:modificationDateTime>%{ NOW(); }%</hol:modificationDateTime>
                         <hol:modificationMilliSeconds>0</hol:modificationMilliSeconds>
                     </hol:modificationTimeStamp>
                     <hol:holding>
-                        <hol:expectedDeliveryDate>2020-12-24</hol:expectedDeliveryDate>
+                        <hol:expectedDeliveryDate>%{
+                            var daysFromNow = 3;
+                            var now = new Date().getTime();
+                            var then = now + daysFromNow * 24 * 60 * 60 * 1000;
+                            new Date(then).toISOString().replace(/T.*/, '');
+                            }%</hol:expectedDeliveryDate>
                         <hol:readyForLoan>-1</hol:readyForLoan>
                         <hol:issueId>00:1</hol:issueId>
                         <hol:issueText>Some description</hol:issueText>
                         <hol:holdingsItem>
                             <hol:itemId>3</hol:itemId>
+                            <hol:branchId>a1</hol:branchId>
                             <hol:branch>The County</hol:branch>
                             <hol:department>The House</hol:department>
                             <hol:location>The Kitchen</hol:location>
                             <hol:subLocation>The Countertop</hol:subLocation>
                             <hol:circulationRule>None</hol:circulationRule>
+                            <!-- optional -->
+                            <hol:loanRestriction></hol:loanRestriction>
                             <hol:status>Online</hol:status>
                             <hol:accessionDate>2014-06-26</hol:accessionDate>
                         </hol:holdingsItem>

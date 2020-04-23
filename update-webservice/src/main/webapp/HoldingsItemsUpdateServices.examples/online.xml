@@ -15,7 +15,7 @@
                 <hol:onlineBibliographicItem>
                     <hol:bibliographicRecordId>87654321</hol:bibliographicRecordId>
                     <hol:modificationTimeStamp>
-                        <hol:modificationDateTime>2017-01-01T00:00:00Z</hol:modificationDateTime>
+                        <hol:modificationDateTime>%{ NOW(); }%</hol:modificationDateTime>
                         <hol:modificationMilliSeconds>0</hol:modificationMilliSeconds>
                     </hol:modificationTimeStamp>
                     <hol:hasOnlineHolding>true</hol:hasOnlineHolding>
