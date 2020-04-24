@@ -16,22 +16,30 @@
                     <hol:bibliographicRecordId>0a00</hol:bibliographicRecordId>
                     <!-- <hol:note> ? </hol:note> -->
                     <hol:modificationTimeStamp>
-                        <hol:modificationDateTime> YYYY-MM-DDThh:mm:ssZ </hol:modificationDateTime>
-                        <hol:modificationMilliSeconds> ? </hol:modificationMilliSeconds>
+                        <hol:modificationDateTime>%{ NOW(); }%</hol:modificationDateTime>
+                        <hol:modificationMilliSeconds>0</hol:modificationMilliSeconds>
                     </hol:modificationTimeStamp>
                     <!--0 to 100 repetitions:-->
                     <hol:holding>
-                        <hol:expectedDeliveryDate> ? </hol:expectedDeliveryDate>
+                        <hol:expectedDeliveryDate>%{
+                            var daysFromNow = 3;
+                            var now = new Date().getTime();
+                            var then = now + daysFromNow * 24 * 60 * 60 * 1000;
+                            new Date(then).toISOString().replace(/T.*/, '');
+                            }%</hol:expectedDeliveryDate>
                         <hol:readyForLoan> ? </hol:readyForLoan>
                         <hol:issueId> ? </hol:issueId>
                         <hol:issueText> ? </hol:issueText>
                         <hol:holdingsItem>
                             <hol:itemId> ? </hol:itemId>
+                            <hol:branchId> ? </hol:branchId>
                             <hol:branch> ? </hol:branch>
                             <hol:department> ? </hol:department>
                             <hol:location> ? </hol:location>
                             <hol:subLocation> ? </hol:subLocation>
                             <hol:circulationRule> ? </hol:circulationRule>
+                            <!-- optional -->
+                            <hol:loanRestriction>|a|b|c|d|e|f|g</hol:loanRestriction>
                             <hol:status>NotForLoan|OnOrder|OnShelf|OnLoan|Online|Decommissioned</hol:status>
                             <hol:accessionDate>2014-06-26</hol:accessionDate>
                         </hol:holdingsItem>
