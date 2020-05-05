@@ -72,7 +72,6 @@ public class Purge {
      * @throws SQLException           in case of rollback or commit error
      * @throws IOException            when waiting for human interaction
      */
-    @SuppressFBWarnings("DM_DEFAULT_ENCODING")
     public void process() throws HoldingsItemsException, SQLException, IOException {
         log.debug("Process");
 
@@ -86,19 +85,9 @@ public class Purge {
         // Confirm agency to purge
         System.out.printf("Agency: %s, Name: '%s'%n", agencyId, agencyName);
 
-        boolean acceptable = false;
-        while (!acceptable) {
-            System.out.print("Enter Agency Name to confirm purge (Enter to abort): ");
-            Scanner scanner = new Scanner(System.in);
-            String output = scanner.nextLine().trim();
-            if (output.isEmpty())
-                return;
-            acceptable = agencyName.equals(output);
-            log.debug("Response: {}", acceptable);
-            if (!acceptable) {
-                log.info("Error on '{}' != '{}'", output, agencyName);
-            }
-        }
+        if (!userVerifyAgency())
+            return;
+
         log.debug("Purging {}: '{}' with queue worker: '{}'", agencyId, agencyName, queue);
         System.out.printf("Purging %s: '%s' with queue worker: '%s'%n", agencyId, agencyName, queue);
 
@@ -108,6 +97,25 @@ public class Purge {
         long duration = ( end - start ) / 1000;
         log.info("Purged {} with {} live records in {} s.", recordsCount, purgeCount, duration);
 
+    }
+
+    @SuppressFBWarnings("DM_DEFAULT_ENCODING")
+    protected boolean userVerifyAgency() {
+        for (;;) {
+            System.out.print("Enter Agency Name to confirm purge (Enter to abort): ");
+            Scanner scanner = new Scanner(System.in);
+            String output = scanner.nextLine().trim();
+            if (output.isEmpty())
+                return false;
+            boolean acceptable = agencyName.equals(output);
+            log.debug("Response: {}", acceptable);
+            if (acceptable) {
+                break;
+            } else {
+                log.info("Error on '{}' != '{}'", output, agencyName);
+            }
+        }
+        return true;
     }
 
     /**
