@@ -94,7 +94,7 @@ public final class Arguments {
     private final Option removeFirstAcquisitionDate =
             Option.builder("r")
                     .longOpt("remove")
-                    .desc("Remove first acquisition date (remove all data from database - irrevertable) (mutually exclusive with --keep)")
+                    .desc("Remove first acquisition date (remove all data from database - irreversible) (mutually exclusive with --keep)")
                     .build();
     private final Options options = new Options()
             .addOption(agencyId)
@@ -133,7 +133,7 @@ public final class Arguments {
             throw new ExitException(usage(missing));
         }
         if (hasKeepDecommissioned() && hasRemoveFirstAcquisitionDate())
-            throw new ExitException(usage("--keep/--remove is mutually exclusive"));
+            throw new ExitException(usage("--keep/--remove are mutually exclusive"));
     }
 
     private CommandLine parse(Options options, List<Option> required, String[] args) throws ExitException {
