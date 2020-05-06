@@ -78,6 +78,15 @@ public class PurgeMain {
             String queue = commandLine.getQueue();
             log.info("Queue: {}", queue);
 
+            boolean keepDecommissioned = commandLine.hasKeepDecommissioned();
+            if (keepDecommissioned) {
+                log.info("Will not remove decommissioned records");
+            }
+            boolean removeFirstAcquisitionDate = commandLine.hasRemoveFirstAcquisitionDate();
+            if (removeFirstAcquisitionDate) {
+                log.info("Will remove ALL traces of the agency");
+            }
+
             boolean dryRun = commandLine.hasDryRun();
             if (dryRun) {
                 log.info("Dry run. Data will be rolled back");
@@ -91,9 +100,7 @@ public class PurgeMain {
             DataSource dataSource = getDataSource(db);
             JpaByDbUrl jpa = new JpaByDbUrl(db, "purge-tool");
 
-            try (Connection connection = dataSource.getConnection()) {
-                connection.setAutoCommit(false);
-
+            try {
                 jpa.run(em -> {
                     HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em);
                     PurgeReport purgeReport = new PurgeReport(dao, agencyId);
@@ -102,18 +109,28 @@ public class PurgeMain {
 
                 jpa.run(em -> {
                     HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, trackingId);
-                    Purge purge = new Purge(dao, queue, agencyName, agencyId, dryRun);
+                    Purge purge = new Purge(em, dao, queue, agencyName, agencyId, dryRun);
                     purge.process();
                 });
 
-                PurgeWait purgeWait = new PurgeWait(connection, agencyName, agencyId, trackingId, dryRun);
-                purgeWait.waitForQueue();
+                try (Connection connection = dataSource.getConnection()) {
+                    PurgeWait purgeWait = new PurgeWait(connection, trackingId);
+                    purgeWait.waitForQueue();
+                }
 
                 jpa.run(em -> {
                     HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em);
                     PurgeReport purgeReport = new PurgeReport(dao, agencyId);
                     purgeReport.statusReport();
                 });
+
+                if (!keepDecommissioned) {
+                    jpa.run(em -> {
+                        HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, trackingId);
+                        Purge purge = new Purge(em, dao, queue, agencyName, agencyId, dryRun);
+                        purge.removeDecommissioned(removeFirstAcquisitionDate);
+                    });
+                }
 
             } catch (SQLException | RuntimeException ex) {
                 log.error("Exception", ex);

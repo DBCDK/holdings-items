@@ -129,7 +129,7 @@ public class HoldingsItemsDAO {
     }
 
     /**
-     * Find all bibliographicrecordids for a given agency
+     * Find all bibliographicrecordids that are not decommissioned, for a given agency
      * <p>
      * This will be slow
      *
@@ -145,6 +145,23 @@ public class HoldingsItemsDAO {
                                             String.class)
                 .setParameter("agencyId", agencyId)
                 .setParameter("status", Status.DECOMMISSIONED)
+                .getResultList());
+    }
+
+    /**
+     * Find all bibliographicrecordids for a given agency
+     * <p>
+     * This will be slow
+     *
+     * @param agencyId agency in question
+     * @return collection of bibliographicrecordids for the given agency
+     */
+    public Set<String> getBibliographicIdsIncludingDecommissioned(int agencyId) {
+        return new HashSet<>(em.createQuery("SELECT h.bibliographicRecordId" +
+                                            " FROM BibliographicItemEntity h" +
+                                            " WHERE h.agencyId = :agencyId",
+                                            String.class)
+                .setParameter("agencyId", agencyId)
                 .getResultList());
     }
 
