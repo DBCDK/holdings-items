@@ -54,6 +54,7 @@ public class Purge {
     /**
      * Create the purge request
      *
+     * @param em         Entity manager that is base of the dao
      * @param dao        data access object for database
      * @param queue      Name of worker to put in queue
      * @param agencyName The name of the agency to verify against
