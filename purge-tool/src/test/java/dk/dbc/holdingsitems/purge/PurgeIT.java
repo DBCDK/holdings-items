@@ -18,7 +18,11 @@
  */
 package dk.dbc.holdingsitems.purge;
 
+import java.time.Instant;
 import org.junit.Test;
+
+import static org.hamcrest.CoreMatchers.*;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 /**
  *
@@ -27,25 +31,59 @@ import org.junit.Test;
 public class PurgeIT extends JpaBase {
 
     @Test(timeout = 2_000L)
-    public void testCase() throws Exception {
-        System.out.println("testCase");
+    public void testKeepDecommissioned() throws Exception {
+        System.out.println("testKeepDecommissioned");
 
-        String[] unchanged1 = list("700001/12345678//a1/OnShelf",
-                                   "700001/12345678//a2/OnShelf");
+        String[] removed = list("700001/12345678//a1/OnShelf",
+                                "700001/12345678//a2/OnShelf");
 
-        String[] unchanged2 = list("700002/12345678//b1/OnShelf",
-                                   "700002/12345678//b2/OnShelf");
+        String[] unchanged = list("700002/12345678//b1/OnShelf",
+                                  "700002/12345678//b2/OnShelf");
 
-        insert(unchanged1);
-        insert(unchanged2);
+        insert(removed);
+        insert(unchanged);
 
-        PurgeReport report = exec(dao -> {
-            return new PurgeReport(dao, 700001);
+        verify(removed, unchanged);
+
+        exec((em, dao) -> {
+            Purge purge = new Purge(em, dao, "[void]", "[void]", 700001, false);
+            purge.removeDecommissioned(true);
         });
 
-        report.statusReport();
+        verify(unchanged);
 
-        verify(unchanged1, unchanged2);
+        boolean isNew = exec((em, dao) -> {
+            return dao.getRecordCollection("12345678", 700001, Instant.now()).isNew();
+        });
+        assertThat(isNew, is(true));
+    }
+
+    @Test(timeout = 2_000L)
+    public void testRemoveDecommissioned() throws Exception {
+        System.out.println("testRemoveDecommissioned");
+
+        String[] removed = list("700001/12345678//a1/OnShelf",
+                                "700001/12345678//a2/OnShelf");
+
+        String[] unchanged = list("700002/12345678//b1/OnShelf",
+                                  "700002/12345678//b2/OnShelf");
+
+        insert(removed);
+        insert(unchanged);
+
+        verify(removed, unchanged);
+
+        exec((em, dao) -> {
+            Purge purge = new Purge(em, dao, "[void]", "[void]", 700001, false);
+            purge.removeDecommissioned(false);
+        });
+
+        verify(unchanged);
+
+        boolean isNew = exec((em, dao) -> {
+            return dao.getRecordCollection("12345678", 700001, Instant.now()).isNew();
+        });
+        assertThat(isNew, is(false));
     }
 
 }

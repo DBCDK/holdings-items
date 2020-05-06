@@ -39,6 +39,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.stream.Stream;
 import javax.persistence.EntityManager;
+import javax.persistence.EntityTransaction;
 import org.junit.Assert;
 import org.junit.Before;
 import org.postgresql.ds.PGSimpleDataSource;
@@ -58,25 +59,47 @@ public class JpaBase extends JpaIntegrationTest {
     @FunctionalInterface
     public static interface DaoVoidExecution {
 
-        public void execute(HoldingsItemsDAO dao) throws Exception;
+        public void execute(EntityManager em, HoldingsItemsDAO dao) throws Exception;
     }
 
     @FunctionalInterface
     public static interface DaoExecution<T extends Object> {
 
-        public T execute(HoldingsItemsDAO dao) throws Exception;
+        public T execute(EntityManager em, HoldingsItemsDAO dao) throws Exception;
     }
 
-    public void exec(DaoVoidExecution ex) {
+    public void exec(DaoVoidExecution exe) {
         JpaTestEnvironment e = env();
         EntityManager em = e.getEntityManager();
-        e.getPersistenceContext().run(() -> ex.execute(HoldingsItemsDAO.newInstance(em)));
+        EntityTransaction transaction = em.getTransaction();
+        try {
+            transaction.begin();
+            exe.execute(em, HoldingsItemsDAO.newInstance(em));
+            transaction.commit();
+        } catch (Exception ex) {
+            transaction.rollback();
+            if (ex instanceof RuntimeException)
+                throw (RuntimeException) ex;
+            throw new RuntimeException(ex);
+        }
     }
 
-    public <T> T exec(DaoExecution<T> ex) {
+    public <T> T exec(DaoExecution<T> exe) {
         JpaTestEnvironment e = env();
         EntityManager em = e.getEntityManager();
-        return e.getPersistenceContext().run(() -> ex.execute(HoldingsItemsDAO.newInstance(em)));
+        EntityTransaction transaction = em.getTransaction();
+        try {
+            transaction.begin();
+            return exe.execute(em, HoldingsItemsDAO.newInstance(em));
+        } catch (Exception ex) {
+            transaction.rollback();
+            if (ex instanceof RuntimeException)
+                throw (RuntimeException) ex;
+            throw new RuntimeException(ex);
+        } finally {
+            if (transaction.isActive())
+                transaction.commit();
+        }
     }
 
     @Override
@@ -143,8 +166,8 @@ public class JpaBase extends JpaIntegrationTest {
     }
 
     protected void insert(String... rows) {
-        exec(dao -> {
-            for (String s : rows) {
+        for (String s : rows) {
+            exec((em, dao) -> {
                 String[] parts = s.split("/");
                 if (parts.length != 5)
                     throw new IllegalArgumentException("requires agencyid/bibliographicrecordid/issueid/itemid/status");
@@ -164,8 +187,8 @@ public class JpaBase extends JpaIntegrationTest {
                 item.setLoanRestriction(LoanRestriction.EMPTY);
                 item.setAccessionDate(LocalDate.from(now.atZone(ZoneId.systemDefault())));
                 bib.save();
-            }
-        });
+            });
+        }
     }
 
     protected void verify(String[]... sets) throws SQLException {

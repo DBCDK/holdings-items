@@ -26,10 +26,13 @@ import dk.dbc.holdingsitems.jpa.Status;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.IOException;
 import java.sql.SQLException;
+import java.time.Instant;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import javax.persistence.EntityManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,6 +48,7 @@ public class Purge {
 
     private final boolean dryRun;
 
+    private final EntityManager em;
     private final HoldingsItemsDAO dao;
 
     /**
@@ -56,8 +60,9 @@ public class Purge {
      * @param agencyId   The agency ID to be processed
      * @param dryRun     Optionally check but does not commit anything
      */
-    public Purge(HoldingsItemsDAO dao, String queue, String agencyName, int agencyId, boolean dryRun) {
+    public Purge(EntityManager em, HoldingsItemsDAO dao, String queue, String agencyName, int agencyId, boolean dryRun) {
         log.debug("Purge for agency ID {} with Queue: '{}'", agencyId, queue);
+        this.em = em;
         this.dao = dao;
         this.queue = queue;
         this.agencyName = agencyName;
@@ -149,4 +154,28 @@ public class Purge {
 
         return records.get();
     }
+
+    /**
+     * Cleanup the database
+     *
+     * @param removeFirstAcquisitionDate Remove all trace of the agency
+     * @throws HoldingsItemsException If dao somehow fails
+     */
+    public void removeDecommissioned(boolean removeFirstAcquisitionDate) throws HoldingsItemsException {
+        log.info("Removing records from database (wipe={})", removeFirstAcquisitionDate);
+        if (dryRun)
+            return;
+        Instant now = Instant.now();
+        dao.getBibliographicIdsIncludingDecommissioned(agencyId).stream()
+                .map(bibliographicId -> dao.getRecordCollection(bibliographicId, agencyId, now))
+                .forEach(removeFirstAcquisitionDate ?
+                         em::remove :
+                         bibItem -> {
+                     bibItem.stream()
+                             .collect(Collectors.toSet()).stream() // Hack to not modify container that is being iterated.
+                             .forEach(bibItem::removeIssue);
+                     bibItem.save();
+                 });
+    }
+
 }
