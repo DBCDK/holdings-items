@@ -31,8 +31,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 public class PurgeIT extends JpaBase {
 
     @Test(timeout = 2_000L)
-    public void testKeepDecommissioned() throws Exception {
-        System.out.println("testKeepDecommissioned");
+    public void testRemoveFirstAcqisitionDate() throws Exception {
+        System.out.println("testRemoveFirstAcqisitionDate");
 
         String[] removed = list("700001/12345678//a1/OnShelf",
                                 "700001/12345678//a2/OnShelf");
@@ -59,8 +59,8 @@ public class PurgeIT extends JpaBase {
     }
 
     @Test(timeout = 2_000L)
-    public void testRemoveDecommissioned() throws Exception {
-        System.out.println("testRemoveDecommissioned");
+    public void testKeepDecommissioned() throws Exception {
+        System.out.println("testKeepDecommissioned");
 
         String[] removed = list("700001/12345678//a1/OnShelf",
                                 "700001/12345678//a2/OnShelf");
