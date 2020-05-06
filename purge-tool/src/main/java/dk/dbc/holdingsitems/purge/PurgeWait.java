@@ -37,12 +37,9 @@ public class PurgeWait {
      * Create the purge request
      *
      * @param connection  DB connection
-     * @param agencyName  The name of the agency to verify against
-     * @param agencyId    The agency ID to be processed
      * @param trackingId  The tracking-id to wait for to be removed from the queue
-     * @param dryRun      Optionally check but does not commit anything
      */
-    public PurgeWait(Connection connection, String agencyName, int agencyId, String trackingId, boolean dryRun) {
+    public PurgeWait(Connection connection, String trackingId) {
         this.connection = connection;
         this.trackingId = trackingId;
     }
