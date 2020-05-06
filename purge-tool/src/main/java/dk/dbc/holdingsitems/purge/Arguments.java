@@ -166,7 +166,7 @@ public final class Arguments {
                 formatter.printWrapped(writer, 76, error);
                 formatter.printWrapped(writer, 76, "");
             }
-            formatter.printUsage(writer, 76, "java -jar holdings-items-purge-tool.jar", options);
+            formatter.printUsage(writer, 76, "java -jar holdings-items-purge-tool-jar-with-dependencies.jar", options);
             formatter.printWrapped(writer, 76, "");
             formatter.printOptions(writer, 76, options, 4, 4);
             formatter.printWrapped(writer, 76, "");
