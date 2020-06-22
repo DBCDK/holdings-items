@@ -22,11 +22,14 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import dk.dbc.holdingsitems.jpa.IssueEntity;
 import dk.dbc.holdingsitems.jpa.ItemEntity;
 import dk.dbc.holdingsitems.jpa.LoanRestriction;
+import dk.dbc.holdingsitems.jpa.Status;
 
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Objects;
+
+import static java.util.stream.Collectors.toList;
 
 /**
  *
@@ -46,6 +49,7 @@ public class UniqueFields {
     private final String location;
     private final String subLocation;
     private final String circulationRule;
+    private final Status status;
     private final LocalDate accessionDate;
     private final LoanRestriction loanRestriction;
 
@@ -64,6 +68,7 @@ public class UniqueFields {
         this.circulationRule = record.getCirculationRule();
         this.accessionDate = record.getAccessionDate();
         this.loanRestriction = record.getLoanRestriction();
+        this.status = record.getStatus();
     }
 
     public void fillIn(ObjectNode node) {
@@ -84,6 +89,7 @@ public class UniqueFields {
         node.putArray(SolrFields.LOCATION.getFieldName()).add(location);
         node.putArray(SolrFields.SUBLOCATION.getFieldName()).add(subLocation);
         node.putArray(SolrFields.CIRCULATION_RULE.getFieldName()).add(circulationRule);
+        node.putArray(SolrFields.STATUS.getFieldName()).add(status.toString());
         node.putArray(SolrFields.ACCESSION_DATE.getFieldName()).add(isoDate(accessionDate));
         if (loanRestriction != null && !loanRestriction.toString().isEmpty())
             node.putArray(SolrFields.LOAN_RESTRICTION.getFieldName()).add(loanRestriction.toString());
@@ -109,6 +115,7 @@ public class UniqueFields {
         hash = 43 * hash + Objects.hashCode(this.location);
         hash = 43 * hash + Objects.hashCode(this.subLocation);
         hash = 43 * hash + Objects.hashCode(this.circulationRule);
+        hash = 43 * hash + Objects.hashCode(this.status);
         hash = 43 * hash + Objects.hashCode(this.accessionDate);
         hash = 43 * hash + Objects.hashCode(this.loanRestriction);
         return hash;
@@ -132,6 +139,7 @@ public class UniqueFields {
                Objects.equals(this.location, other.location) &&
                Objects.equals(this.subLocation, other.subLocation) &&
                Objects.equals(this.circulationRule, other.circulationRule) &&
+               Objects.equals(this.status, other.status) &&
                Objects.equals(this.expectedDelivery, other.expectedDelivery) &&
                Objects.equals(this.accessionDate, other.accessionDate) &&
                Objects.equals(this.loanRestriction, other.loanRestriction);
@@ -139,7 +147,7 @@ public class UniqueFields {
 
     @Override
     public String toString() {
-        return "UniqueFields{" + "agencyId=" + agencyId + ", bibliographicRecordId=" + bibliographicRecordId + ", issueId=" + issueId + ", issueText=" + issueText + ", expectedDelivery=" + expectedDelivery + ", readyForLoan=" + readyForLoan + ", branch=" + branch + ", branchId=" + branchId + ", department=" + department + ", location=" + location + ", subLocation=" + subLocation + ", circulationRule=" + circulationRule + ", accessionDate=" + accessionDate + ", loanRestriction=" + loanRestriction + '}';
+        return "UniqueFields{" + "agencyId=" + agencyId + ", bibliographicRecordId=" + bibliographicRecordId + ", issueId=" + issueId + ", issueText=" + issueText + ", expectedDelivery=" + expectedDelivery + ", readyForLoan=" + readyForLoan + ", branch=" + branch + ", branchId=" + branchId + ", department=" + department + ", location=" + location + ", subLocation=" + subLocation + ", circulationRule=" + circulationRule + ", status=" + status + ", accessionDate=" + accessionDate + ", loanRestriction=" + loanRestriction + '}';
     }
 
 }

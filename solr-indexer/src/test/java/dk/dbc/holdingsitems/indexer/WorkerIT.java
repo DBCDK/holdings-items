@@ -161,7 +161,6 @@ public class WorkerIT extends JpaBase {
                 ObjectNode dp = findSubDocContaining(subDocs, "/holdingsitem.itemId", "dp1");
                 log.debug("dp = {}", dp);
                 assertEquals("Two entries collapsed", 2, dp.get("holdingsitem.itemId").size());
-                assertEquals("Two entries Different status", 2, dp.get("holdingsitem.status").size());
                 ObjectNode rpo1 = findSubDocContaining(subDocs, "/holdingsitem.itemId", "rpo1");
                 log.debug("rpo1 = {}", rpo1);
                 assertEquals(O.readTree("{\"holdingsitem.note\":[\"any-text\"]," +

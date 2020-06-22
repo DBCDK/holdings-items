@@ -79,11 +79,9 @@ public class JobProcessor {
 
     @PostConstruct
     public void init() {
-
         client = ClientBuilder.newBuilder()
                 .build();
         uriBuilder = UriBuilder.fromUri(config.getSolrDocStoreUrl());
-
     }
 
     @Timed
@@ -101,7 +99,6 @@ public class JobProcessor {
                 UniqueFields key = new UniqueFields(issue, item);
                 RepeatedFields repeatedFields = records.computeIfAbsent(key, v -> new RepeatedFields(b.getTrackingId(), issue.getTrackingId(), job.getTrackingId()));
                 repeatedFields.addItemId(item.getItemId());
-                repeatedFields.addStatus(item.getStatus());
                 repeatedFields.addTrackingId(item.getTrackingId());
             });
         });

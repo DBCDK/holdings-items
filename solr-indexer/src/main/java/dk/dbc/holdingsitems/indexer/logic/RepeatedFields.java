@@ -35,12 +35,10 @@ import static java.util.stream.Collectors.toList;
 public class RepeatedFields {
 
     private final Set<String> itemIds;
-    private final Set<Status> statuses;
     private final Set<String> trackingIds;
 
     public RepeatedFields() {
         this.itemIds = new HashSet<>();
-        this.statuses = new HashSet<>();
         this.trackingIds = new HashSet<>();
     }
 
@@ -59,15 +57,8 @@ public class RepeatedFields {
         }
     }
 
-    public void addStatus(Status status) {
-        statuses.add(status);
-    }
-
     public void fillIn(ObjectNode node) {
         addAll(node, SolrFields.ITEM_ID, itemIds);
-        addAll(node, SolrFields.STATUS, statuses.stream()
-               .map(Object::toString)
-               .collect(toList()));
         addAll(node, SolrFields.TRACKING_ID, trackingIds);
     }
 
@@ -78,7 +69,7 @@ public class RepeatedFields {
 
     @Override
     public String toString() {
-        return "RepeatedFields{" + "itemIds=" + itemIds + ", statuses=" + statuses + ", trackingIds=" + trackingIds + '}';
+        return "RepeatedFields{" + "itemIds=" + itemIds + ", trackingIds=" + trackingIds + '}';
     }
 
 }
