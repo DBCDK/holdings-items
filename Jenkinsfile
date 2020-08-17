@@ -7,7 +7,7 @@ if (env.BRANCH_NAME == 'master') {
             triggers: [
                 [
                     $class: 'jenkins.triggers.ReverseBuildTrigger',
-                    upstreamProjects: "../pg-queue/master, ../ee-stats, ../dbc-commons", threshold: hudson.model.Result.SUCCESS
+                    upstreamProjects: "Docker-payara5-bump-trigger, ../pg-queue/master, ../ee-stats, ../dbc-commons", threshold: hudson.model.Result.SUCCESS
                 ]
             ]
         ]),
@@ -25,6 +25,7 @@ pipeline {
     }
     triggers {
         pollSCM("H/3 * * * *")
+        upstream('/Docker-payara5-bump-trigger')
     }
     options {
         buildDiscarder(logRotator(artifactDaysToKeepStr: "", artifactNumToKeepStr: "", daysToKeepStr: "30", numToKeepStr: "30"))
@@ -80,7 +81,7 @@ pipeline {
 
         stage("coverage") {
             steps {
-                step([$class: 'JacocoPublisher', 
+                step([$class: 'JacocoPublisher',
                       execPattern: '**/target/*.exec',
                       classPattern: '**/target/classes',
                       sourcePattern: '**/src/main/java',
