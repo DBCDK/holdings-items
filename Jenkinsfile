@@ -25,7 +25,6 @@ pipeline {
     }
     triggers {
         pollSCM("H/3 * * * *")
-        upstream('/Docker-payara5-bump-trigger')
     }
     options {
         buildDiscarder(logRotator(artifactDaysToKeepStr: "", artifactNumToKeepStr: "", daysToKeepStr: "30", numToKeepStr: "30"))
