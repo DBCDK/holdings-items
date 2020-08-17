@@ -7,7 +7,7 @@ if (env.BRANCH_NAME == 'master') {
             triggers: [
                 [
                     $class: 'jenkins.triggers.ReverseBuildTrigger',
-                    upstreamProjects: "../pg-queue/master, ../ee-stats, ../dbc-commons", threshold: hudson.model.Result.SUCCESS
+                    upstreamProjects: "Docker-payara5-bump-trigger, ../pg-queue/master, ../ee-stats, ../dbc-commons", threshold: hudson.model.Result.SUCCESS
                 ]
             ]
         ]),
@@ -80,7 +80,7 @@ pipeline {
 
         stage("coverage") {
             steps {
-                step([$class: 'JacocoPublisher', 
+                step([$class: 'JacocoPublisher',
                       execPattern: '**/target/*.exec',
                       classPattern: '**/target/classes',
                       sourcePattern: '**/src/main/java',
