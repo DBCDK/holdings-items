@@ -56,9 +56,9 @@ public class MigrateMain {
             ds.setUser(username);
         if (password != null)
             ds.setPassword(password);
-        ds.setServerName(hostname);
+        ds.setServerNames(new String[] {hostname});
         if (port != null)
-            ds.setPortNumber(Integer.parseUnsignedInt(port));
+            ds.setPortNumbers(new int[] {Integer.parseUnsignedInt(port)});
         ds.setDatabaseName(database);
         DatabaseMigrator.migrate(ds);
     }

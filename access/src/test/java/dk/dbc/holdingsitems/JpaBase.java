@@ -126,17 +126,17 @@ public class JpaBase extends JpaIntegrationTest {
 
         String userName = System.getProperty("user.name");
         if (testPort != null) {
-            ds.setServerName("localhost");
+            ds.setServerNames(new String[] {"localhost"} );
             ds.setDatabaseName(databaseName);
             ds.setUser(userName);
             ds.setPassword(userName);
-            ds.setPortNumber(Integer.parseUnsignedInt(testPort));
+            ds.setPortNumbers(new int[] {Integer.parseUnsignedInt(testPort)});
         } else {
             Map<String, String> env = System.getenv();
             ds.setUser(env.getOrDefault("PGUSER", userName));
             ds.setPassword(env.getOrDefault("PGPASSWORD", userName));
-            ds.setServerName(env.getOrDefault("PGHOST", "localhost"));
-            ds.setPortNumber(Integer.parseUnsignedInt(env.getOrDefault("PGPORT", "5432")));
+            ds.setServerNames(new String[] {env.getOrDefault("PGHOST", "localhost")});
+            ds.setPortNumbers(new int[] {Integer.parseUnsignedInt(env.getOrDefault("PGPORT", "5432"))});
             ds.setDatabaseName(env.getOrDefault("PGDATABASE", userName));
         }
         return ds;

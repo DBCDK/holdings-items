@@ -73,7 +73,7 @@ public class Worker {
                 .dataSource(dataSource)
                 .fromEnvWithDefaults()
                 .executor(executor)
-                .metricRegistry(metrics)
+                .metricRegistryCodahale(metrics)
                 .build(config.getThreads(), this::work);
         worker.start();
     }
