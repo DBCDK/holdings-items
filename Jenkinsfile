@@ -33,59 +33,51 @@ pipeline {
     stages {
         stage("build") {
             steps {
-                // Fail Early..
                 script {
-                    if (! env.BRANCH_NAME) {
-                        currentBuild.rawBuild.result = Result.ABORTED
-                        throw new hudson.AbortException('Job Started from non MultiBranch Build')
-                    } else {
-                        println(" Building BRANCH_NAME == ${BRANCH_NAME}")
-                    }
-                }
+                    def status = sh returnStatus: true, script:  """
+                        rm -rf \$WORKSPACE/.repo
+                        mvn -B -Dmaven.repo.local=\$WORKSPACE/.repo dependency:resolve dependency:resolve-plugins >/dev/null 2>&1 || true
+                        mvn -B -Dmaven.repo.local=\$WORKSPACE/.repo clean
+                        mvn -B -Dmaven.repo.local=\$WORKSPACE/.repo --fail-at-end org.jacoco:jacoco-maven-plugin:prepare-agent install -Dsurefire.useFile=false
+                    """
 
-                sh """
-                    rm -rf \$WORKSPACE/.repo/dk/dbc
-                    mvn -B -Dmaven.repo.local=\$WORKSPACE/.repo clean
-                    mvn -B -Dmaven.repo.local=\$WORKSPACE/.repo org.jacoco:jacoco-maven-plugin:prepare-agent install javadoc:aggregate -Dsurefire.useFile=false
-                """
-                script {
-                    junit testResults: '**/target/surefire-reports/TEST-*.xml'
+                    // We want code-coverage and pmd/spotbugs even if unittests fails
+                    status += sh returnStatus: true, script:  """
+                        mvn -B -Dmaven.repo.local=\$WORKSPACE/.repo -pl !update-ws-transport pmd:pmd pmd:cpd spotbugs:spotbugs javadoc:aggregate
+                    """
+
+                    junit testResults: '**/target/*-reports/TEST-*.xml'
 
                     def java = scanForIssues tool: [$class: 'Java']
                     def javadoc = scanForIssues tool: [$class: 'JavaDoc']
+                    publishIssues issues:[java, javadoc]
 
-                    publishIssues issues:[java,javadoc], unstableTotalAll:1
-                }
-            }
-        }
-
-        stage("analysis") {
-            steps {
-                sh """
-                    mvn -B -Dmaven.repo.local=\$WORKSPACE/.repo -pl !update-ws-transport pmd:pmd pmd:cpd findbugs:findbugs
-                """
-
-                script {
                     def pmd = scanForIssues tool: [$class: 'Pmd'], pattern: '**/target/pmd.xml'
-                    publishIssues issues:[pmd], unstableTotalAll:1
+                    publishIssues issues:[pmd]
 
                     def cpd = scanForIssues tool: [$class: 'Cpd'], pattern: '**/target/cpd.xml'
-                    publishIssues issues:[cpd], unstableTotalAll:10
+                    publishIssues issues:[cpd]
 
-                    def findbugs = scanForIssues tool: [$class: 'FindBugs'], pattern: '**/target/findbugsXml.xml'
-                    publishIssues issues:[findbugs], unstableTotalAll:1
+                    def spotbugs = scanForIssues tool: [$class: 'SpotBugs'], pattern: '**/target/spotbugsXml.xml'
+                    publishIssues issues:[spotbugs]
+
+                    step([$class: 'JacocoPublisher',
+                          execPattern: 'target/*.exec,**/target/*.exec',
+                          classPattern: 'target/classes,**/target/classes',
+                          sourcePattern: 'src/main/java,**/src/main/java',
+                          exclusionPattern: 'src/test*,**/src/test*,**/*?Request.*,**/*?Response.*,**/*?Request$*,**/*?Response$*,**/*?DTO.*,**/*?DTO$*'
+                    ])
+
+                    warnings consoleParsers: [
+                         [parserName: "Java Compiler (javac)"],
+                         [parserName: "JavaDoc Tool"]],
+                         unstableTotalAll: "0",
+                         failedTotalAll: "0"
+
+                    if ( status != 0 ) {
+                        currentBuild.result = Result.FAILURE
+                    }
                 }
-            }
-        }
-
-        stage("coverage") {
-            steps {
-                step([$class: 'JacocoPublisher',
-                      execPattern: '**/target/*.exec',
-                      classPattern: '**/target/classes',
-                      sourcePattern: '**/src/main/java',
-                      exclusionPattern: '**/src/test*'
-                ])
             }
         }
 
@@ -201,6 +193,21 @@ pipeline {
         success {
             step([$class: 'JavadocArchiver', javadocDir: 'target/site/apidocs', keepAll: false])
             archiveArtifacts artifacts: '**/target/*-jar-with-dependencies.jar', fingerprint: true
+            script {
+                if( "${env.BRANCH_NAME}" == 'master' && currentBuild.getPreviousBuild() != null && currentBuild.getPreviousBuild().result == 'FAILURE' ) {
+                    emailext(
+                            recipientProviders: [developers(), culprits()],
+                            to: "os-team@dbc.dk",
+                            subject: "[Jenkins] ${env.JOB_NAME} #${env.BUILD_NUMBER} back to normal",
+                            mimeType: 'text/html; charset=UTF-8',
+                            body: "<p>The master is back to normal.</p><p><a href=\"${env.BUILD_URL}\">Build information</a>.</p>",
+                            attachLog: false)
+                    slackSend(channel: 'search',
+                            color: 'good',
+                            message: "${env.JOB_NAME} #${env.BUILD_NUMBER} back to normal: ${env.BUILD_URL}",
+                            tokenCredentialId: 'slack-global-integration-token')
+                }
+            }
         }
     }
 }
