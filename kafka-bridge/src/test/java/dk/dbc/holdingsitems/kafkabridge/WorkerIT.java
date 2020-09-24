@@ -21,7 +21,7 @@ package dk.dbc.holdingsitems.kafkabridge;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.salesforce.kafka.test.KafkaTestServer;
-import com.salesforce.kafka.test.junit.SharedKafkaTestResource;
+import com.salesforce.kafka.test.junit4.SharedKafkaTestResource;
 import dk.dbc.holdingsitems.HoldingsItemsDAO;
 import dk.dbc.holdingsitems.QueueJob;
 import dk.dbc.holdingsitems.StateChangeMetadata;
@@ -58,9 +58,9 @@ public class WorkerIT extends JpaBase {
 
     @Before
     public void setUp() throws Exception {
-        KafkaTestServer kafkaTestServer = KAFKA.getKafkaTestServer();
-        brokers = kafkaTestServer.getKafkaConnectString();
-        kafkaTestServer.createTopic(TOPIC, 2);
+
+        brokers = KAFKA.getKafkaConnectString();
+        KAFKA.getKafkaTestUtils().createTopic(TOPIC, 2, (short)1);
     }
 
     @Test(timeout = 30_000L)

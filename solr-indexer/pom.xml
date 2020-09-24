@@ -158,11 +158,13 @@
         <dependency>
             <groupId>dk.dbc</groupId>
             <artifactId>pg-queue-consumer</artifactId>
+            <version>${pg-queue.version}</version>
         </dependency>
 
         <dependency>
             <groupId>dk.dbc</groupId>
             <artifactId>pg-queue-supplier</artifactId>
+            <version>${pg-queue.version}</version>
         </dependency>
 
         <dependency>
