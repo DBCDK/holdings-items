@@ -121,6 +121,12 @@
                 <version>${pg-queue.version}</version>
             </dependency>
 
+            <dependency>
+                <groupId>dk.dbc</groupId>
+                <artifactId>pg-queue-ee-diags</artifactId>
+                <version>${pg-queue.version}</version>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
 
