@@ -128,7 +128,6 @@
         <dependency>
             <groupId>dk.dbc</groupId>
             <artifactId>pg-queue-common</artifactId>
-            <version>${pg-queue.version}</version>
         </dependency>
 
         <!-- Order of javaee-api / eclipselink is important -->
@@ -159,13 +158,11 @@
         <dependency>
             <groupId>dk.dbc</groupId>
             <artifactId>pg-queue-supplier</artifactId>
-            <version>${pg-queue.version}</version>
         </dependency>
         
         <dependency>
             <groupId>dk.dbc</groupId>
             <artifactId>pg-queue-consumer</artifactId>
-            <version>${pg-queue.version}</version>
             <scope>test</scope>
         </dependency>
 

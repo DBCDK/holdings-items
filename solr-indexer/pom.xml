@@ -158,13 +158,11 @@
         <dependency>
             <groupId>dk.dbc</groupId>
             <artifactId>pg-queue-consumer</artifactId>
-            <version>${pg-queue.version}</version>
         </dependency>
 
         <dependency>
             <groupId>dk.dbc</groupId>
             <artifactId>pg-queue-supplier</artifactId>
-            <version>${pg-queue.version}</version>
         </dependency>
 
         <dependency>
@@ -210,18 +208,16 @@
         <dependency>
             <groupId>org.glassfish.jersey.core</groupId>
             <artifactId>jersey-client</artifactId>
-            <version>${jersey.version}</version>
             <scope>test</scope>
         </dependency>
 
         <dependency> <!-- InjectionManagerFactory -->
             <groupId>org.glassfish.jersey.inject</groupId>
             <artifactId>jersey-hk2</artifactId>
-            <version>${jersey.version}</version>
             <scope>test</scope>
         </dependency>
 
-        <dependency> <!-- use jackson insteaf of moxy -->
+        <dependency> <!-- use jackson instead of moxy -->
             <groupId>org.glassfish.jersey.media</groupId>
             <artifactId>jersey-media-json-jackson</artifactId>
         </dependency>
