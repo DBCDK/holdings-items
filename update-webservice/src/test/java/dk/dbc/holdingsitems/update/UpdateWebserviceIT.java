@@ -65,7 +65,6 @@ import org.junit.Test;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.*;
-import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.*;
 
 /**
@@ -625,7 +624,7 @@ public class UpdateWebserviceIT extends JpaBase {
         mock.loadCollectionTimer = mock(Timer.class);
         AccessValidator validator = mock(AccessValidator.class);
         mock.validator = validator;
-        when(validator.validate(anyObject(), anyString(), anyString()))
+        when(validator.validate(any(Authentication.class), anyString(), anyString()))
                 .then((invocation) -> {
                     Authentication auth = (Authentication) invocation.getArguments()[0];
                     if (auth == null)
@@ -635,9 +634,9 @@ public class UpdateWebserviceIT extends JpaBase {
         mock.wsc = mock(WebServiceContext.class);
         doReturn(mockMessageContext()).when(mock.wsc).getMessageContext();
 
-        doCallRealMethod().when(mock).holdingsItemsUpdate(anyObject());
-        doCallRealMethod().when(mock).completeHoldingsItemsUpdate(anyObject());
-        doCallRealMethod().when(mock).onlineHoldingsItemsUpdate(anyObject());
+        doCallRealMethod().when(mock).holdingsItemsUpdate(any(HoldingsItemsUpdateRequest.class));
+        doCallRealMethod().when(mock).completeHoldingsItemsUpdate(any(CompleteHoldingsItemsUpdateRequest.class));
+        doCallRealMethod().when(mock).onlineHoldingsItemsUpdate(any(OnlineHoldingsItemsUpdateRequest.class));
         return mock;
     }
 
