@@ -71,7 +71,7 @@ public class Worker {
         log.info("Staring worker");
 
         worker = QueueWorker.builder(QueueJob.STORAGE_ABSTRACTION)
-                .skipDuplicateJobs(QueueJob.DEDUPLICATION_ABSTRACTION_IGNORE_STATECHANGE)
+                .skipDuplicateJobs(QueueJob.DEDUPLICATION_ABSTRACTION_IGNORE_STATECHANGE, true, true)
                 .consume(config.getQueues())
                 .dataSource(dataSource)
                 .fromEnvWithDefaults()
