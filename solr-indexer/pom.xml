@@ -75,19 +75,19 @@
                 <artifactId>maven-dependency-plugin</artifactId>
                 <executions>
                     <execution>
-                        <phase>validate</phase>
+                        <id>docker-payara-utils</id>
+                        <phase>prepare-package</phase>
                         <goals>
                             <goal>copy</goal>
                         </goals>
                         <configuration>
-                            <outputDirectory>${endorsed.dir}</outputDirectory>
-                            <silent>true</silent>
                             <artifactItems>
                                 <artifactItem>
-                                    <groupId>javax</groupId>
-                                    <artifactId>javaee-endorsed-api</artifactId>
-                                    <version>7.0</version>
-                                    <type>jar</type>
+                                    <groupId>dk.dbc</groupId>
+                                    <artifactId>payara-utils-runtime</artifactId>
+                                    <version>1.0-SNAPSHOT</version>
+                                    <outputDirectory>${project.build.directory}/docker/</outputDirectory>
+                                    <destFileName>payara-utils-runtime.jar</destFileName>
                                 </artifactItem>
                             </artifactItems>
                         </configuration>
@@ -177,12 +177,6 @@
         </dependency>
 
         <dependency>
-            <groupId>dk.dbc</groupId>
-            <artifactId>ee-stats</artifactId>
-            <version>1.0-SNAPSHOT</version>
-        </dependency>
-
-        <dependency>
             <groupId>dk.dbc.commoms.testutils</groupId>
             <artifactId>dbc-commons-testutil-postgres-connection</artifactId>
             <scope>test</scope>
@@ -200,10 +194,18 @@
             <artifactId>annotations</artifactId>
             <version>3.0.1</version>
         </dependency>
+
         <dependency>
             <groupId>javax</groupId>
             <artifactId>javaee-api</artifactId>
         </dependency>
+
+        <dependency>
+            <groupId>org.eclipse.microprofile</groupId>
+            <artifactId>microprofile</artifactId>
+            <type>pom</type>
+        </dependency>
+
 
         <dependency>
             <groupId>org.glassfish.jersey.core</groupId>

@@ -18,11 +18,7 @@
  */
 package dk.dbc.holdingsitems.update;
 
-import com.codahale.metrics.Counter;
-import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.Timer;
 import com.sun.xml.ws.developer.SchemaValidation;
-import dk.dbc.ee.stats.Timed;
 import dk.dbc.forsrights.client.ForsRightsException;
 import dk.dbc.holdingsitems.HoldingsItemsDAO;
 import dk.dbc.holdingsitems.HoldingsItemsException;
@@ -67,6 +63,10 @@ import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.ws.WebServiceContext;
 import javax.xml.ws.handler.MessageContext;
+import org.eclipse.microprofile.metrics.Counter;
+import org.eclipse.microprofile.metrics.MetricRegistry;
+import org.eclipse.microprofile.metrics.Timer;
+import org.eclipse.microprofile.metrics.annotation.Timed;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXParseException;
@@ -170,7 +170,7 @@ public class UpdateWebservice {
      * @param req soap request
      * @return soap response
      */
-    @Timed
+    @Timed(reusable = true)
     public HoldingsItemsUpdateResult holdingsItemsUpdate(final HoldingsItemsUpdateRequest req) {
         requestUpdateCounter.inc();
         if (req.getTrackingId() == null || req.getTrackingId().isEmpty()) {
@@ -251,7 +251,7 @@ public class UpdateWebservice {
      * @param req soap request
      * @return soap response
      */
-    @Timed
+    @Timed(reusable = true)
     public HoldingsItemsUpdateResult completeHoldingsItemsUpdate(final CompleteHoldingsItemsUpdateRequest req) {
         requestCompleteCounter.inc();
         if (req.getTrackingId() == null || req.getTrackingId().isEmpty()) {
@@ -357,7 +357,7 @@ public class UpdateWebservice {
      * @param req soap request
      * @return soap response
      */
-    @Timed
+    @Timed(reusable = true)
     public HoldingsItemsUpdateResult onlineHoldingsItemsUpdate(final OnlineHoldingsItemsUpdateRequest req) {
         requestOnlineCounter.inc();
         if (req.getTrackingId() == null || req.getTrackingId().isEmpty()) {

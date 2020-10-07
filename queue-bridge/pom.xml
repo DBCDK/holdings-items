@@ -52,21 +52,22 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
+                <version>3.1.2</version>
                 <executions>
                     <execution>
-                        <phase>validate</phase>
+                        <id>docker-payara-utils</id>
+                        <phase>prepare-package</phase>
                         <goals>
                             <goal>copy</goal>
                         </goals>
                         <configuration>
-                            <outputDirectory>${endorsed.dir}</outputDirectory>
-                            <silent>true</silent>
                             <artifactItems>
                                 <artifactItem>
-                                    <groupId>javax</groupId>
-                                    <artifactId>javaee-endorsed-api</artifactId>
-                                    <version>7.0</version>
-                                    <type>jar</type>
+                                    <groupId>dk.dbc</groupId>
+                                    <artifactId>payara-utils-runtime</artifactId>
+                                    <version>1.0-SNAPSHOT</version>
+                                    <outputDirectory>${project.build.directory}/docker/</outputDirectory>
+                                    <destFileName>payara-utils-runtime.jar</destFileName>
                                 </artifactItem>
                             </artifactItems>
                         </configuration>
@@ -97,6 +98,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-deploy-plugin</artifactId>
+                <version>2.8.2</version>
                 <configuration>
                     <skip>true</skip>
                 </configuration>
@@ -117,22 +119,21 @@
         </dependency>
 
         <dependency>
-            <groupId>dk.dbc</groupId>
-            <artifactId>ee-stats</artifactId>
-            <version>1.0-SNAPSHOT</version>
-        </dependency>
-
-        <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>holdings-items-access</artifactId>
             <version>${project.version}</version>
         </dependency>
 
-
         <dependency>
             <groupId>javax</groupId>
             <artifactId>javaee-api</artifactId>
             <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.eclipse.microprofile</groupId>
+            <artifactId>microprofile</artifactId>
+            <type>pom</type>
         </dependency>
 
         <dependency>
