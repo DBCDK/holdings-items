@@ -26,7 +26,7 @@ import org.junit.Test;
  *
  * @author DBC {@literal <dbc.dk>}
  */
-public class UpdateWebserviceTest {
+public class UpdateBeanTest {
 
     @Test(timeout = 2_000L)
     public void testAuthEnabledAuthOk() throws Exception {
@@ -71,8 +71,8 @@ public class UpdateWebserviceTest {
     }
 
     public static void makeAuthTestRequest(String auth, int agencyId, boolean disableAuth) {
-        UpdateWebservice updateWebservice = new UpdateWebservice();
-        updateWebservice.config = new Config() {
+        UpdateBean updateBean = new UpdateBean();
+        updateBean.config = new Config() {
             @Override
             public String getRightsGroup() {
                 return "";
@@ -89,7 +89,7 @@ public class UpdateWebserviceTest {
             }
 
         };
-        updateWebservice.validator = new AccessValidator() {
+        updateBean.validator = new AccessValidator() {
             @Override
             public String validate(Authentication auth, String rightsGroup, String rightsName) throws ForsRightsException {
                 if (auth == null) {
@@ -142,7 +142,7 @@ public class UpdateWebserviceTest {
             }
         };
 
-        updateWebservice.userValidation(updateRequest);
+        updateBean.userValidation(updateRequest);
     }
 
 }

@@ -104,7 +104,7 @@ public abstract class UpdateRequest {
      */
     public abstract void processBibliograhicItems();
 
-    private final UpdateWebservice updateWebService;
+    private final UpdateBean updateWebService;
     private final HashSet<QueueEntry> queueEntries;
     protected final HashMap<String, HashMap<String, StateChangeMetadata>> oldItemStatus; // Bibl -> item -> status
     protected HoldingsItemsDAO dao;
@@ -112,10 +112,10 @@ public abstract class UpdateRequest {
     /**
      * Update request super class
      *
-     * @param updateWebservice used for accessing timers
+     * @param updateBean used for accessing timers
      */
-    public UpdateRequest(UpdateWebservice updateWebservice) {
-        this.updateWebService = updateWebservice;
+    public UpdateRequest(UpdateBean updateBean) {
+        this.updateWebService = updateBean;
         this.queueEntries = new HashSet<>();
         this.oldItemStatus = new HashMap<>();
     }
