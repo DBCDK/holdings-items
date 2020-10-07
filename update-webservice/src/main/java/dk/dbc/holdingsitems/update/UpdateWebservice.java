@@ -59,6 +59,7 @@ import javax.annotation.Resource;
 import javax.inject.Inject;
 import javax.jws.WebService;
 import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.ws.WebServiceContext;
@@ -92,7 +93,7 @@ public class UpdateWebservice {
     @Inject
     AccessValidator validator;
 
-    @Inject
+    @PersistenceContext(unitName = "holdingsItems_PU")
     EntityManager em;
 
     @Resource
