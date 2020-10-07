@@ -20,7 +20,6 @@ package dk.dbc.holdingsitems.kafkabridge;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import dk.dbc.ee.stats.Timed;
 import dk.dbc.holdingsitems.HoldingsItemsDAO;
 import dk.dbc.holdingsitems.HoldingsItemsException;
 import dk.dbc.holdingsitems.QueueJob;
@@ -34,6 +33,7 @@ import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
 import javax.inject.Inject;
 import javax.persistence.EntityManager;
+import org.eclipse.microprofile.metrics.annotation.Timed;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,7 +53,7 @@ public class JobProcessor {
     @Inject
     EntityManager em;
 
-    @Timed
+    @Timed(reusable = true)
     @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
     public void transferJob(QueueJob job) throws Exception {
         try (Producer messageTarget = makeKafkaTarget() ;

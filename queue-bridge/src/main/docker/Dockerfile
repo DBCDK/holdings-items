@@ -1,5 +1,7 @@
 FROM docker.dbc.dk/payara5-micro:latest
 
+COPY target/docker/*.jar /opt/payara5/jars/
+
 ENV THREADS=1 \
     RETRIES=5 \
     APPLICATION_NAME=HoldingsItemsQueueBridge \

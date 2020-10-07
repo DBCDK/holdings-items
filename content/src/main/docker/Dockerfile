@@ -1,6 +1,8 @@
 FROM docker.dbc.dk/payara5-micro:latest
 MAINTAINER os-team
 
+COPY target/docker/*.jar /opt/payara5/jars/
+
 ENV JAVA_MAX_HEAP_SIZE=1G
 ENV MAX_POOL_SIZE=8
 

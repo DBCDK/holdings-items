@@ -19,7 +19,6 @@
 package dk.dbc.holdingsitems.update;
 
 import dk.dbc.holdingsitems.StateChangeMetadata;
-import com.codahale.metrics.Timer;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dk.dbc.holdingsitems.HoldingsItemsDAO;
@@ -49,6 +48,7 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import javax.xml.datatype.XMLGregorianCalendar;
+import org.eclipse.microprofile.metrics.Timer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
