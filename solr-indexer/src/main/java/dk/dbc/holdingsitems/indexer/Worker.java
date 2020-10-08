@@ -18,7 +18,6 @@
  */
 package dk.dbc.holdingsitems.indexer;
 
-import com.codahale.metrics.MetricRegistry;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import dk.dbc.holdingsitems.QueueJob;
@@ -36,6 +35,7 @@ import javax.ejb.Startup;
 import javax.enterprise.concurrent.ManagedExecutorService;
 import javax.inject.Inject;
 import javax.sql.DataSource;
+import org.eclipse.microprofile.metrics.MetricRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -76,7 +76,7 @@ public class Worker {
                 .dataSource(dataSource)
                 .fromEnvWithDefaults()
                 .executor(executor)
-                .metricRegistryCodahale(metrics)
+                .metricRegistryMicroProfile(metrics)
                 .build(config.getThreads(), this::work);
         worker.start();
     }

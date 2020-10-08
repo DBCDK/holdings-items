@@ -18,7 +18,6 @@
  */
 package dk.dbc.holdingsitems.monitor;
 
-import dk.dbc.ee.stats.Timed;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -32,6 +31,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import org.eclipse.microprofile.metrics.annotation.Timed;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,7 +50,7 @@ public class Status {
 
     @GET
     @Produces({MediaType.APPLICATION_JSON})
-    @Timed
+    @Timed(reusable = true)
     public Response getStatus() {
         log.info("getStatus called ");
         try (Connection connection = dataSource.getConnection() ;

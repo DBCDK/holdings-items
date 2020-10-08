@@ -22,7 +22,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.sun.messaging.ConnectionConfiguration;
 import com.sun.messaging.ConnectionFactory;
-import dk.dbc.ee.stats.Timed;
 import dk.dbc.holdingsitems.QueueJob;
 import java.util.Map;
 import javax.annotation.PostConstruct;
@@ -34,6 +33,7 @@ import javax.jms.JMSProducer;
 import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.TextMessage;
+import org.eclipse.microprofile.metrics.annotation.Timed;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,7 +72,7 @@ public class JobProcessor {
         this.mapping = config.getMapping();
     }
 
-    @Timed
+    @Timed(reusable = true)
     public void transferJob(QueueJob job, String consumer) throws Exception {
         ObjectNode node = O.createObjectNode();
         String bibliographicRecordId = job.getBibliographicRecordId();

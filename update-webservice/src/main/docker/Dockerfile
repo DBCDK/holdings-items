@@ -1,6 +1,8 @@
 FROM docker.dbc.dk/payara5-full:latest
 MAINTAINER os-team
 
+COPY target/docker/*.jar /opt/payara5/jars/
+
 ENV MAX_POOL_SIZE=32
 
 LABEL HOLDINGS_ITEMS_POSTGRES_URL="Url pointing at holdings items postgres (required). Ex.: 'user:pass@host:1234/dbname'" \

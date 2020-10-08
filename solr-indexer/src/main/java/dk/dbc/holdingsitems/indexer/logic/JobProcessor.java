@@ -22,7 +22,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import dk.dbc.ee.stats.Timed;
 import dk.dbc.holdingsitems.HoldingsItemsDAO;
 import dk.dbc.holdingsitems.QueueJob;
 import dk.dbc.holdingsitems.indexer.Config;
@@ -45,6 +44,7 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
+import org.eclipse.microprofile.metrics.annotation.Timed;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -84,7 +84,7 @@ public class JobProcessor {
         uriBuilder = UriBuilder.fromUri(config.getSolrDocStoreUrl());
     }
 
-    @Timed
+    @Timed(reusable = true)
     @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
     public ObjectNode buildRequestJson(QueueJob job) throws Exception {
         String trackingId = job.getTrackingId();
