@@ -28,8 +28,6 @@ import javax.inject.Inject;
 import javax.jws.WebService;
 import javax.xml.ws.WebServiceContext;
 import org.eclipse.microprofile.metrics.annotation.Timed;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -42,8 +40,6 @@ import org.slf4j.LoggerFactory;
             wsdlLocation = "WEB-INF/wsdl/holdingsItemsUpdate.wsdl")
 @SchemaValidation(handler = WsdlValidationHandler.class, inbound = true, outbound = false)
 public class UpdateWebservice {
-
-    private static final Logger log = LoggerFactory.getLogger(UpdateWebservice.class);
 
     @Inject
     UpdateBean updateBean;
