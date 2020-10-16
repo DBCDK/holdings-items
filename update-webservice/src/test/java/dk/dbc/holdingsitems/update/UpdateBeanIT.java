@@ -18,8 +18,6 @@
  */
 package dk.dbc.holdingsitems.update;
 
-import com.codahale.metrics.Counter;
-import com.codahale.metrics.Timer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dk.dbc.forsrights.client.ForsRightsException;
@@ -59,20 +57,22 @@ import javax.xml.datatype.DatatypeFactory;
 import javax.xml.datatype.XMLGregorianCalendar;
 import javax.xml.ws.WebServiceContext;
 import javax.xml.ws.handler.MessageContext;
+import org.eclipse.microprofile.metrics.Counter;
+import org.eclipse.microprofile.metrics.Timer;
 import org.hamcrest.Matchers;
 import org.junit.Test;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.*;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 /**
  *
  * @author DBC {@literal <dbc.dk>}
  */
-public class UpdateWebserviceIT extends JpaBase {
+public class UpdateBeanIT extends JpaBase {
 
     String branch = "My Branch";
     String department = "My Department";
@@ -84,7 +84,7 @@ public class UpdateWebserviceIT extends JpaBase {
     public void testHoldingsItemsUpdate() throws Exception {
         System.out.println("testHoldingsItemsUpdate");
         HoldingsItemsUpdateResult resp = jpa(em -> {
-            return mockUpdateWebservice(em)
+            return mockUpdateBean(em)
                     .holdingsItemsUpdate(updateReq1());
         });
         System.out.println("status = " + resp.getHoldingsItemsUpdateStatusMessage());
@@ -103,7 +103,7 @@ public class UpdateWebserviceIT extends JpaBase {
     public void testHoldingsItemsUpdateQueue() throws Exception {
         System.out.println("testHoldingsItemsUpdateQueue");
         jpa(em -> {
-            mockUpdateWebservice(em)
+            mockUpdateBean(em)
                     .holdingsItemsUpdate(updateReq1());
         });
         HashMap<String, Set<String>> queue = getQueue();
@@ -116,13 +116,13 @@ public class UpdateWebserviceIT extends JpaBase {
     public void testOnlineHoldingsItemsUpdate() throws Exception {
         System.out.println("testOnlineHoldingsItemsUpdate");
         HoldingsItemsUpdateResult respSetup = jpa(em -> {
-            return mockUpdateWebservice(em)
+            return mockUpdateBean(em)
                     .holdingsItemsUpdate(updateReq1());
         });
         System.out.println("status = " + respSetup.getHoldingsItemsUpdateStatusMessage());
         assertEquals("Expedcted success from request", HoldingsItemsUpdateStatusEnum.OK, respSetup.getHoldingsItemsUpdateStatus());
         HoldingsItemsUpdateResult respCreate = jpa(em -> {
-            return mockUpdateWebservice(em)
+            return mockUpdateBean(em)
                     .onlineHoldingsItemsUpdate(onlineReqCreate());
         });
         System.out.println("status = " + respCreate.getHoldingsItemsUpdateStatusMessage());
@@ -133,7 +133,7 @@ public class UpdateWebserviceIT extends JpaBase {
         assertEquals("Expected online items", 0, countItems(StatusType.DECOMMISSIONED));
         System.out.println("OK");
         HoldingsItemsUpdateResult delete = jpa(em -> {
-            return mockUpdateWebservice(em)
+            return mockUpdateBean(em)
                     .onlineHoldingsItemsUpdate(onlineReqDelete());
         });
         System.out.println("status = " + delete.getHoldingsItemsUpdateStatusMessage());
@@ -145,7 +145,7 @@ public class UpdateWebserviceIT extends JpaBase {
     public void testOnlineHoldingsItemsUpdateQueue() throws Exception {
         System.out.println("testOnlineHoldingsItemsUpdateQueue");
         jpa(em -> {
-            mockUpdateWebservice(em)
+            mockUpdateBean(em)
                     .onlineHoldingsItemsUpdate(onlineReqCreate());
         });
         HashMap<String, Set<String>> queue = getQueue();
@@ -158,7 +158,7 @@ public class UpdateWebserviceIT extends JpaBase {
     public void testCompleteHoldingsItemsUpdateQueue() throws Exception {
         System.out.println("testCompleteHoldingsItemsUpdateQueue");
         jpa(em -> {
-            mockUpdateWebservice(em)
+            mockUpdateBean(em)
                     .completeHoldingsItemsUpdate(completeReq2());
         });
         HashMap<String, Set<String>> queue = getQueue();
@@ -171,14 +171,14 @@ public class UpdateWebserviceIT extends JpaBase {
     public void testUpdateHoldingsItemsCreateAndUpdateQueue() throws Exception {
         System.out.println("testCompleteHoldingsItemsUpdateQueue");
         jpa(em -> {
-            mockUpdateWebservice(em)
+            mockUpdateBean(em)
                     .holdingsItemsUpdate(updateReq1());
         });
         getQueue(); // Just for logging
         clearQueue();
 
         jpa(em -> {
-            mockUpdateWebservice(em)
+            mockUpdateBean(em)
                     .holdingsItemsUpdate(updateReq2());
         });
         HashMap<String, Set<String>> queue = getQueue();
@@ -205,14 +205,14 @@ public class UpdateWebserviceIT extends JpaBase {
     public void testCompleteHoldingsItemsCreateAndUpdateQueue() throws Exception {
         System.out.println("testCompleteHoldingsItemsUpdateQueue");
         jpa(em -> {
-            mockUpdateWebservice(em)
+            mockUpdateBean(em)
                     .completeHoldingsItemsUpdate(completeReq1());
         });
         getQueue(); // Just for logging
         clearQueue();
 
         jpa(em -> {
-            mockUpdateWebservice(em)
+            mockUpdateBean(em)
                     .completeHoldingsItemsUpdate(completeReq3());
         });
         HashMap<String, Set<String>> queue = getQueue();
@@ -237,14 +237,14 @@ public class UpdateWebserviceIT extends JpaBase {
     public void testCompleteHoldingsItemsCreateEmptyJson() throws Exception {
         System.out.println("testCompleteHoldingsItemsCreateEmptyJson");
         jpa(em -> {
-            mockUpdateWebservice(em)
+            mockUpdateBean(em)
                     .completeHoldingsItemsUpdate(completeReq1());
         });
         getQueue(); // Just for logging
         clearQueue();
 
         jpa(em -> {
-            mockUpdateWebservice(em)
+            mockUpdateBean(em)
                     .completeHoldingsItemsUpdate(completeReqEmpty());
         });
         HashMap<String, Set<String>> queue = getQueue();
@@ -272,19 +272,19 @@ public class UpdateWebserviceIT extends JpaBase {
         System.out.println("testCompleteDecommissions");
         HoldingsItemsUpdateResult respSetup =
                 jpa(em -> {
-                    return mockUpdateWebservice(em)
+                    return mockUpdateBean(em)
                             .holdingsItemsUpdate(updateReq1());
                 });
         System.out.println("status = " + respSetup.getHoldingsItemsUpdateStatusMessage());
         assertEquals("Expedcted success from request", HoldingsItemsUpdateStatusEnum.OK, respSetup.getHoldingsItemsUpdateStatus());
         HoldingsItemsUpdateResult resp = jpa(em -> {
-            return mockUpdateWebservice(em)
+            return mockUpdateBean(em)
                     .completeHoldingsItemsUpdate(completeReq1());
         });
         System.out.println("status = " + resp.getHoldingsItemsUpdateStatusMessage());
         assertEquals("Expedcted success from request", HoldingsItemsUpdateStatusEnum.OK, resp.getHoldingsItemsUpdateStatus());
         HoldingsItemsUpdateResult respOnline = jpa(em -> {
-            return mockUpdateWebservice(em)
+            return mockUpdateBean(em)
                     .onlineHoldingsItemsUpdate(onlineReqCreate());
         });
         System.out.println("status = " + respOnline.getHoldingsItemsUpdateStatusMessage());
@@ -302,12 +302,12 @@ public class UpdateWebserviceIT extends JpaBase {
     public void testNoteGetsUpdated() throws Exception {
         System.out.println("testNoteGetsUpdated");
         jpa(em -> {
-            mockUpdateWebservice(em).holdingsItemsUpdate(updateReqNote1());
+            mockUpdateBean(em).holdingsItemsUpdate(updateReqNote1());
         });
         String noteBefore = checkRow(101010, "12345678", "I1", "it1-1").getOrDefault("b.note", "N/A");
         assertEquals("Original Note", noteBefore);
         jpa(em -> {
-            mockUpdateWebservice(em).holdingsItemsUpdate(updateReqNote2());
+            mockUpdateBean(em).holdingsItemsUpdate(updateReqNote2());
         });
         String noteAfter = checkRow(101010, "12345678", "I1", "it1-1").getOrDefault("b.note", "N/A");
         assertEquals("Updated Note", noteAfter);
@@ -327,7 +327,7 @@ public class UpdateWebserviceIT extends JpaBase {
                         holdingsItemsUpdateRequest(101010, null, "track-update-1",
                                                    bibliographicItem("12345678", modified("2017-09-07T09:09:00.000Z"), "Original Note",
                                                                      holding("I1", "Issue #1", date("2199-01-01"), 0, item)));
-                mockUpdateWebservice(em).holdingsItemsUpdate(req);
+                mockUpdateBean(em).holdingsItemsUpdate(req);
             });
 
             BibliographicItemEntity notSet = jpa(em -> {
@@ -350,7 +350,7 @@ public class UpdateWebserviceIT extends JpaBase {
                         holdingsItemsUpdateRequest(101010, null, "track-update-1",
                                                    bibliographicItem("12345678", modified("2017-09-07T09:09:01.000Z"), "Original Note",
                                                                      holding("I1", "Issue #1", date("2199-01-01"), 0, item)));
-                mockUpdateWebservice(em).holdingsItemsUpdate(req);
+                mockUpdateBean(em).holdingsItemsUpdate(req);
             });
 
             BibliographicItemEntity setToE = jpa(em -> {
@@ -373,7 +373,7 @@ public class UpdateWebserviceIT extends JpaBase {
                         holdingsItemsUpdateRequest(101010, null, "track-update-1",
                                                    bibliographicItem("12345678", modified("2017-09-07T09:09:02.000Z"), "Original Note",
                                                                      holding("I1", "Issue #1", date("2199-01-01"), 0, item)));
-                mockUpdateWebservice(em).holdingsItemsUpdate(req);
+                mockUpdateBean(em).holdingsItemsUpdate(req);
             });
 
             BibliographicItemEntity retain = jpa(em -> {
@@ -401,7 +401,7 @@ public class UpdateWebserviceIT extends JpaBase {
                         holdingsItemsUpdateRequest(101010, null, "track-update-1",
                                                    bibliographicItem("12345678", modified("2017-09-07T09:09:00.000Z"), "Original Note",
                                                                      holding("I1", "Issue #1", date("2199-01-01"), 0, item)));
-                mockUpdateWebservice(em).holdingsItemsUpdate(req);
+                mockUpdateBean(em).holdingsItemsUpdate(req);
             });
 
             HashMap<String, Set<String>> queue = getQueue();
@@ -422,7 +422,7 @@ public class UpdateWebserviceIT extends JpaBase {
                         holdingsItemsUpdateRequest(101010, null, "track-update-1",
                                                    bibliographicItem("12345678", modified("2017-09-07T09:09:00.001Z"), "Original Note",
                                                                      holding("I1", "Issue #1", date("2199-01-01"), 0, item)));
-                mockUpdateWebservice(em).holdingsItemsUpdate(req);
+                mockUpdateBean(em).holdingsItemsUpdate(req);
             });
 
             HashMap<String, Set<String>> queue = getQueue();
@@ -447,7 +447,7 @@ public class UpdateWebserviceIT extends JpaBase {
                     holdingsItemsUpdateRequest(101010, null, "track-update-1",
                                                bibliographicItem("12345678", modified("2017-09-07T09:09:00.001Z"), "Original Note",
                                                                  holding("I1", "Issue #1", date("2199-01-01"), 0, item)));
-            mockUpdateWebservice(em).holdingsItemsUpdate(req);
+            mockUpdateBean(em).holdingsItemsUpdate(req);
         });
         jpa(em -> {
             HoldingsItem item = item("it1-1", branch, "234567", department, location, subLocation, circulationRule,
@@ -457,7 +457,7 @@ public class UpdateWebserviceIT extends JpaBase {
                     holdingsItemsUpdateRequest(101011, null, "track-update-1",
                                                bibliographicItem("12345678", modified("2017-09-07T09:09:00.001Z"), "Original Note",
                                                                  holding("I1", "Issue #1", date("2199-01-01"), 0, item)));
-            mockUpdateWebservice(em).holdingsItemsUpdate(req);
+            mockUpdateBean(em).holdingsItemsUpdate(req);
         });
         jpa(em -> {
             HoldingsItem item = item("it1-1", branch, "234567", department, location, subLocation, circulationRule,
@@ -467,7 +467,7 @@ public class UpdateWebserviceIT extends JpaBase {
                     holdingsItemsUpdateRequest(101012, null, "track-update-1",
                                                bibliographicItem("12345678", modified("2017-09-07T09:09:00.001Z"), "Original Note",
                                                                  holding("I1", "Issue #1", date("2199-01-01"), 0, item)));
-            mockUpdateWebservice(em).holdingsItemsUpdate(req);
+            mockUpdateBean(em).holdingsItemsUpdate(req);
         });
 
         try (Connection connection = dataSource.getConnection()) {
@@ -610,8 +610,8 @@ public class UpdateWebserviceIT extends JpaBase {
                 ));
     }
 
-    private UpdateWebservice mockUpdateWebservice(EntityManager em) throws SQLException, ForsRightsException {
-        UpdateWebservice mock = mock(UpdateWebservice.class);
+    private UpdateBean mockUpdateBean(EntityManager em) throws SQLException, ForsRightsException {
+        UpdateBean mock = mock(UpdateBean.class);
         mock.config = mockConfig();
         mock.em = em;
         mock.requestCounter = mock(Counter.class);
@@ -625,19 +625,23 @@ public class UpdateWebserviceIT extends JpaBase {
         mock.loadCollectionTimer = mock(Timer.class);
         AccessValidator validator = mock(AccessValidator.class);
         mock.validator = validator;
-        when(validator.validate(anyObject(), anyString(), anyString()))
+        when(validator.validate(any(Authentication.class), anyString(), anyString()))
                 .then((invocation) -> {
                     Authentication auth = (Authentication) invocation.getArguments()[0];
                     if (auth == null)
                         return null;
                     return auth.getGroupIdAut();
                 });
-        mock.wsc = mock(WebServiceContext.class);
-        doReturn(mockMessageContext()).when(mock.wsc).getMessageContext();
 
-        doCallRealMethod().when(mock).holdingsItemsUpdate(anyObject());
-        doCallRealMethod().when(mock).completeHoldingsItemsUpdate(anyObject());
-        doCallRealMethod().when(mock).onlineHoldingsItemsUpdate(anyObject());
+        doCallRealMethod().when(mock).setWebServiceContext(any(WebServiceContext.class));
+        doCallRealMethod().when(mock).holdingsItemsUpdate(any(HoldingsItemsUpdateRequest.class));
+        doCallRealMethod().when(mock).completeHoldingsItemsUpdate(any(CompleteHoldingsItemsUpdateRequest.class));
+        doCallRealMethod().when(mock).onlineHoldingsItemsUpdate(any(OnlineHoldingsItemsUpdateRequest.class));
+
+        WebServiceContext wsc = mock(WebServiceContext.class);
+        doReturn(mockMessageContext()).when(wsc).getMessageContext();
+        mock.setWebServiceContext(wsc);
+
         return mock;
     }
 

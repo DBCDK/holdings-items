@@ -18,7 +18,6 @@
  */
 package dk.dbc.holdingsitems.indexer;
 
-import com.codahale.metrics.MetricRegistry;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -229,7 +228,6 @@ public class WorkerIT extends JpaBase {
         };
         worker.config = config;
         worker.dataSource = dataSource;
-        worker.metrics = new MetricRegistry();
         worker.init();
         QueueJob job = jobs.poll(10, TimeUnit.SECONDS);
         worker.destroy();
@@ -254,7 +252,6 @@ public class WorkerIT extends JpaBase {
             worker.config = config;
             worker.dataSource = dataSource;
             worker.jobProcessor = new JobProcessor(config, em);
-            worker.metrics = new MetricRegistry();
             worker.jobProcessor.init();
             worker.init();
             ObjectNode job = consumer.requests.poll(10, TimeUnit.SECONDS);

@@ -1,6 +1,5 @@
 package dk.dbc.holdingsitems.content;
 
-import dk.dbc.ee.stats.Timed;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +16,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import org.eclipse.microprofile.metrics.annotation.Timed;
 
 @Stateless
 @Path("status")
@@ -28,7 +28,7 @@ public class Status {
 
     @GET
     @Produces({MediaType.APPLICATION_JSON})
-    @Timed
+    @Timed(reusable = true)
     public Response getStatus() {
         log.info("Status endpoint called.");
         try (Connection connection = dataSource.getConnection();

@@ -18,7 +18,6 @@
  */
 package dk.dbc.holdingsitems.kafkabridge;
 
-import com.codahale.metrics.MetricRegistry;
 import dk.dbc.holdingsitems.QueueJob;
 import dk.dbc.pgqueue.consumer.JobMetaData;
 import dk.dbc.pgqueue.consumer.QueueWorker;
@@ -33,6 +32,7 @@ import javax.ejb.Startup;
 import javax.enterprise.concurrent.ManagedExecutorService;
 import javax.inject.Inject;
 import javax.sql.DataSource;
+import org.eclipse.microprofile.metrics.MetricRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,7 +72,7 @@ public class Worker {
                 .fromEnvWithDefaults()
                 .dataSource(dataSource)
                 .executor(executor)
-                .metricRegistryCodahale(metrics)
+                .metricRegistryMicroProfile(metrics)
                 .build(config.getThreads(), this::work);
         worker.start();
     }
