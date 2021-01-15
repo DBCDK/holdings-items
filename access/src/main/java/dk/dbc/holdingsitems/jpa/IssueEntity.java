@@ -137,7 +137,7 @@ public class IssueEntity implements Serializable {
     transient EntityManager em;
 
     @Transient
-    transient boolean pessimisticForceIncrement; // If entities fetched by this entity should be optiistic_force_increment locked
+    transient boolean pessimisticForceIncrement; // If entities fetched by this entity should be pessimistic_force_increment locked
 
     public static List<IssueEntity> byAgencyBibliographic(EntityManager em, int agencyId, String bibliographicRecordId) {
         List<IssueEntity> list = em.createNamedQuery("byAgencyBibliographic", IssueEntity.class)
