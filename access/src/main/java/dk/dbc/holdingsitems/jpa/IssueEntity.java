@@ -137,7 +137,7 @@ public class IssueEntity implements Serializable {
     transient EntityManager em;
 
     @Transient
-    transient boolean optimisticForceIncrement; // If entities fetched by this entity should be optiistic_force_increment locked
+    transient boolean pessimisticForceIncrement; // If entities fetched by this entity should be pessimistic_force_increment locked
 
     public static List<IssueEntity> byAgencyBibliographic(EntityManager em, int agencyId, String bibliographicRecordId) {
         List<IssueEntity> list = em.createNamedQuery("byAgencyBibliographic", IssueEntity.class)
@@ -172,7 +172,7 @@ public class IssueEntity implements Serializable {
             res.setUpdated(Instant.now());
         }
         res.em = em;
-        res.optimisticForceIncrement = owner.optimisticForceIncrement;
+        res.pessimisticForceIncrement = owner.pessimisticForceIncrement;
         return res;
     }
 
@@ -224,7 +224,7 @@ public class IssueEntity implements Serializable {
      */
     public ItemEntity item(String itemId, Instant modified) {
         ItemEntity item = em.find(ItemEntity.class, new ItemKey(agencyId, bibliographicRecordId, issueId, itemId),
-                                  optimisticForceIncrement ? LockModeType.OPTIMISTIC_FORCE_INCREMENT : LockModeType.NONE);
+                                  pessimisticForceIncrement ? LockModeType.PESSIMISTIC_FORCE_INCREMENT : LockModeType.NONE);
         if (item == null) {
             if (items == null)
                 items = new HashSet<>();

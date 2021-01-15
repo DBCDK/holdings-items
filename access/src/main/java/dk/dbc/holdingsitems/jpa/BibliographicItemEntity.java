@@ -94,10 +94,10 @@ public class BibliographicItemEntity implements Serializable {
     transient EntityManager em;
 
     @Transient
-    transient boolean optimisticForceIncrement; // If entities fetched by this entity should be optimistic_force_increment locked
+    transient boolean pessimisticForceIncrement; // If entities fetched by this entity should be pessimistic_force_increment locked
 
     public static BibliographicItemEntity from(EntityManager em, int agencyId, String bibliographicRecordId, Instant modified, LocalDate firstAccessionDate) {
-        return from(em, new BibliographicItemKey(agencyId, bibliographicRecordId), modified, firstAccessionDate, LockModeType.OPTIMISTIC_FORCE_INCREMENT);
+        return from(em, new BibliographicItemKey(agencyId, bibliographicRecordId), modified, firstAccessionDate, LockModeType.PESSIMISTIC_FORCE_INCREMENT);
     }
 
     public static BibliographicItemEntity fromUnLocked(EntityManager em, int agencyId, String bibliographicRecordId, Instant modified, LocalDate firstAccessionDate) {
@@ -105,7 +105,7 @@ public class BibliographicItemEntity implements Serializable {
     }
 
     public static BibliographicItemEntity from(EntityManager em, BibliographicItemKey key, Instant modified, LocalDate firstAccessionDate) {
-        return from(em, key, modified, firstAccessionDate, LockModeType.OPTIMISTIC_FORCE_INCREMENT);
+        return from(em, key, modified, firstAccessionDate, LockModeType.PESSIMISTIC_FORCE_INCREMENT);
     }
 
     public static BibliographicItemEntity fromUnLocked(EntityManager em, BibliographicItemKey key, Instant modified, LocalDate firstAccessionDate) {
@@ -121,7 +121,7 @@ public class BibliographicItemEntity implements Serializable {
             entity.setModified(modified);
         }
         entity.em = em;
-        entity.optimisticForceIncrement = lock == LockModeType.OPTIMISTIC_FORCE_INCREMENT;
+        entity.pessimisticForceIncrement = lock == LockModeType.PESSIMISTIC_FORCE_INCREMENT;
         return entity;
     }
 
@@ -167,7 +167,7 @@ public class BibliographicItemEntity implements Serializable {
 
     public IssueEntity issue(String issueId, Instant modified) {
         IssueEntity issue = em.find(IssueEntity.class, new IssueKey(agencyId, bibliographicRecordId, issueId),
-                                    optimisticForceIncrement ? LockModeType.OPTIMISTIC_FORCE_INCREMENT : LockModeType.NONE);
+                                    pessimisticForceIncrement ? LockModeType.PESSIMISTIC_FORCE_INCREMENT : LockModeType.NONE);
         if (issue == null) {
             if (issues == null)
                 issues = new HashSet<>();
@@ -178,7 +178,7 @@ public class BibliographicItemEntity implements Serializable {
             issue.setTrackingId(trackingId);
             issues.add(issue);
         }
-        issue.optimisticForceIncrement = optimisticForceIncrement;
+        issue.pessimisticForceIncrement = pessimisticForceIncrement;
         issue.em = em;
         issue.owner = this;
         return issue;
