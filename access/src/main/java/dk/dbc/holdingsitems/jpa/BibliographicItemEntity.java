@@ -147,6 +147,7 @@ public class BibliographicItemEntity implements Serializable {
             em.merge(this);
         }
         persisted();
+        em.flush();
     }
 
     void persisted() {
@@ -177,6 +178,8 @@ public class BibliographicItemEntity implements Serializable {
             issue.setModified(modified);
             issue.setTrackingId(trackingId);
             issues.add(issue);
+        } else {
+            issue.persist = false;
         }
         issue.pessimisticForceIncrement = pessimisticForceIncrement;
         issue.em = em;

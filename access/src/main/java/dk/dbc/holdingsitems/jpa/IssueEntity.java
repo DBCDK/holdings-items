@@ -233,6 +233,8 @@ public class IssueEntity implements Serializable {
             item.setModified(modified);
             item.setTrackingId(trackingId);
             items.add(item);
+        } else {
+            item.persist = false;
         }
         item.owner = this;
         return item;
