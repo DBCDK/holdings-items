@@ -95,7 +95,6 @@ public class JpaBase extends JpaIntegrationTest {
             stmt.execute("TRUNCATE bibliographicItem CASCADE");
             stmt.execute("TRUNCATE queue CASCADE");
             stmt.execute("TRUNCATE queue_error CASCADE");
-            stmt.execute("TRUNCATE q CASCADE");
         }
         env().getEntityManagerFactory().getCache().evictAll();
     }

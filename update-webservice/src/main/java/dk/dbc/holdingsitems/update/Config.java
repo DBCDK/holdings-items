@@ -49,11 +49,8 @@ public class Config {
 
     private static final Logger log = LoggerFactory.getLogger(Config.class);
 
-    private String updateQueueListOld;
     private String updateQueueList;
-    private String completeQueueListOld;
     private String completeQueueList;
-    private String onlineQueueListOld;
     private String onlineQueueList;
     private Set<Integer> shouldLogXmlAgenciesSet;
     private boolean disableAuthentication;
@@ -81,9 +78,9 @@ public class Config {
     }
 
     private void configure() {
-        splitQueue(get("UPDATE_QUEUE_LIST"), s -> updateQueueList = s, s -> updateQueueListOld = s);
-        splitQueue(get("COMPLETE_QUEUE_LIST"), s -> completeQueueList = s, s -> completeQueueListOld = s);
-        splitQueue(get("ONLINE_QUEUE_LIST"), s -> onlineQueueList = s, s -> onlineQueueListOld = s);
+        updateQueueList = get("UPDATE_QUEUE_LIST");
+        completeQueueList = get("COMPLETE_QUEUE_LIST");
+        onlineQueueList = get("ONLINE_QUEUE_LIST");
         shouldLogXmlAgenciesSet = Arrays.stream(get("DEBUG_XML_AGENCIES", "").split(";"))
                 .filter(s -> !s.isEmpty())
                 .map(Integer::parseInt)
@@ -107,42 +104,16 @@ public class Config {
         return env.getOrDefault(var, defaultValue);
     }
 
-    private static void splitQueue(String real, Consumer<String> queueByNew, Consumer<String> queueByOld) {
-        HashSet<String> byNew = new HashSet<>();
-        HashSet<String> byOld = new HashSet<>();
-        for (String queue : real.split(",")) {
-            if (queue.endsWith(":old")) {
-                byOld.add(queue.substring(0, queue.lastIndexOf(':')));
-            } else {
-                byNew.add(queue);
-            }
-        }
-        queueByNew.accept(String.join(",", byNew));
-        queueByOld.accept(String.join(",", byOld));
-    }
-
     public String getUpdateQueueList() {
         return updateQueueList;
-    }
-
-    public String getUpdateQueueOldList() {
-        return updateQueueListOld;
     }
 
     public String getCompleteQueueList() {
         return completeQueueList;
     }
 
-    public String getCompleteQueueOldList() {
-        return completeQueueListOld;
-    }
-
     public String getOnlineQueueList() {
         return onlineQueueList;
-    }
-
-    public String getOnlineQueueOldList() {
-        return onlineQueueListOld;
     }
 
     public boolean getDisableAuthentication() {

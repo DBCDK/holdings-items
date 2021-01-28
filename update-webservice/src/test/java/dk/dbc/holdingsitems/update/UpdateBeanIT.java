@@ -107,7 +107,6 @@ public class UpdateBeanIT extends JpaBase {
                     .holdingsItemsUpdate(updateReq1());
         });
         HashMap<String, Set<String>> queue = getQueue();
-        assertEquals("queue size", 1, queue.get("updateOld").size());
         assertEquals("queue size", 1, queue.get("update").size());
         System.out.println("OK");
     }
@@ -149,7 +148,6 @@ public class UpdateBeanIT extends JpaBase {
                     .onlineHoldingsItemsUpdate(onlineReqCreate());
         });
         HashMap<String, Set<String>> queue = getQueue();
-        assertEquals("queue size", 1, queue.get("onlineOld").size());
         assertEquals("queue size", 1, queue.get("online").size());
         System.out.println("OK");
     }
@@ -162,7 +160,6 @@ public class UpdateBeanIT extends JpaBase {
                     .completeHoldingsItemsUpdate(completeReq2());
         });
         HashMap<String, Set<String>> queue = getQueue();
-        assertEquals("queue size", 1, queue.get("completeOld").size());
         assertEquals("queue size", 1, queue.get("complete").size());
         System.out.println("OK");
     }
@@ -182,7 +179,6 @@ public class UpdateBeanIT extends JpaBase {
                     .holdingsItemsUpdate(updateReq2());
         });
         HashMap<String, Set<String>> queue = getQueue();
-        assertEquals("queue size", 2, queue.get("updateOld").size());
         assertEquals("queue size", 2, queue.get("update").size());
         String rec12345678str = queue.get("update").stream()
                 .filter(s -> s.contains("12345678"))
@@ -216,7 +212,6 @@ public class UpdateBeanIT extends JpaBase {
                     .completeHoldingsItemsUpdate(completeReq3());
         });
         HashMap<String, Set<String>> queue = getQueue();
-        assertEquals("queue size", 1, queue.get("completeOld").size());
         assertEquals("queue size", 1, queue.get("complete").size());
 
         String rec12345678str = queue.get("complete").stream()
@@ -248,7 +243,6 @@ public class UpdateBeanIT extends JpaBase {
                     .completeHoldingsItemsUpdate(completeReqEmpty());
         });
         HashMap<String, Set<String>> queue = getQueue();
-        assertEquals("queue size", 1, queue.get("completeOld").size());
         assertEquals("queue size", 1, queue.get("complete").size());
 
         String rec12345678str = queue.get("complete").stream()
@@ -648,24 +642,12 @@ public class UpdateBeanIT extends JpaBase {
     private void clearQueue() throws SQLException {
         try (Connection connection = dataSource.getConnection() ;
              Statement stmt = connection.createStatement()) {
-            stmt.executeUpdate("TRUNCATE q");
             stmt.executeUpdate("TRUNCATE queue");
         }
     }
 
     private HashMap<String, Set<String>> getQueue() throws SQLException {
         HashMap<String, Set<String>> result = new HashMap<>();
-        try (Connection connection = dataSource.getConnection() ;
-             PreparedStatement stmt = connection.prepareStatement("SELECT worker, agencyId, bibliographicRecordId, issueId FROM q") ;
-             ResultSet resultSet = stmt.executeQuery()) {
-            while (resultSet.next()) {
-                result.computeIfAbsent(resultSet.getString(1), s -> new HashSet<>())
-                        .add(resultSet.getInt(2) + "|" +
-                             resultSet.getString(3) + "|" +
-                             resultSet.getString(4));
-
-            }
-        }
         try (Connection connection = dataSource.getConnection() ;
              PreparedStatement stmt = connection.prepareStatement("SELECT consumer, agencyId, bibliographicRecordId, stateChange FROM queue") ;
              ResultSet resultSet = stmt.executeQuery()) {
@@ -687,9 +669,9 @@ public class UpdateBeanIT extends JpaBase {
 
     private Config mockConfig() {
         return new Config("DISABLE_AUTHENTICATION=true",
-                          "UPDATE_QUEUE_LIST=updateOld:old,update",
-                          "COMPLETE_QUEUE_LIST=completeOld:old,complete",
-                          "ONLINE_QUEUE_LIST=onlineOld:old,online",
+                          "UPDATE_QUEUE_LIST=update",
+                          "COMPLETE_QUEUE_LIST=complete",
+                          "ONLINE_QUEUE_LIST=online",
                           "FORS_RIGHTS_URL=ANY",
                           "FORS_RIGHT_CACHE_AGE=8h",
                           "RIGHTS_NAME=any",

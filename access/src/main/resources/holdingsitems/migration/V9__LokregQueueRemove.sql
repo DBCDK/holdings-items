@@ -1,0 +1,2 @@
+DROP TABLE q;
+DROP TABLE diag;
