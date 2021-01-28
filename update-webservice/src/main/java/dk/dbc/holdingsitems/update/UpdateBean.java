@@ -196,11 +196,6 @@ public class UpdateBean {
                 }
 
                 @Override
-                public String getQueueListOld() {
-                    return config.getUpdateQueueOldList();
-                }
-
-                @Override
                 public String getQueueList() {
                     return config.getUpdateQueueList();
                 }
@@ -274,11 +269,6 @@ public class UpdateBean {
                 @Override
                 public String getTrakingId() {
                     return req.getTrackingId();
-                }
-
-                @Override
-                public String getQueueListOld() {
-                    return config.getCompleteQueueOldList();
                 }
 
                 @Override
@@ -380,11 +370,6 @@ public class UpdateBean {
                 @Override
                 public String getTrakingId() {
                     return req.getTrackingId();
-                }
-
-                @Override
-                public String getQueueListOld() {
-                    return config.getOnlineQueueOldList();
                 }
 
                 @Override

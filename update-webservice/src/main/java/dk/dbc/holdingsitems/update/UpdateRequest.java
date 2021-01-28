@@ -90,13 +90,6 @@ public abstract class UpdateRequest {
      *
      * @return comma separated list of queues for this endpoint
      */
-    public abstract String getQueueListOld();
-
-    /**
-     * List queues a request should enqueue onto
-     *
-     * @return comma separated list of queues for this endpoint
-     */
     public abstract String getQueueList();
 
     /**
@@ -169,23 +162,6 @@ public abstract class UpdateRequest {
                         log.debug("Cannot make json to string: ", ex);
                     }
                     dao.enqueue(queueEntry.getBibliographicRecordId(), queueEntry.getAgencyId(), saveStateChangeText, queue);
-                } catch (HoldingsItemsException ex) {
-                    throw new WrapperException(ex);
-                }
-            }
-        }
-        queues = getQueueListOld().split("[^-0-9a-zA-Z_]+");
-        for (QueueEntry queueEntry : queueEntries) {
-            for (String queue : queues) {
-                if (queue.isEmpty()) {
-                    continue;
-                }
-                log.info("QUEUE: " +
-                         queueEntry.getAgencyId() + "|" +
-                         queueEntry.getBibliographicRecordId() + "|" +
-                         queue);
-                try {
-                    dao.enqueueOld(queueEntry.getBibliographicRecordId(), queueEntry.getAgencyId(), queue);
                 } catch (HoldingsItemsException ex) {
                     throw new WrapperException(ex);
                 }

@@ -52,27 +52,6 @@ import static org.junit.Assert.*;
 public class HoldingsItemsDAOIT extends JpaBase {
 
     @Test
-    public void testOldQueue() throws HoldingsItemsException, SQLException {
-        System.out.println("testOldQueue");
-        jpa(em -> {
-            HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em);
-            dao.enqueueOld("987654321", 870970, "solrIndex1");
-        });
-        flushAndEvict();
-        jpa(em -> {
-            HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em);
-            List<QueueJob> queue = queue();
-            System.out.println("queue = " + queue);
-            assertEquals("Sizeof queue is 1", 1, queue.size());
-            assertEquals("Queue Entry 1 starts with: ", "solrIndex1", queue.get(0).getWorker());
-            Instant queued = queue.get(0).getQueued();
-            long diff = Math.abs(queued.toEpochMilli() - Instant.now().toEpochMilli());
-            System.out.println("diff = " + diff);
-            assertTrue("Not too long ago it has been queued", diff < 500);
-        });
-    }
-
-    @Test
     public void testEnqueue() throws Exception {
         System.out.println("testEnqueue");
         jpa(em -> {
@@ -280,32 +259,6 @@ public class HoldingsItemsDAOIT extends JpaBase {
 // |  _  |  __/ | |_) |  __/ |    |  _|| |_| | | | | (__| |_| | (_) | | | \__ \
 // |_| |_|\___|_| .__/ \___|_|    |_|   \__,_|_| |_|\___|\__|_|\___/|_| |_|___/
 //              |_|
-    private static final SimpleDateFormat DATE_PARSER = new SimpleDateFormat("YYYY-MM-DD");
-
-    @SuppressWarnings({"deprecation"})
-    List<QueueJob> queue() throws SQLException {
-        ArrayList<QueueJob> ret = new ArrayList<>();
-        try (Connection connection = dataSource.getConnection() ;
-             PreparedStatement stmt = connection.prepareStatement("SELECT " + QueueJob.SQL_COLUMNS + " FROM q") ;
-             ResultSet resultSet = stmt.executeQuery()) {
-            while (resultSet.next()) {
-                ret.add(new QueueJob(resultSet));
-            }
-        }
-        return ret;
-    }
-
-    int diags() throws SQLException {
-        try (Connection connection = dataSource.getConnection() ;
-             PreparedStatement stmt = connection.prepareStatement("SELECT COUNT(*) FROM diag") ;
-             ResultSet resultSet = stmt.executeQuery()) {
-            if (resultSet.next()) {
-                return resultSet.getInt(1);
-            }
-        }
-        return -1;
-    }
-
     private void make4(EntityManager em) {
 
         BibliographicItemEntity b1 = BibliographicItemEntity.from(em, 870970, "25912233", Instant.MIN, LocalDate.now());
