@@ -53,13 +53,13 @@ pipeline {
                     publishIssues issues:[java, javadoc]
 
                     def pmd = scanForIssues tool: [$class: 'Pmd'], pattern: '**/target/pmd.xml'
-                    publishIssues issues:[pmd]
+                    publishIssues issues:[pmd], unstableTotalAll:1
 
                     def cpd = scanForIssues tool: [$class: 'Cpd'], pattern: '**/target/cpd.xml'
                     publishIssues issues:[cpd]
 
                     def spotbugs = scanForIssues tool: [$class: 'SpotBugs'], pattern: '**/target/spotbugsXml.xml'
-                    publishIssues issues:[spotbugs]
+                    publishIssues issues:[spotbugs], unstableTotalAll:1
 
                     step([$class: 'JacocoPublisher',
                           execPattern: 'target/*.exec,**/target/*.exec',
