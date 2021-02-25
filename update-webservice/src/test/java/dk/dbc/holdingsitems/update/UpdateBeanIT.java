@@ -59,7 +59,6 @@ import javax.xml.ws.WebServiceContext;
 import javax.xml.ws.handler.MessageContext;
 import org.eclipse.microprofile.metrics.Counter;
 import org.eclipse.microprofile.metrics.Timer;
-import org.hamcrest.Matchers;
 import org.junit.Test;
 
 import static org.hamcrest.Matchers.containsString;
@@ -206,7 +205,6 @@ public class UpdateBeanIT extends JpaBase {
         });
         getQueue(); // Just for logging
         clearQueue();
-
         jpa(em -> {
             mockUpdateBean(em)
                     .completeHoldingsItemsUpdate(completeReq3());
@@ -284,12 +282,8 @@ public class UpdateBeanIT extends JpaBase {
         System.out.println("status = " + respOnline.getHoldingsItemsUpdateStatusMessage());
         assertEquals("Expedcted success from request", HoldingsItemsUpdateStatusEnum.OK, respOnline.getHoldingsItemsUpdateStatus());
         assertEquals("Expected collections", 4, countAllCollections());
-        assertEquals("Expected items", 5, countAllItems());
-        assertEquals("Expected decommissioned", 3, countItems(StatusType.DECOMMISSIONED));
+        assertEquals("Expected items", 2, countAllItems());
         assertEquals("Expected online", 1, countItems(StatusType.ONLINE));
-        HashMap<String, String> row = checkRow(101010, "12345678", "I1", "it1-1");
-        assertNotNull("Expected a row", row);
-        assertEquals("complete time as new update", "2017-09-07T09:09:01.001Z", row.get("c.complete"));
     }
 
     @Test(timeout = 2_000L)
@@ -429,68 +423,6 @@ public class UpdateBeanIT extends JpaBase {
         }
     }
 
-    @Test(timeout = 2_000L)
-    public void testThat114TypeGetAgenciesThatHasHoldingsForWorks() throws Exception {
-        System.out.println("testThat114TypeGetAgenciesThatHasHoldingsForWorks");
-
-        jpa(em -> {
-            HoldingsItem item = item("it1-1", branch, "234567", department, location, subLocation, circulationRule,
-                                     StatusType.DECOMMISSIONED, date("2017-01-01"));
-            item.setLoanRestriction(null);
-            HoldingsItemsUpdateRequest req =
-                    holdingsItemsUpdateRequest(101010, null, "track-update-1",
-                                               bibliographicItem("12345678", modified("2017-09-07T09:09:00.001Z"), "Original Note",
-                                                                 holding("I1", "Issue #1", date("2199-01-01"), 0, item)));
-            mockUpdateBean(em).holdingsItemsUpdate(req);
-        });
-        jpa(em -> {
-            HoldingsItem item = item("it1-1", branch, "234567", department, location, subLocation, circulationRule,
-                                     StatusType.ON_LOAN, date("2017-01-01"));
-            item.setLoanRestriction(null);
-            HoldingsItemsUpdateRequest req =
-                    holdingsItemsUpdateRequest(101011, null, "track-update-1",
-                                               bibliographicItem("12345678", modified("2017-09-07T09:09:00.001Z"), "Original Note",
-                                                                 holding("I1", "Issue #1", date("2199-01-01"), 0, item)));
-            mockUpdateBean(em).holdingsItemsUpdate(req);
-        });
-        jpa(em -> {
-            HoldingsItem item = item("it1-1", branch, "234567", department, location, subLocation, circulationRule,
-                                     StatusType.ON_SHELF, date("2017-01-01"));
-            item.setLoanRestriction(null);
-            HoldingsItemsUpdateRequest req =
-                    holdingsItemsUpdateRequest(101012, null, "track-update-1",
-                                               bibliographicItem("12345678", modified("2017-09-07T09:09:00.001Z"), "Original Note",
-                                                                 holding("I1", "Issue #1", date("2199-01-01"), 0, item)));
-            mockUpdateBean(em).holdingsItemsUpdate(req);
-        });
-
-        try (Connection connection = dataSource.getConnection()) {
-            Set<Integer> agencies = getAgenciesThatHasHoldingsFor114(connection, "12345678");
-            assertThat(agencies, Matchers.containsInAnyOrder(101011, 101012));
-        }
-    }
-
-    // 1.1.4 START
-    private static final String AGENCIES_WITH_BIBLIOGRAPHICRECORDID = "SELECT DISTINCT agencyId FROM holdingsitemscollection" +
-                                                                      " JOIN holdingsitemsitem USING(agencyId, bibliographicRecordId, issueId)" +
-                                                                      " WHERE bibliographicRecordId=? AND status != 'Decommissioned'";
-
-    public Set<Integer> getAgenciesThatHasHoldingsFor114(Connection connection, String bibliographicRecordId) throws SQLException {
-        HashSet agencies = new HashSet<Integer>();
-
-        try (PreparedStatement stmt = connection.prepareStatement(AGENCIES_WITH_BIBLIOGRAPHICRECORDID)) {
-            stmt.setString(1, bibliographicRecordId);
-            try (ResultSet resultSet = stmt.executeQuery()) {
-                while (resultSet.next()) {
-                    int agency = resultSet.getInt(1);
-                    agencies.add(agency);
-                }
-            }
-        }
-        return agencies;
-    }
-    // 1.1.4 END
-
     public HoldingsItemsUpdateRequest updateReq1() throws DatatypeConfigurationException {
         return holdingsItemsUpdateRequest(
                 101010, null, "track-update-1",
@@ -568,10 +500,10 @@ public class UpdateBeanIT extends JpaBase {
                 completeBibliographicItem(
                         "12345678", modified("2017-09-07T09:09:03.001Z"), "Other Note",
                         holding("I3", "Issue #3", null, 1,
-                                item("it3-1", branch, "234567", department, location, subLocation, circulationRule,
+                                item("it3-2", branch, "234567", department, location, subLocation, circulationRule,
                                      StatusType.ON_LOAN, date("2017-01-01"))),
                         holding("I3", "Issue #3", null, 1,
-                                item("it3-2", branch, "234567", department, location, subLocation, circulationRule,
+                                item("it3-3", branch, "234567", department, location, subLocation, circulationRule,
                                      StatusType.ON_LOAN, date("2017-01-01")))));
     }
 
