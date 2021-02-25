@@ -63,6 +63,7 @@ public class JpaBase extends JpaIntegrationTest {
 
     public void jpa(JpaVoidExecution ex) {
         JpaTestEnvironment e = env();
+        e.reset();
         EntityManager em = e.getEntityManager();
         e.getPersistenceContext().run(() -> {
             try {
@@ -77,6 +78,7 @@ public class JpaBase extends JpaIntegrationTest {
 
     public <T> T jpa(JpaExecution<T> ex) {
         JpaTestEnvironment e = env();
+        e.reset();
         EntityManager em = e.getEntityManager();
         return e.getPersistenceContext().run(() -> {
             try {

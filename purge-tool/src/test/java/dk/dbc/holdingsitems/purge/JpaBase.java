@@ -70,6 +70,7 @@ public class JpaBase extends JpaIntegrationTest {
 
     public void exec(DaoVoidExecution exe) {
         JpaTestEnvironment e = env();
+        e.reset();
         EntityManager em = e.getEntityManager();
         EntityTransaction transaction = em.getTransaction();
         try {
@@ -86,6 +87,7 @@ public class JpaBase extends JpaIntegrationTest {
 
     public <T> T exec(DaoExecution<T> exe) {
         JpaTestEnvironment e = env();
+        e.reset();
         EntityManager em = e.getEntityManager();
         EntityTransaction transaction = em.getTransaction();
         try {
