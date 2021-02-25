@@ -79,4 +79,8 @@ public class IssueKey implements Serializable {
                Objects.equals(this.issueId, other.issueId);
     }
 
+    @Override
+    public String toString() {
+        return "IssueKey{" + "agencyId=" + getAgencyId() + ", bibliographicRecordId=" + getBibliographicRecordId() + ", issueId=" + issueId + '}';
+    }
 }
