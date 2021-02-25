@@ -20,11 +20,11 @@ package dk.dbc.holdingsitems.indexer.logic;
 
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import dk.dbc.holdingsitems.jpa.ItemEntity;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
-
 
 /**
  *
@@ -32,10 +32,12 @@ import java.util.Set;
  */
 public class RepeatedFields {
 
+    private final Set<String> branchs;
     private final Set<String> itemIds;
     private final Set<String> trackingIds;
 
     public RepeatedFields() {
+        this.branchs = new HashSet<>();
         this.itemIds = new HashSet<>();
         this.trackingIds = new HashSet<>();
     }
@@ -45,17 +47,28 @@ public class RepeatedFields {
         this.trackingIds.addAll(Arrays.asList(trackingIds));
     }
 
-    public void addItemId(String itemId) {
+    public void addRepeatedFieldsFrom(ItemEntity item) {
+        addBranch(item.getBranch());
+        addItemId(item.getItemId());
+        addTrackingId(item.getTrackingId());
+    }
+
+    private void addBranch(String branch) {
+        branchs.add(branch);
+    }
+
+    private void addItemId(String itemId) {
         itemIds.add(itemId);
     }
 
-    public void addTrackingId(String trackingId) {
+    private void addTrackingId(String trackingId) {
         if (trackingId != null && !trackingId.isEmpty()) {
             trackingIds.add(trackingId);
         }
     }
 
     public void fillIn(ObjectNode node) {
+        addAll(node, SolrFields.BRANCH, branchs);
         addAll(node, SolrFields.ITEM_ID, itemIds);
         addAll(node, SolrFields.TRACKING_ID, trackingIds);
     }
@@ -67,7 +80,7 @@ public class RepeatedFields {
 
     @Override
     public String toString() {
-        return "RepeatedFields{" + "itemIds=" + itemIds + ", trackingIds=" + trackingIds + '}';
+        return "RepeatedFields{" + "branchs=" + branchs + ", itemIds=" + itemIds + ", trackingIds=" + trackingIds + '}';
     }
 
 }

@@ -29,7 +29,6 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Objects;
 
-
 /**
  *
  * @author DBC {@literal <dbc.dk>}
@@ -42,7 +41,6 @@ public class UniqueFields {
     private final String issueText;
     private final LocalDate expectedDelivery;
     private final int readyForLoan;
-    private final String branch;
     private final String branchId;
     private final String department;
     private final String location;
@@ -59,7 +57,6 @@ public class UniqueFields {
         this.issueText = collection.getIssueText();
         this.expectedDelivery = collection.getExpectedDelivery();
         this.readyForLoan = collection.getReadyForLoan();
-        this.branch = record.getBranch();
         this.branchId = record.getBranchId();
         this.department = record.getDepartment();
         this.location = record.getLocation();
@@ -79,11 +76,7 @@ public class UniqueFields {
         if (expectedDelivery != null)
             node.putArray(SolrFields.EXPECTED_DELIVERY.getFieldName()).add(isoDate(expectedDelivery));
         node.putArray(SolrFields.READY_FOR_LOAN.getFieldName()).add(String.valueOf(readyForLoan));
-        // TODO then all have branchId move branch to RepeatedFields
-        node.putArray(SolrFields.BRANCH.getFieldName()).add(branch);
-        // TODO - whan all have branchId this check isn't nessecary
-        if (branchId != null && !branchId.isEmpty())
-            node.putArray(SolrFields.BRANCH_ID.getFieldName()).add(String.valueOf(branchId));
+        node.putArray(SolrFields.BRANCH_ID.getFieldName()).add(String.valueOf(branchId));
         node.putArray(SolrFields.DEPARTMENT.getFieldName()).add(department);
         node.putArray(SolrFields.LOCATION.getFieldName()).add(location);
         node.putArray(SolrFields.SUBLOCATION.getFieldName()).add(subLocation);
@@ -108,7 +101,6 @@ public class UniqueFields {
         hash = 43 * hash + Objects.hashCode(this.issueText);
         hash = 43 * hash + Objects.hashCode(this.expectedDelivery);
         hash = 43 * hash + this.readyForLoan;
-        hash = 43 * hash + Objects.hashCode(this.branch);
         hash = 43 * hash + Objects.hashCode(this.branchId);
         hash = 43 * hash + Objects.hashCode(this.department);
         hash = 43 * hash + Objects.hashCode(this.location);
@@ -132,7 +124,6 @@ public class UniqueFields {
                Objects.equals(this.bibliographicRecordId, other.bibliographicRecordId) &&
                Objects.equals(this.issueId, other.issueId) &&
                Objects.equals(this.issueText, other.issueText) &&
-               Objects.equals(this.branch, other.branch) &&
                Objects.equals(this.branchId, other.branchId) &&
                Objects.equals(this.department, other.department) &&
                Objects.equals(this.location, other.location) &&
@@ -146,7 +137,7 @@ public class UniqueFields {
 
     @Override
     public String toString() {
-        return "UniqueFields{" + "agencyId=" + agencyId + ", bibliographicRecordId=" + bibliographicRecordId + ", issueId=" + issueId + ", issueText=" + issueText + ", expectedDelivery=" + expectedDelivery + ", readyForLoan=" + readyForLoan + ", branch=" + branch + ", branchId=" + branchId + ", department=" + department + ", location=" + location + ", subLocation=" + subLocation + ", circulationRule=" + circulationRule + ", status=" + status + ", accessionDate=" + accessionDate + ", loanRestriction=" + loanRestriction + '}';
+        return "UniqueFields{" + "agencyId=" + agencyId + ", bibliographicRecordId=" + bibliographicRecordId + ", issueId=" + issueId + ", issueText=" + issueText + ", expectedDelivery=" + expectedDelivery + ", readyForLoan=" + readyForLoan + ", branchId=" + branchId + ", department=" + department + ", location=" + location + ", subLocation=" + subLocation + ", circulationRule=" + circulationRule + ", status=" + status + ", accessionDate=" + accessionDate + ", loanRestriction=" + loanRestriction + '}';
     }
 
 }

@@ -98,8 +98,7 @@ public class JobProcessor {
             issue.stream().forEach(item -> {
                 UniqueFields key = new UniqueFields(issue, item);
                 RepeatedFields repeatedFields = records.computeIfAbsent(key, v -> new RepeatedFields(b.getTrackingId(), issue.getTrackingId(), job.getTrackingId()));
-                repeatedFields.addItemId(item.getItemId());
-                repeatedFields.addTrackingId(item.getTrackingId());
+                repeatedFields.addRepeatedFieldsFrom(item);
             });
         });
 
