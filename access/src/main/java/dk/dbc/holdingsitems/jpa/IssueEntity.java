@@ -47,7 +47,6 @@ import javax.persistence.Table;
 import javax.persistence.Transient;
 import javax.persistence.Version;
 
-import static java.util.Collections.EMPTY_SET;
 
 /**
  * Database mapping of holdingsitemscollection table
@@ -119,7 +118,6 @@ public class IssueEntity implements Serializable {
         @JoinColumn(name = "bibliographicRecordId", referencedColumnName = "bibliographicRecordId",
                     insertable = false, updatable = false)
     })
-
     @ManyToOne(cascade = CascadeType.ALL)
     BibliographicItemEntity owner;
 
@@ -151,6 +149,7 @@ public class IssueEntity implements Serializable {
     public IssueEntity() {
         this.pk = new IssueKey();
         this.persist = false;
+        this.items = new HashSet<>();
     }
 
     IssueEntity(BibliographicItemEntity owner, String issueId) {
@@ -160,6 +159,7 @@ public class IssueEntity implements Serializable {
         this.issueId = issueId;
         this.owner = owner;
         this.persist = true;
+        this.items = new HashSet<>();
     }
 
     public static IssueEntity from(EntityManager em, BibliographicItemEntity owner, String issueId) {
@@ -199,8 +199,6 @@ public class IssueEntity implements Serializable {
      * @return stream of all related items
      */
     public Stream<ItemEntity> stream() {
-        if (items == null)
-            return EMPTY_SET.stream();
         return items.stream();
     }
 
@@ -223,25 +221,26 @@ public class IssueEntity implements Serializable {
      *         it is newly created)
      */
     public ItemEntity item(String itemId, Instant modified) {
-        ItemEntity item = em.find(ItemEntity.class, new ItemKey(agencyId, bibliographicRecordId, issueId, itemId),
+        ItemKey key = new ItemKey(agencyId, bibliographicRecordId, issueId, itemId);
+        ItemEntity item = em.find(ItemEntity.class, key,
                                   pessimisticForceIncrement ? LockModeType.PESSIMISTIC_FORCE_INCREMENT : LockModeType.NONE);
         if (item == null) {
-            if (items == null)
-                items = new HashSet<>();
             item = new ItemEntity(this, itemId);
             item.setCreated(Instant.now());
             item.setModified(modified);
             item.setTrackingId(trackingId);
-            items.add(item);
         } else {
             item.persist = false;
         }
+        items.add(item);
         item.owner = this;
         return item;
     }
 
     public void removeItem(ItemEntity item) {
         items.remove(item);
+        item.owner = null;
+        em.remove(item);
     }
 
     public boolean isNew() {
