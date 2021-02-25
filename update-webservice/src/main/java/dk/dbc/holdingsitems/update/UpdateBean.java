@@ -316,8 +316,8 @@ public class UpdateBean {
                             Set<String> processedItems = processIssuesAndItems.getOrDefault(issueId, EMPTY_SET);
                             List<ItemEntity> decommissioned = issue.stream() // For all items
                                     .filter(item -> !processedItems.contains(item.getItemId())) // Not those present in request
-                                    .filter(item -> item.getStatus() != Status.ONLINE) // That are't online type
-                                    .filter(item -> !item.getModified().isAfter(modified)) // And hasn't been modified in the future
+                                    .filter(item -> item.getStatus() != Status.ONLINE) // That aren't online type
+                                    .filter(item -> !item.getModified().isAfter(modified)) // And haven't been modified in the future
                                     .collect(toList());
                             log.debug("decommissioned = {}", decommissioned);
                             decommissioned.forEach(item -> {
