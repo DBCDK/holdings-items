@@ -26,14 +26,10 @@ import dk.dbc.holdingsitems.jpa.Status;
 import org.junit.Test;
 
 import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.sql.Statement;
-import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
@@ -100,7 +96,7 @@ public class HoldingsItemsDAOIT extends JpaBase {
             BibliographicItemEntity b = BibliographicItemEntity.from(em, 870970, "abc", Instant.now(), LocalDate.MAX);
             IssueEntity c = b.issue("i1", Instant.MIN);
             c.item("d", Instant.MIN)
-                    .setStatus(Status.DECOMMISSIONED);
+                    .remove();
             em.merge(b);
         });
 
@@ -110,11 +106,9 @@ public class HoldingsItemsDAOIT extends JpaBase {
             return em.createQuery("SELECT h.bibliographicRecordId" +
                                   " FROM ItemEntity h" +
                                   " WHERE h.agencyId = :agencyId" +
-                                  "  AND h.status != :status" +
                                   " GROUP BY h.agencyId, h.bibliographicRecordId",
                                   String.class)
                     .setParameter("agencyId", 870970)
-                    .setParameter("status", Status.DECOMMISSIONED)
                     .getResultList();
         });
         System.out.println("bibIds = " + bibIdsDecom);
@@ -176,7 +170,7 @@ public class HoldingsItemsDAOIT extends JpaBase {
         assertThat(statusMap.size(), is(3));
     }
 
-    @Test(timeout = 2_000L)
+    @Test(timeout = 12_000L)
     public void hasLiveHoldingsForAgencyAndBibliographicRecordId() throws Exception {
         System.out.println("hasLiveHoldingsForAgencyAndBibliographicRecordId");
         // Create live holding
@@ -189,6 +183,7 @@ public class HoldingsItemsDAOIT extends JpaBase {
                     .setStatus(Status.ON_SHELF);
             b1.save();
         });
+        flushAndEvict();
 
         boolean hasLiveHoldings = jpa(em -> {
             HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em);
@@ -201,9 +196,10 @@ public class HoldingsItemsDAOIT extends JpaBase {
             BibliographicItemEntity b1 = BibliographicItemEntity.from(em, 870970, "25912233", Instant.MIN, LocalDate.now());
             IssueEntity c1 = b1.issue("i1", Instant.MIN);
             c1.item("a", Instant.MIN)
-                    .setStatus(Status.DECOMMISSIONED);
+                    .remove();
             b1.save();
         });
+
 
         hasLiveHoldings = jpa(em -> {
             HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em);
@@ -219,6 +215,7 @@ public class HoldingsItemsDAOIT extends JpaBase {
                     .setStatus(Status.ON_SHELF);
             c2.save();
         });
+        flushAndEvict();
 
         hasLiveHoldings = jpa(em -> {
             HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em);
