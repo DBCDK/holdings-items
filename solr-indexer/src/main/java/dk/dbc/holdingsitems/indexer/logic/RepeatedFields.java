@@ -32,12 +32,12 @@ import java.util.Set;
  */
 public class RepeatedFields {
 
-    private final Set<String> branchs;
+    private final Set<String> branches;
     private final Set<String> itemIds;
     private final Set<String> trackingIds;
 
     public RepeatedFields() {
-        this.branchs = new HashSet<>();
+        this.branches = new HashSet<>();
         this.itemIds = new HashSet<>();
         this.trackingIds = new HashSet<>();
     }
@@ -54,7 +54,7 @@ public class RepeatedFields {
     }
 
     private void addBranch(String branch) {
-        branchs.add(branch);
+        branches.add(branch);
     }
 
     private void addItemId(String itemId) {
@@ -68,7 +68,7 @@ public class RepeatedFields {
     }
 
     public void fillIn(ObjectNode node) {
-        addAll(node, SolrFields.BRANCH, branchs);
+        addAll(node, SolrFields.BRANCH, branches);
         addAll(node, SolrFields.ITEM_ID, itemIds);
         addAll(node, SolrFields.TRACKING_ID, trackingIds);
     }
@@ -80,7 +80,7 @@ public class RepeatedFields {
 
     @Override
     public String toString() {
-        return "RepeatedFields{" + "branchs=" + branchs + ", itemIds=" + itemIds + ", trackingIds=" + trackingIds + '}';
+        return "RepeatedFields{" + "branchs=" + branches + ", itemIds=" + itemIds + ", trackingIds=" + trackingIds + '}';
     }
 
 }
