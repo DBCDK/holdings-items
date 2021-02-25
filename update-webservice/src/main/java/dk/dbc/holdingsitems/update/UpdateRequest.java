@@ -44,7 +44,10 @@ import java.util.Comparator;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import javax.xml.datatype.XMLGregorianCalendar;
@@ -53,6 +56,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.time.ZoneOffset.UTC;
+import static java.util.stream.Collectors.toList;
 
 /**
  *
@@ -172,15 +176,16 @@ public abstract class UpdateRequest {
     /**
      * Fetch a collection and add a holding to it
      *
-     * @param modified whence the request says the collection is
-     *                 modified
-     * @param bibItem  database representation
-     * @param holding  holding describing an issue
-     * @param complete is this a complete or an update request
+     * @param modified       whence the request says the collection is
+     *                       modified
+     * @param bibItem        database representation
+     * @param holding        holding describing an issue
+     * @param processedItems A map of issue to collection of items, that are
+     *                       processed (filled in by this method)
      * @throws WrapperException RuntimeException for wrapping Exceptions in
      *                          (useful for using .stream())
      */
-    protected void processHolding(Instant modified, BibliographicItemEntity bibItem, boolean complete, Holding holding) throws WrapperException {
+    protected void processHolding(Instant modified, BibliographicItemEntity bibItem, Holding holding, Map<String, Set<String>> processedItems) throws WrapperException {
         String issueId = holding.getIssueId();
         try (LogWith logWith = new LogWith()) {
             logWith.with("issueId", issueId);
@@ -210,25 +215,15 @@ public abstract class UpdateRequest {
                         .setTrackingId(getTrakingId());
             }
 
-            HashSet<String> handledItems = new HashSet<>();
             holding.getHoldingsItems().forEach(holdingsItem -> {
-                handledItems.add(holdingsItem.getItemId());
                 addItemToCollection(issue, holdingsItem, modified);
             });
-            HashMap<String, StateChangeMetadata> statuses = oldItemStatus.computeIfAbsent(bibItem.getBibliographicRecordId(), f -> new HashMap<>());
-            if (complete) {
-                issue.setComplete(modified);
-                issue.stream()
-                        .filter(item -> !handledItems.contains(item.getItemId())) // Skip all that are in the request
-                        .filter(item -> !item.getModified().isAfter(modified)) // Skip all that are newer in tha database
-                        .filter(item -> item.getStatus() != Status.ONLINE) // Online are special - should not be deleted
-                        .forEach(item -> {
-                            statuses.computeIfAbsent(item.getItemId(), i -> new StateChangeMetadata(item.getStatus(), item.getModified()))
-                                    .update(Status.DECOMMISSIONED, modified);
-                            item.setStatus(Status.DECOMMISSIONED)
-                                    .setModified(modified)
-                                    .setTrackingId(getTrakingId());
-                        });
+
+            if (processedItems != null) {
+                Set<String> handledItems = processedItems.computeIfAbsent(issueId, i -> new HashSet<>());
+                holding.getHoldingsItems().forEach(holdingsItem -> {
+                    handledItems.add(holdingsItem.getItemId());
+                });
             }
         }
     }
@@ -244,24 +239,16 @@ public abstract class UpdateRequest {
         collection.setComplete(modified);
         String bibliographicRecordId = collection.getBibliographicRecordId();
         HashMap<String, StateChangeMetadata> statuses = oldItemStatus.computeIfAbsent(bibliographicRecordId, f -> new HashMap<>());
-        collection.stream()
-                .forEach(record -> {
-                    String itemId = record.getItemId();
-                    Status oldStatus = record.getStatus();
-                    if (oldStatus == Status.ONLINE)
-                        return;
-                    if (record.getModified().isAfter(modified)) // This is modified after complete - keep it
-                        return;
-
-                    StateChangeMetadata metadata = statuses.computeIfAbsent(itemId, i -> new StateChangeMetadata(oldStatus, record.getModified()));
-                    metadata.update(Status.DECOMMISSIONED, modified);
-                    record.setStatus(Status.DECOMMISSIONED);
-                    record.setModified(modified);
-                    record.setTrackingId(getTrakingId());
-
-                    log.debug("record = {}", record);
-                    log.debug("metadata = {}", metadata);
-                });
+        List<ItemEntity> decommissioned = collection.stream()
+                .filter(item -> item.getStatus() != Status.ONLINE)
+                .filter(item -> !item.getModified().isAfter(modified)) // This is modified after complete - keep it
+                .collect(toList());
+        decommissioned.forEach(item -> {
+            StateChangeMetadata metadata = statuses.computeIfAbsent(item.getItemId(),
+                                                                    i -> StateChangeMetadata.from(item));
+            metadata.update(Status.DECOMMISSIONED, modified);
+            item.remove();
+        });
     }
 
     /**
@@ -325,26 +312,31 @@ public abstract class UpdateRequest {
                 item.setAccessionDate(toDate(accessionDate, false));
             }
             StatusType status = holdingsItem.getStatus();
-            if (status != null) {
-                if (status == StatusType.ONLINE) {
-                    throw new FailedUpdateInternalException("Use endpoint onlineHoldingsItemsUpdate - got status ONLINE");
-                }
-                oldItemStatus.computeIfAbsent(issue.getBibliographicRecordId(),
-                                              f -> new HashMap<>())
-                        .computeIfAbsent(itemId, f -> new StateChangeMetadata(
-                                         item.getStatus(), item.getModified()))
-                        .update(Status.parse(status.value()), modified);
-                item.setStatus(Status.parse(status.value()));
+            if (status == null) {
+                throw new FailedUpdateInternalException("Status is required for all items");
             }
-            String lr = holdingsItem.getLoanRestriction();
-            item.setLoanRestriction(LoanRestriction.parse(lr));
-            item.setModified(modified);
-            copyValue(holdingsItem::getBranch, item::setBranch);
-            copyValue(holdingsItem::getBranchId, item::setBranchId);
-            copyValue(holdingsItem::getCirculationRule, item::setCirculationRule);
-            copyValue(holdingsItem::getDepartment, item::setDepartment);
-            copyValue(holdingsItem::getLocation, item::setLocation);
-            copyValue(holdingsItem::getSubLocation, item::setSubLocation);
+            if (status == StatusType.ONLINE) {
+                throw new FailedUpdateInternalException("Use endpoint onlineHoldingsItemsUpdate - got status ONLINE");
+            }
+            oldItemStatus.computeIfAbsent(issue.getBibliographicRecordId(),
+                                          f -> new HashMap<>())
+                    .computeIfAbsent(itemId, f -> new StateChangeMetadata(
+                                     item.getStatus(), item.getModified()))
+                    .update(Status.parse(status.value()), modified);
+            if (status == StatusType.DECOMMISSIONED) {
+                item.remove();
+            } else {
+                item.setStatus(Status.parse(status.value()));
+                String lr = holdingsItem.getLoanRestriction();
+                item.setLoanRestriction(LoanRestriction.parse(lr));
+                item.setModified(modified);
+                copyValue(holdingsItem::getBranch, item::setBranch);
+                copyValue(holdingsItem::getBranchId, item::setBranchId);
+                copyValue(holdingsItem::getCirculationRule, item::setCirculationRule);
+                copyValue(holdingsItem::getDepartment, item::setDepartment);
+                copyValue(holdingsItem::getLocation, item::setLocation);
+                copyValue(holdingsItem::getSubLocation, item::setSubLocation);
+            }
         }
     }
 

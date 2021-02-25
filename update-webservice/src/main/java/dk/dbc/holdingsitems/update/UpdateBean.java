@@ -49,7 +49,7 @@ import java.sql.SQLException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
@@ -69,6 +69,9 @@ import org.eclipse.microprofile.metrics.annotation.Timed;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXParseException;
+
+import static java.util.Collections.EMPTY_SET;
+import static java.util.stream.Collectors.toList;
 
 /**
  *
@@ -226,7 +229,7 @@ public class UpdateBean {
 
                                     bibliographicItem.getHoldings().stream()
                                             .sorted(HOLDINGS_SORT_COMPARE)
-                                            .forEachOrdered(holding -> processHolding(modified, bibItem, false, holding));
+                                            .forEachOrdered(holding -> processHolding(modified, bibItem, holding, null));
                                     bibItem.save();
                                     addQueueJob(bibliographicRecordId, getAgencyId());
                                 }
@@ -296,36 +299,33 @@ public class UpdateBean {
                             bibItem.setTrackingId(getTrakingId());
                         }
 
-                        Set<String> handledIssues = new HashSet<>();
+                        HashMap<String, Set<String>> processIssuesAndItems = new HashMap<>();
                         bibliographicItem.getHoldings().stream()
                                 .sorted(HOLDINGS_SORT_COMPARE)
                                 .forEachOrdered(holding -> {
-                                    handledIssues.add(holding.getIssueId());
-                                    processHolding(modified, bibItem, true, holding);
+                                    processHolding(modified, bibItem, holding, processIssuesAndItems);
                                 });
                         HashMap<String, StateChangeMetadata> statuses = oldItemStatus.computeIfAbsent(bibliographicRecordId, f -> new HashMap<>());
 
-                        bibItem.stream() // For all issues
-                                .filter(issue -> !handledIssues.contains(issue.getIssueId())) // That wasn't in the request
-                                .filter(issue -> !issue.getComplete().isAfter(modified)) // And hasn't been changed in the furure
-                                .forEach(issue -> {
-                                    issue.setComplete(modified)
-                                            .setModified(modified)
-                                            .setTrackingId(getTrakingId());
-                                    issue.stream() // For al items
-                                            .filter(item -> item.getStatus() != Status.ONLINE) // That are't online type
-                                            .filter(item -> !item.getModified().isAfter(modified)) // Han hasn't been modified in the future
-                                            .forEach(item -> {
-                                                statuses.computeIfAbsent(item.getItemId(), i -> new StateChangeMetadata(item.getStatus(), item.getModified()))
-                                                        .update(Status.DECOMMISSIONED, modified);
-
-                                                item.setStatus(Status.DECOMMISSIONED)
-                                                        .setModified(modified)
-                                                        .setTrackingId(getTrakingId());
-
-                                            });
-
-                                });
+                        bibItem.stream().forEach(issue -> {
+                            if (issue.getComplete().isBefore(modified)) {
+                                issue.setComplete(modified);
+                            }
+                            String issueId = issue.getIssueId();
+                            log.debug("issueId = {}", issueId);
+                            Set<String> processedItems = processIssuesAndItems.getOrDefault(issueId, EMPTY_SET);
+                            List<ItemEntity> decommissioned = issue.stream() // For all items
+                                    .filter(item -> !processedItems.contains(item.getItemId())) // Not those present in request
+                                    .filter(item -> item.getStatus() != Status.ONLINE) // That aren't online type
+                                    .filter(item -> !item.getModified().isAfter(modified)) // And haven't been modified in the future
+                                    .collect(toList());
+                            log.debug("decommissioned = {}", decommissioned);
+                            decommissioned.forEach(item -> {
+                                statuses.computeIfAbsent(item.getItemId(), i -> new StateChangeMetadata(item.getStatus(), item.getModified()))
+                                        .update(Status.DECOMMISSIONED, modified);
+                                item.remove();
+                            });
+                        });
                         bibItem.save();
                         addQueueJob(bibliographicRecordId, getAgencyId());
                     }
@@ -407,7 +407,7 @@ public class UpdateBean {
                         if (bibliographicItem.isHasOnlineHolding()) {
                             rec.setStatus(Status.ONLINE);
                         } else {
-                            rec.setStatus(Status.DECOMMISSIONED);
+                            rec.remove();
                         }
                         if (rec.isNew()) {
                             rec.setBranch("");

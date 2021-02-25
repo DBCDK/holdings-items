@@ -90,4 +90,8 @@ public class ItemKey implements Serializable {
                Objects.equals(this.itemId, other.itemId);
     }
 
+    @Override
+    public String toString() {
+        return "ItemKey{" + "agencyId=" + getAgencyId() + ", bibliographicRecordId=" + getBibliographicRecordId() + ", issueId=" + getIssueId() + ", itemId=" + itemId + '}';
+    }
 }

@@ -22,19 +22,22 @@ import dk.dbc.holdingsitems.HoldingsItemsDAO;
 import dk.dbc.holdingsitems.HoldingsItemsException;
 import dk.dbc.holdingsitems.jpa.BibliographicItemEntity;
 import dk.dbc.holdingsitems.jpa.IssueEntity;
+import dk.dbc.holdingsitems.jpa.ItemEntity;
 import dk.dbc.holdingsitems.jpa.Status;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.time.Instant;
+import java.util.List;
 import java.util.Scanner;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import javax.persistence.EntityManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static java.util.stream.Collectors.toList;
 
 /**
  *
@@ -137,18 +140,19 @@ public class Purge {
         AtomicInteger records = new AtomicInteger(0);
         for (String bibliographicId : bibliographicIds) {
             log.trace("Bibliographic Id '{}'", bibliographicId);
-            AtomicBoolean toQueue = new AtomicBoolean(false);
+            boolean toQueue = false;
             BibliographicItemEntity bibItem = dao.getRecordCollection(bibliographicId, agencyId, null);
-            bibItem.stream()
+            List<ItemEntity> itemsToDecommission = bibItem.stream()
                     .flatMap(IssueEntity::stream)
                     .filter(item -> item.getStatus() != Status.DECOMMISSIONED)
-                    .forEach(item -> {
-                        item.setStatus(Status.DECOMMISSIONED);
-                        toQueue.set(true);
-                    });
+                    .collect(toList());
+            if (!itemsToDecommission.isEmpty()) {
+                itemsToDecommission.forEach(ItemEntity::remove);
+                toQueue = true;
+            }
             if (!dryRun)
                 bibItem.save();
-            if (!dryRun && toQueue.get()) {
+            if (!dryRun && toQueue) {
                 dao.enqueue(bibliographicId, agencyId, "{}", queue);
             }
         }

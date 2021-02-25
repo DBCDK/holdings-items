@@ -86,21 +86,15 @@ public final class Arguments {
                     .longOpt("dry-run")
                     .desc("Only simulate")
                     .build();
-    private final Option keepDecommissioned =
-            Option.builder("k")
-                    .longOpt("keep")
-                    .desc("Keep decommissioned records (mutually exclusive with --remove)")
-                    .build();
     private final Option removeFirstAcquisitionDate =
             Option.builder("r")
                     .longOpt("remove")
-                    .desc("Remove first acquisition date (remove all data from database - irreversible) (mutually exclusive with --keep)")
+                    .desc("Remove first acquisition date (remove all data from database - irreversible)")
                     .build();
     private final Options options = new Options()
             .addOption(agencyId)
             .addOption(openAgency)
             .addOption(database)
-            .addOption(keepDecommissioned)
             .addOption(removeFirstAcquisitionDate)
             .addOption(queue)
             .addOption(verbose)
@@ -132,8 +126,6 @@ public final class Arguments {
             missing = "Required options: " + missing + " are missing";
             throw new ExitException(usage(missing));
         }
-        if (hasKeepDecommissioned() && hasRemoveFirstAcquisitionDate())
-            throw new ExitException(usage("--keep/--remove are mutually exclusive"));
     }
 
     private CommandLine parse(Options options, List<Option> required, String[] args) throws ExitException {
@@ -178,10 +170,6 @@ public final class Arguments {
 
     public boolean hasRemoveFirstAcquisitionDate() {
         return commandLine.hasOption(removeFirstAcquisitionDate.getOpt());
-    }
-
-    public boolean hasKeepDecommissioned() {
-        return commandLine.hasOption(keepDecommissioned.getOpt());
     }
 
     public boolean hasDryRun() {

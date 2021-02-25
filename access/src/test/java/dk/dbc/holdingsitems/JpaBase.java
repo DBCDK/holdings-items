@@ -62,14 +62,21 @@ public class JpaBase extends JpaIntegrationTest {
 
     public void jpa(JpaVoidExecution ex) {
         JpaTestEnvironment e = env();
+        e.reset();
         EntityManager em = e.getEntityManager();
-        e.getPersistenceContext().run(() -> ex.execute(em));
+        e.getPersistenceContext().run(() -> {
+            ex.execute(em);
+        });
     }
 
     public <T> T jpa(JpaExecution<T> ex) {
         JpaTestEnvironment e = env();
+        e.reset();
         EntityManager em = e.getEntityManager();
-        return e.getPersistenceContext().run(() -> ex.execute(em));
+        return e.getPersistenceContext().run(() -> {
+            T t = ex.execute(em);
+            return t;
+        });
     }
 
     public void flushAndEvict() {
@@ -125,7 +132,7 @@ public class JpaBase extends JpaIntegrationTest {
 
         String userName = System.getProperty("user.name");
         if (testPort != null) {
-            ds.setServerNames(new String[] {"localhost"} );
+            ds.setServerNames(new String[] {"localhost"});
             ds.setDatabaseName(databaseName);
             ds.setUser(userName);
             ds.setPassword(userName);

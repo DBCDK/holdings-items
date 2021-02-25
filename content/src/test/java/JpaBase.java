@@ -1,11 +1,6 @@
 import dk.dbc.commons.persistence.JpaIntegrationTest;
 import dk.dbc.commons.persistence.JpaTestEnvironment;
 import dk.dbc.holdingsitems.DatabaseMigrator;
-import dk.dbc.holdingsitems.jpa.BibliographicItemEntity;
-import dk.dbc.holdingsitems.jpa.IssueEntity;
-import dk.dbc.holdingsitems.jpa.ItemEntity;
-import dk.dbc.holdingsitems.jpa.LoanRestriction;
-import dk.dbc.holdingsitems.jpa.Status;
 import org.junit.Before;
 import org.postgresql.ds.PGSimpleDataSource;
 import org.slf4j.Logger;
@@ -16,8 +11,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.time.Instant;
-import java.time.LocalDate;
 import java.util.Map;
 
 /**
@@ -41,12 +34,14 @@ public class JpaBase extends JpaIntegrationTest {
 
     public void jpa(JpaVoidExecution ex) {
         JpaTestEnvironment e = env();
+        e.reset();
         EntityManager em = e.getEntityManager();
         e.getPersistenceContext().run(() -> ex.execute(em));
     }
 
     public <T> T jpa(JpaExecution<T> ex) {
         JpaTestEnvironment e = env();
+        e.reset();
         EntityManager em = e.getEntityManager();
         return e.getPersistenceContext().run(() -> ex.execute(em));
     }

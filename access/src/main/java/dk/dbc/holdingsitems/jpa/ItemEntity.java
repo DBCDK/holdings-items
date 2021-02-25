@@ -118,7 +118,6 @@ public class ItemEntity implements Serializable {
         @JoinColumn(name = "issueId", referencedColumnName = "issueId",
                     insertable = false, updatable = false)
     })
-
     @ManyToOne(cascade = CascadeType.ALL)
     IssueEntity owner;
 
@@ -148,6 +147,7 @@ public class ItemEntity implements Serializable {
 
     public void remove() {
         owner.removeItem(this);
+        owner = null;
     }
 
     void persisted() {

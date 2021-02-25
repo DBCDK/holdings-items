@@ -82,7 +82,7 @@ public class BibliographicItemEntity implements Serializable {
     private String trackingId;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "owner", orphanRemoval = true, cascade = {CascadeType.MERGE, CascadeType.PERSIST})
-    private Set<IssueEntity> issues;
+    private final Set<IssueEntity> issues;
 
     @Transient
     transient boolean persist;
@@ -128,6 +128,7 @@ public class BibliographicItemEntity implements Serializable {
     public BibliographicItemEntity() {
         this.pk = new BibliographicItemKey();
         this.persist = false;
+        this.issues = new HashSet<>();
     }
 
     BibliographicItemEntity(int agencyId, String bibliographicRecordId) {
@@ -135,6 +136,7 @@ public class BibliographicItemEntity implements Serializable {
         this.agencyId = agencyId;
         this.bibliographicRecordId = bibliographicRecordId;
         this.persist = true;
+        this.issues = new HashSet<>();
     }
 
     /**
@@ -163,24 +165,24 @@ public class BibliographicItemEntity implements Serializable {
     public Stream<IssueEntity> stream() {
         if (issues == null)
             return EMPTY_SET.stream();
+        issues.forEach(issue -> issue.em = em);
         return issues.stream();
     }
 
     public IssueEntity issue(String issueId, Instant modified) {
-        IssueEntity issue = em.find(IssueEntity.class, new IssueKey(agencyId, bibliographicRecordId, issueId),
+        IssueKey key = new IssueKey(agencyId, bibliographicRecordId, issueId);
+        IssueEntity issue = em.find(IssueEntity.class, key,
                                     pessimisticForceIncrement ? LockModeType.PESSIMISTIC_FORCE_INCREMENT : LockModeType.NONE);
         if (issue == null) {
-            if (issues == null)
-                issues = new HashSet<>();
             issue = new IssueEntity(this, issueId);
             issue.setComplete(modified);
             issue.setCreated(modified);
             issue.setModified(modified);
             issue.setTrackingId(trackingId);
-            issues.add(issue);
         } else {
             issue.persist = false;
         }
+        issues.add(issue);
         issue.pessimisticForceIncrement = pessimisticForceIncrement;
         issue.em = em;
         issue.owner = this;
@@ -279,7 +281,7 @@ public class BibliographicItemEntity implements Serializable {
 
     @Override
     public String toString() {
-        return "BibliographicItemEntity{" + "agencyId=" + agencyId + ", bibliographicRecordId=" + bibliographicRecordId + ", note=" + note + ", firstAccessionDate=" + firstAccessionDate + ", modified=" + modified + ", trackingId=" + trackingId + ", items=" + issues + '}';
+        return "BibliographicItemEntity{" + "agencyId=" + agencyId + ", bibliographicRecordId=" + bibliographicRecordId + ", note=" + note + ", firstAccessionDate=" + firstAccessionDate + ", modified=" + modified + ", trackingId=" + trackingId + ", issues=" + issues + '}';
     }
 
 }

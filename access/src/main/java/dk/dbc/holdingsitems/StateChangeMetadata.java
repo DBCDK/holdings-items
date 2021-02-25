@@ -18,6 +18,7 @@
  */
 package dk.dbc.holdingsitems;
 
+import dk.dbc.holdingsitems.jpa.ItemEntity;
 import dk.dbc.holdingsitems.jpa.Status;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.time.Instant;
@@ -34,6 +35,10 @@ public class StateChangeMetadata {
 
     public StateChangeMetadata(Status oldStatus, Instant when) {
         this(oldStatus, oldStatus, when);
+    }
+
+    public static StateChangeMetadata from(ItemEntity item) {
+        return new StateChangeMetadata(item.getStatus(), item.getModified());
     }
 
     @SuppressFBWarnings("EI_EXPOSE_REP2")
