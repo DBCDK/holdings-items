@@ -78,10 +78,6 @@ public class PurgeMain {
             String queue = commandLine.getQueue();
             log.info("Queue: {}", queue);
 
-            boolean keepDecommissioned = commandLine.hasKeepDecommissioned();
-            if (keepDecommissioned) {
-                log.info("Will not remove decommissioned records");
-            }
             boolean removeFirstAcquisitionDate = commandLine.hasRemoveFirstAcquisitionDate();
             if (removeFirstAcquisitionDate) {
                 log.info("Will remove ALL traces of the agency");
@@ -123,14 +119,6 @@ public class PurgeMain {
                     PurgeReport purgeReport = new PurgeReport(dao, agencyId);
                     purgeReport.statusReport();
                 });
-
-                if (!keepDecommissioned) {
-                    jpa.run(em -> {
-                        HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, trackingId);
-                        Purge purge = new Purge(em, dao, queue, agencyName, agencyId, dryRun);
-                        purge.removeDecommissioned(removeFirstAcquisitionDate);
-                    });
-                }
 
             } catch (SQLException | RuntimeException ex) {
                 log.error("Exception", ex);
