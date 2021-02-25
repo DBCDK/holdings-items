@@ -30,6 +30,8 @@ public class StatusConverter implements AttributeConverter<Status, String> {
 
     @Override
     public String convertToDatabaseColumn(Status status) {
+        if(status == Status.DECOMMISSIONED)
+            throw new IllegalArgumentException("Cannot store status=Deprecated in database any more");
         return status.toString();
     }
 
