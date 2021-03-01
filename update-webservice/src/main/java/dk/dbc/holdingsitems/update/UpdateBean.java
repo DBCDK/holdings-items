@@ -230,6 +230,7 @@ public class UpdateBean {
                                     bibliographicItem.getHoldings().stream()
                                             .sorted(HOLDINGS_SORT_COMPARE)
                                             .forEachOrdered(holding -> processHolding(modified, bibItem, holding, null));
+                                    log.debug("bibItem = {}", bibItem);
                                     bibItem.save();
                                     addQueueJob(bibliographicRecordId, getAgencyId());
                                 }
