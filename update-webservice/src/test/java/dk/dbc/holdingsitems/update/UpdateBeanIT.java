@@ -88,7 +88,7 @@ public class UpdateBeanIT extends JpaBase {
         });
         System.out.println("status = " + resp.getHoldingsItemsUpdateStatusMessage());
         assertEquals("Expedcted success from request", HoldingsItemsUpdateStatusEnum.OK, resp.getHoldingsItemsUpdateStatus());
-        assertEquals("Expected collections", 2, countAllCollections());
+        assertEquals("Expected collections", 2, countAllIssues());
         assertEquals("Expected items", 3, countAllItems());
         assertEquals("Expected on shelf", 2, countItems(StatusType.ON_SHELF));
         assertEquals("Expected on order", 1, countItems(StatusType.ON_ORDER));
@@ -125,7 +125,7 @@ public class UpdateBeanIT extends JpaBase {
         });
         System.out.println("status = " + respCreate.getHoldingsItemsUpdateStatusMessage());
         assertEquals("Expedcted success from request", HoldingsItemsUpdateStatusEnum.OK, respCreate.getHoldingsItemsUpdateStatus());
-        assertEquals("Expected collections", 3, countAllCollections());
+        assertEquals("Expected collections", 3, countAllIssues());
         assertEquals("Expected items", 4, countAllItems());
         assertEquals("Expected online items", 1, countItems(StatusType.ONLINE));
         assertEquals("Expected online items", 0, countItems(StatusType.DECOMMISSIONED));
@@ -281,7 +281,7 @@ public class UpdateBeanIT extends JpaBase {
         });
         System.out.println("status = " + respOnline.getHoldingsItemsUpdateStatusMessage());
         assertEquals("Expedcted success from request", HoldingsItemsUpdateStatusEnum.OK, respOnline.getHoldingsItemsUpdateStatus());
-        assertEquals("Expected collections", 4, countAllCollections());
+        assertEquals("Expected collections", 2, countAllIssues());
         assertEquals("Expected items", 2, countAllItems());
         assertEquals("Expected online", 1, countItems(StatusType.ONLINE));
     }
@@ -701,7 +701,7 @@ public class UpdateBeanIT extends JpaBase {
         return mod;
     }
 
-    private int countAllCollections() throws SQLException {
+    private int countAllIssues() throws SQLException {
         try (Connection db = dataSource.getConnection() ;
              PreparedStatement stmt = db.prepareStatement("SELECT COUNT(*) FROM issue") ;
              ResultSet resultSet = stmt.executeQuery()) {

@@ -151,7 +151,10 @@ public class BibliographicItemEntity implements Serializable {
             em.merge(this);
         }
         persist = false;
-        issues.forEach(IssueEntity::save);
+        issues.forEach(is -> {
+            is.em = em;
+            is.save();
+        });
         em.flush();
     }
 
