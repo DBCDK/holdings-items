@@ -47,7 +47,6 @@ import javax.persistence.Table;
 import javax.persistence.Transient;
 import javax.persistence.Version;
 
-
 /**
  * Database mapping of holdingsitemscollection table
  *
@@ -185,12 +184,12 @@ public class IssueEntity implements Serializable {
         } else {
             em.merge(this);
         }
-        persisted();
+        persist = false;
+        items.forEach(i -> i.persist = false);
     }
 
-    void persisted() {
-        persist = false;
-        items.forEach(ItemEntity::persisted);
+    public boolean isEmpty() {
+        return items.isEmpty();
     }
 
     /**
@@ -240,7 +239,9 @@ public class IssueEntity implements Serializable {
     public void removeItem(ItemEntity item) {
         items.remove(item);
         item.owner = null;
-        em.remove(item);
+        if (!item.isNew()) {
+            em.remove(item);
+        }
     }
 
     public boolean isNew() {
@@ -342,20 +343,13 @@ public class IssueEntity implements Serializable {
         return this;
     }
 
+    // only PRIMARY KEY fields for hash-code
     @Override
     public int hashCode() {
         int hash = 3;
         hash = 79 * hash + this.agencyId;
         hash = 79 * hash + Objects.hashCode(this.bibliographicRecordId);
         hash = 79 * hash + Objects.hashCode(this.issueId);
-        hash = 79 * hash + Objects.hashCode(this.issueText);
-        hash = 79 * hash + Objects.hashCode(this.expectedDelivery);
-        hash = 79 * hash + this.readyForLoan;
-        hash = 79 * hash + Objects.hashCode(this.complete);
-        hash = 79 * hash + Objects.hashCode(this.modified);
-        hash = 79 * hash + Objects.hashCode(this.created);
-        hash = 79 * hash + Objects.hashCode(this.updated);
-        hash = 79 * hash + Objects.hashCode(this.trackingId);
         return hash;
     }
 

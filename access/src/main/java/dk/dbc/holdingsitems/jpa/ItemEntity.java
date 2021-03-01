@@ -147,11 +147,6 @@ public class ItemEntity implements Serializable {
 
     public void remove() {
         owner.removeItem(this);
-        owner = null;
-    }
-
-    void persisted() {
-        persist = false;
     }
 
     public boolean isNew() {
@@ -294,6 +289,7 @@ public class ItemEntity implements Serializable {
         return this;
     }
 
+    // only PRIMARY KEY fields for hash-code
     @Override
     public int hashCode() {
         int hash = 5;
@@ -301,18 +297,6 @@ public class ItemEntity implements Serializable {
         hash = 67 * hash + Objects.hashCode(this.bibliographicRecordId);
         hash = 67 * hash + Objects.hashCode(this.issueId);
         hash = 67 * hash + Objects.hashCode(this.itemId);
-        hash = 67 * hash + Objects.hashCode(this.branch);
-        hash = 67 * hash + Objects.hashCode(this.branchId);
-        hash = 67 * hash + Objects.hashCode(this.department);
-        hash = 67 * hash + Objects.hashCode(this.location);
-        hash = 67 * hash + Objects.hashCode(this.subLocation);
-        hash = 67 * hash + Objects.hashCode(this.circulationRule);
-        hash = 67 * hash + Objects.hashCode(this.accessionDate);
-        hash = 67 * hash + Objects.hashCode(this.loanRestriction);
-        hash = 67 * hash + Objects.hashCode(this.status);
-        hash = 67 * hash + Objects.hashCode(this.modified);
-        hash = 67 * hash + Objects.hashCode(this.created);
-        hash = 67 * hash + Objects.hashCode(this.trackingId);
         return hash;
     }
 

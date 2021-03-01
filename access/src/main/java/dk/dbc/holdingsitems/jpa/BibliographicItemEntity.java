@@ -24,6 +24,7 @@ import java.sql.Date;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -143,18 +144,31 @@ public class BibliographicItemEntity implements Serializable {
      * persist or merge depending on which is appropriate
      */
     public void save() {
+        removeEmptyIssues();
         if (persist) {
             em.persist(this);
         } else {
             em.merge(this);
         }
-        persisted();
+        persist = false;
+        issues.forEach(is -> {
+            is.em = em;
+            is.save();
+        });
         em.flush();
     }
 
-    void persisted() {
-        persist = false;
-        issues.forEach(IssueEntity::persisted);
+    private void removeEmptyIssues() {
+        for (Iterator<IssueEntity> issueIter = issues.iterator() ; issueIter.hasNext() ;) {
+            IssueEntity issue = issueIter.next();
+            if (issue.isEmpty()) {
+                issue.owner = null;
+                issueIter.remove();
+                if (!issue.isNew()) {
+                    em.remove(issue);
+                }
+            }
+        }
     }
 
     /**
@@ -257,10 +271,6 @@ public class BibliographicItemEntity implements Serializable {
         int hash = 3;
         hash = 79 * hash + this.agencyId;
         hash = 79 * hash + Objects.hashCode(this.bibliographicRecordId);
-        hash = 79 * hash + Objects.hashCode(this.note);
-        hash = 79 * hash + Objects.hashCode(this.firstAccessionDate);
-        hash = 79 * hash + Objects.hashCode(this.modified);
-        hash = 79 * hash + Objects.hashCode(this.trackingId);
         return hash;
     }
 

@@ -200,7 +200,6 @@ public class HoldingsItemsDAOIT extends JpaBase {
             b1.save();
         });
 
-
         hasLiveHoldings = jpa(em -> {
             HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em);
             return dao.hasLiveHoldings("25912233", 870970);
