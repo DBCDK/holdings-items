@@ -31,7 +31,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
-import java.util.Map;
 import javax.annotation.PostConstruct;
 import javax.ejb.Stateless;
 import javax.ejb.TransactionAttribute;
@@ -92,28 +91,30 @@ public class JobProcessor {
         HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, trackingId);
         String bibliographicRecordId = job.getBibliographicRecordId();
         int agencyId = job.getAgencyId();
-        BibliographicItemEntity b = dao.getRecordCollectionUnLocked(bibliographicRecordId, agencyId, null);
-        HashMap<UniqueFields, RepeatedFields> records = new HashMap<>();
-        b.stream().forEach(issue -> {
-            issue.stream().forEach(item -> {
-                UniqueFields key = new UniqueFields(issue, item);
-                RepeatedFields repeatedFields = records.computeIfAbsent(key, v -> new RepeatedFields(b.getTrackingId(), issue.getTrackingId(), job.getTrackingId()));
-                repeatedFields.addRepeatedFieldsFrom(item);
-            });
-        });
+        BibliographicItemEntity b = dao.getRecordCollectionUnLocked(bibliographicRecordId, agencyId);
 
         ObjectNode json = O.createObjectNode();
         addMetadata(json, agencyId, bibliographicRecordId, trackingId);
         ArrayNode jsonRecords = json.putArray("indexKeys");
 
-        for (Map.Entry<UniqueFields, RepeatedFields> entry : records.entrySet()) {
-            ObjectNode node = jsonRecords.addObject();
-            node.putArray(SolrFields.NOTE.getFieldName()).add(b.getNote());
-            node.putArray(SolrFields.FIRST_ACCESSION_DATE.getFieldName()).add(UniqueFields.isoDate(b.getFirstAccessionDate()));
-            entry.getKey().fillIn(node);
-            entry.getValue().fillIn(node);
-        }
+        if (b != null) {
+            HashMap<UniqueFields, RepeatedFields> records = new HashMap<>();
+            b.stream().forEach(issue -> {
+                issue.stream().forEach(item -> {
+                    UniqueFields key = new UniqueFields(issue, item);
+                    RepeatedFields repeatedFields = records.computeIfAbsent(key, v -> new RepeatedFields(b.getTrackingId(), issue.getTrackingId(), job.getTrackingId()));
+                    repeatedFields.addRepeatedFieldsFrom(item);
+                });
+            });
 
+            records.forEach((unique, repeated) -> {
+                ObjectNode node = jsonRecords.addObject();
+                node.putArray(SolrFields.NOTE.getFieldName()).add(b.getNote());
+                node.putArray(SolrFields.FIRST_ACCESSION_DATE.getFieldName()).add(UniqueFields.isoDate(b.getFirstAccessionDate()));
+                unique.fillIn(node);
+                repeated.fillIn(node);
+            });
+        }
         return json;
     }
 

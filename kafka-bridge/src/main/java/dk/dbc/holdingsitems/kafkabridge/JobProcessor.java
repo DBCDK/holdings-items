@@ -96,8 +96,8 @@ public class JobProcessor {
         log.debug("issueIds = {}", issueIds);
         HashMap<String, StateChangeMetadata> stateChange = new HashMap<>();
 
-        BibliographicItemEntity b = dao.getRecordCollectionUnLocked(bibliographicRecordId, agencyId, null);
-        if (b.isNew())
+        BibliographicItemEntity b = dao.getRecordCollectionUnLocked(bibliographicRecordId, agencyId);
+        if (b == null)
             throw new IllegalStateException("Nothing found in database related to: " + agencyId + ":" + bibliographicRecordId);
 
         b.stream().forEach(issue -> {

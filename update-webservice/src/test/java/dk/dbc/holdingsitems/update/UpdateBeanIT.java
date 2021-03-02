@@ -320,7 +320,7 @@ public class UpdateBeanIT extends JpaBase {
 
             BibliographicItemEntity notSet = jpa(em -> {
                 HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em);
-                return dao.getRecordCollectionUnLocked("12345678", 101010, Instant.now());
+                return dao.getRecordCollectionUnLocked("12345678", 101010);
             });
             ItemEntity itemNotSet = notSet.stream().findFirst().orElseThrow(() -> new RuntimeException("No issues"))
                     .stream().findFirst().orElseThrow(() -> new RuntimeException("No items"));
@@ -343,7 +343,7 @@ public class UpdateBeanIT extends JpaBase {
 
             BibliographicItemEntity setToE = jpa(em -> {
                 HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em);
-                return dao.getRecordCollectionUnLocked("12345678", 101010, Instant.now());
+                return dao.getRecordCollectionUnLocked("12345678", 101010);
             });
             ItemEntity itemSetToX = setToE.stream().findFirst().orElseThrow(() -> new RuntimeException("No issues"))
                     .stream().findFirst().orElseThrow(() -> new RuntimeException("No items"));
@@ -366,7 +366,7 @@ public class UpdateBeanIT extends JpaBase {
 
             BibliographicItemEntity retain = jpa(em -> {
                 HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em);
-                return dao.getRecordCollectionUnLocked("12345678", 101010, Instant.now());
+                return dao.getRecordCollectionUnLocked("12345678", 101010);
             });
             ItemEntity itemRetain = retain.stream().findFirst().orElseThrow(() -> new RuntimeException("No issues"))
                     .stream().findFirst().orElseThrow(() -> new RuntimeException("No items"));
