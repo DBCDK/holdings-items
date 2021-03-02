@@ -55,7 +55,7 @@ public class PurgeMain {
 
             String vipCoreUrl = commandLine.getVipCoreUrl();
 
-            String agencyName = new VipCoreConnector(vipCoreUrl).lookupAgency(agencyId);
+            String agencyName = new VipCoreConnector(vipCoreUrl).lookupAgencyName(agencyId);
             log.info("VipCore agency {}: Name '{}'", agencyId, agencyName);
 
             String db = commandLine.getDatabase();

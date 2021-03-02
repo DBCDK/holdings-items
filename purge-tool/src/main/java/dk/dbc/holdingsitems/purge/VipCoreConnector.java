@@ -54,11 +54,11 @@ public class VipCoreConnector {
                 .path("findlibrary");
     }
 
-    public String lookupAgency(int id) throws IOException {
-        return lookupAgency(String.valueOf(id));
+    public String lookupAgencyName(int id) throws IOException {
+        return lookupAgencyName(String.valueOf(id));
     }
 
-    public String lookupAgency(String id) throws IOException {
+    public String lookupAgencyName(String id) throws IOException {
         URI uri = this.baseUri.clone()
                 .path(id)
                 .build();
