@@ -267,6 +267,36 @@ public class WorkerIT extends JpaBase {
         });
     }
 
+    @Test(timeout = 20_000L)
+    public void testPurgedRecord() throws Exception {
+        System.out.println("testPurgedRecord");
+
+        try (Connection connection = dataSource.getConnection()) {
+            PreparedQueueSupplier<QueueJob> supplier = new QueueSupplier<>(QueueJob.STORAGE_ABSTRACTION)
+                    .preparedSupplier(connection);
+            supplier.enqueue("q1", new QueueJob(700000, "87654321", "{}", "foo1"));
+        }
+
+        jpa(em -> {
+            Worker worker = new Worker();
+            worker.config = config;
+            worker.dataSource = dataSource;
+            worker.jobProcessor = new JobProcessor(config, em);
+            worker.jobProcessor.init();
+            worker.init();
+            ObjectNode job = consumer.requests.poll(10, TimeUnit.SECONDS);
+            log.debug("job = {}", job);
+            worker.destroy();
+            assertNotNull(job);
+
+            JsonNode json = job.get("body");
+            assertTrue(json.get("indexKeys").isArray());
+            ArrayNode subDocs = (ArrayNode) json.get("indexKeys");
+            assertEquals(0, subDocs.size());
+        });
+
+    }
+
     private ObjectNode findSubDocContaining(ArrayNode nodes, String path, String value) {
         for (JsonNode node : nodes) {
             if (node.isObject()) {

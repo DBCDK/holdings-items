@@ -292,15 +292,11 @@ public class HoldingsItemsDAO {
      * @param agencyId              part of the primary key
      * @param modified              timestamp to use for created/complete if a
      *                              new record is created
-     * @return record collection object
+     * @return record collection object null if non-existing
      */
-    public BibliographicItemEntity getRecordCollectionUnLocked(String bibliographicRecordId, int agencyId, Instant modified) {
-        BibliographicItemEntity b = BibliographicItemEntity.fromUnLocked(
-                em, agencyId, bibliographicRecordId, modified,
-                modified == null ? null : LocalDateTime.ofInstant(modified, ZoneOffset.UTC).toLocalDate());
-        if (b.isNew())
-            b.setTrackingId(trackingId);
-        return b;
+    public BibliographicItemEntity getRecordCollectionUnLocked(String bibliographicRecordId, int agencyId) {
+        return  BibliographicItemEntity.fromUnLocked(
+                em, agencyId, bibliographicRecordId);
     }
 
     /**

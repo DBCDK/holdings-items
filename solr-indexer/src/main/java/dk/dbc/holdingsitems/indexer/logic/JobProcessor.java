@@ -87,34 +87,43 @@ public class JobProcessor {
     @Timed(reusable = true)
     @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
     public ObjectNode buildRequestJson(QueueJob job) throws Exception {
-        String trackingId = job.getTrackingId();
+        try {
+            String trackingId = job.getTrackingId();
 
-        HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, trackingId);
-        String bibliographicRecordId = job.getBibliographicRecordId();
-        int agencyId = job.getAgencyId();
-        BibliographicItemEntity b = dao.getRecordCollectionUnLocked(bibliographicRecordId, agencyId, null);
-        HashMap<UniqueFields, RepeatedFields> records = new HashMap<>();
-        b.stream().forEach(issue -> {
-            issue.stream().forEach(item -> {
-                UniqueFields key = new UniqueFields(issue, item);
-                RepeatedFields repeatedFields = records.computeIfAbsent(key, v -> new RepeatedFields(b.getTrackingId(), issue.getTrackingId(), job.getTrackingId()));
-                repeatedFields.addRepeatedFieldsFrom(item);
-            });
-        });
+            HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, trackingId);
+            String bibliographicRecordId = job.getBibliographicRecordId();
+            int agencyId = job.getAgencyId();
+            BibliographicItemEntity b = dao.getRecordCollectionUnLocked(bibliographicRecordId, agencyId);
 
         ObjectNode json = O.createObjectNode();
-        addMetadata(json, agencyId, bibliographicRecordId, trackingId);
-        ArrayNode jsonRecords = json.putArray("indexKeys");
+            addMetadata(json, agencyId, bibliographicRecordId, trackingId);
+            ArrayNode jsonRecords = json.putArray("indexKeys");
+            
+            if (b != null) {
+                HashMap<UniqueFields, RepeatedFields> records = new HashMap<>();
+                b.stream().forEach(issue -> {
+                    issue.stream().forEach(item -> {
+                        UniqueFields key = new UniqueFields(issue, item);
+                        RepeatedFields repeatedFields = records.computeIfAbsent(key, v -> new RepeatedFields(b.getTrackingId(), issue.getTrackingId(), job.getTrackingId()));
+                        repeatedFields.addRepeatedFieldsFrom(item);
+                    });
+                });
 
-        for (Map.Entry<UniqueFields, RepeatedFields> entry : records.entrySet()) {
-            ObjectNode node = jsonRecords.addObject();
-            node.putArray(SolrFields.NOTE.getFieldName()).add(b.getNote());
-            node.putArray(SolrFields.FIRST_ACCESSION_DATE.getFieldName()).add(UniqueFields.isoDate(b.getFirstAccessionDate()));
-            entry.getKey().fillIn(node);
-            entry.getValue().fillIn(node);
-        }
-
+                for (Map.Entry<UniqueFields, RepeatedFields> entry : records.entrySet()) {
+                    ObjectNode node = jsonRecords.addObject();
+                    node.putArray(SolrFields.NOTE.getFieldName()).add(b.getNote());
+                    node.putArray(SolrFields.FIRST_ACCESSION_DATE.getFieldName()).add(UniqueFields.isoDate(b.getFirstAccessionDate()));
+                    entry.getKey().fillIn(node);
+                    entry.getValue().fillIn(node);
+                }
+            }
         return json;
+        } catch (Exception e) {
+            System.out.println("e = " + e);
+            log.error("Exception: {}", e.getMessage());
+            log.debug("Exception: ", e);
+            throw e;
+        }
     }
 
     @Timed

@@ -101,16 +101,21 @@ public class BibliographicItemEntity implements Serializable {
         return from(em, new BibliographicItemKey(agencyId, bibliographicRecordId), modified, firstAccessionDate, LockModeType.PESSIMISTIC_FORCE_INCREMENT);
     }
 
-    public static BibliographicItemEntity fromUnLocked(EntityManager em, int agencyId, String bibliographicRecordId, Instant modified, LocalDate firstAccessionDate) {
-        return from(em, new BibliographicItemKey(agencyId, bibliographicRecordId), modified, firstAccessionDate, LockModeType.NONE);
+    public static BibliographicItemEntity fromUnLocked(EntityManager em, int agencyId, String bibliographicRecordId) {
+        return fromUnLocked(em, new BibliographicItemKey(agencyId, bibliographicRecordId));
     }
 
     public static BibliographicItemEntity from(EntityManager em, BibliographicItemKey key, Instant modified, LocalDate firstAccessionDate) {
         return from(em, key, modified, firstAccessionDate, LockModeType.PESSIMISTIC_FORCE_INCREMENT);
     }
 
-    public static BibliographicItemEntity fromUnLocked(EntityManager em, BibliographicItemKey key, Instant modified, LocalDate firstAccessionDate) {
-        return from(em, key, modified, firstAccessionDate, LockModeType.NONE);
+    public static BibliographicItemEntity fromUnLocked(EntityManager em, BibliographicItemKey key) {
+        BibliographicItemEntity entity = em.find(BibliographicItemEntity.class, key, LockModeType.NONE);
+        if (entity != null) {
+            entity.em = em;
+            entity.pessimisticForceIncrement = false;
+        }
+        return entity;
     }
 
     private static BibliographicItemEntity from(EntityManager em, BibliographicItemKey key, Instant modified, LocalDate firstAccessionDate, LockModeType lock) {
