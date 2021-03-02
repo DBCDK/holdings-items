@@ -47,13 +47,13 @@ public final class Arguments {
                     .argName("AGENCY")
                     .desc("Agency ID to purge for")
                     .build();
-    private final Option openAgency =
-            Option.builder("o")
-                    .longOpt("open-agency-url")
+    private final Option vipCoreUrl =
+            Option.builder("V")
+                    .longOpt("vipcore-url")
                     .hasArg()
                     .required()
                     .argName("URL")
-                    .desc("OpenAgency URL to connect to. E.g. http://openagency.addi.dk/<version>/")
+                    .desc("OpenAgency URL to connect to. E.g. http://<server>/<version>/api")
                     .build();
     private final Option database =
             Option.builder("d")
@@ -93,7 +93,7 @@ public final class Arguments {
                     .build();
     private final Options options = new Options()
             .addOption(agencyId)
-            .addOption(openAgency)
+            .addOption(vipCoreUrl)
             .addOption(database)
             .addOption(removeFirstAcquisitionDate)
             .addOption(queue)
@@ -196,8 +196,8 @@ public final class Arguments {
         return commandLine.getOptionValue(database.getOpt());
     }
 
-    public String getOpenAgencyUrl() {
-        return commandLine.getOptionValue(openAgency.getOpt());
+    public String getVipCoreUrl() {
+        return commandLine.getOptionValue(vipCoreUrl.getOpt());
     }
 
     public String getQueue() {

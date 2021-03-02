@@ -23,9 +23,6 @@ import ch.qos.logback.classic.LoggerContext;
 import dk.dbc.commons.jdbc.util.DatabaseConnectionDetails;
 import dk.dbc.holdingsitems.HoldingsItemsDAO;
 import dk.dbc.holdingsitems.jpa.JpaByDbUrl;
-import dk.dbc.openagency.client.OpenAgencyException;
-import dk.dbc.openagency.client.OpenAgencyServiceFromURL;
-import dk.dbc.openagency.client.PickupAgency;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -43,7 +40,8 @@ public class PurgeMain {
 
     private static final Logger log = LoggerFactory.getLogger(PurgeMain.class);
 
-    public static void main(String[] args) throws OpenAgencyException, IOException {
+    public static void main(String[] args) throws //OpenAgencyException,
+                                                  IOException {
         try {
             Arguments commandLine = new Arguments(args);
             if (commandLine.hasVerbose()) {
@@ -55,22 +53,10 @@ public class PurgeMain {
             int agencyId = commandLine.getAgencyId();
             log.info("Agency ID: {}", agencyId);
 
-            String agencyUrl = commandLine.getOpenAgencyUrl();
+            String vipCoreUrl = commandLine.getVipCoreUrl();
 
-            log.info("OpenAgency URL: {}", agencyUrl);
-            OpenAgencyServiceFromURL openAgency = OpenAgencyServiceFromURL.builder().build(agencyUrl);
-            log.debug("OpenAgency lookup agency {}", agencyId);
-
-            final PickupAgency agency = openAgency.findLibrary().findLibraryByAgency(agencyId);
-            String agencyName;
-            if (agency == null) {
-                log.warn("OpenAgency agency {}: is unknown", agencyId);
-                agencyName = "<unknown>";
-            } else {
-                agencyName = agency.getAgencyName();
-            }
-
-            log.info("Agency agency {}: Name '{}'", agencyId, agencyName);
+            String agencyName = new VipCoreConnector(vipCoreUrl).lookupAgencyName(agencyId);
+            log.info("VipCore agency {}: Name '{}'", agencyId, agencyName);
 
             String db = commandLine.getDatabase();
             log.info("DB: {}", db);
@@ -105,7 +91,7 @@ public class PurgeMain {
 
                 jpa.run(em -> {
                     HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, trackingId);
-                    Purge purge = new Purge(em, dao, queue, agencyName, agencyId, dryRun);
+                    Purge purge = new Purge(em, dao, queue, agencyName, agencyId, removeFirstAcquisitionDate, dryRun);
                     purge.process();
                 });
 

@@ -46,8 +46,13 @@ public class PurgeIT extends JpaBase {
         verify(removed, unchanged);
 
         exec((em, dao) -> {
-            Purge purge = new Purge(em, dao, "[void]", "[void]", 700001, false);
-            purge.removeDecommissioned(true);
+            Purge purge = new Purge(em, dao, "[void]", "[void]", 700001, true, false) {
+                @Override
+                protected boolean userVerifyAgency() {
+                    return true;
+                }
+            };
+            purge.process();
         });
 
         verify(unchanged);
@@ -74,8 +79,13 @@ public class PurgeIT extends JpaBase {
         verify(removed, unchanged);
 
         exec((em, dao) -> {
-            Purge purge = new Purge(em, dao, "[void]", "[void]", 700001, false);
-            purge.removeDecommissioned(false);
+            Purge purge = new Purge(em, dao, "[void]", "[void]", 700001, false, false) {
+                @Override
+                protected boolean userVerifyAgency() {
+                    return true;
+                }
+            };
+            purge.process();
         });
 
         verify(unchanged);
