@@ -32,6 +32,7 @@
                         <hol:issueText> ? </hol:issueText>
                         <hol:holdingsItem>
                             <hol:itemId> ? </hol:itemId>
+                            <hol:branchId> ? </hol:branchId>
                             <hol:branch> ? </hol:branch>
                             <hol:department> ? </hol:department>
                             <hol:location> ? </hol:location>
@@ -39,7 +40,7 @@
                             <hol:circulationRule> ? </hol:circulationRule>
                             <!-- optional -->
                             <hol:loanRestriction>|a|b|c|d|e|f|g</hol:loanRestriction>
-                            <hol:status>NotForLoan|OnOrder|OnShelf|OnLoan|Online|Decommissioned</hol:status>
+                            <hol:status>NotForLoan|OnOrder|OnShelf|OnLoan|Decommissioned</hol:status>
                             <hol:accessionDate>2014-06-26</hol:accessionDate>
                         </hol:holdingsItem>
                     </hol:holding>
