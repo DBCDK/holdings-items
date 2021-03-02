@@ -36,8 +36,9 @@ public class PurgeWait {
     /**
      * Create the purge request
      *
-     * @param connection  DB connection
-     * @param trackingId  The tracking-id to wait for to be removed from the queue
+     * @param connection DB connection
+     * @param trackingId The tracking-id to wait for to be removed from the
+     *                   queue
      */
     public PurgeWait(Connection connection, String trackingId) {
         this.connection = connection;
@@ -62,8 +63,17 @@ public class PurgeWait {
             if (count == 0) {
                 return;
             } else {
-                System.out.println("Press enter to wait again.");
-                System.in.read();
+                try {
+                    if (count > 200_000) {
+                        Thread.sleep(600_000L);
+                    } else if (count > 20_000) {
+                        Thread.sleep(60_000L);
+                    } else {
+                        Thread.sleep(10_000L);
+                    }
+                } catch (InterruptedException ex) {
+                    System.out.println("Interrupted");
+                }
             }
         }
     }

@@ -50,6 +50,7 @@ public class Purge {
     private final int agencyId;
 
     private final boolean dryRun;
+    private final boolean removeFirstAcquisitionDate;
 
     private final EntityManager em;
     private final HoldingsItemsDAO dao;
@@ -57,14 +58,18 @@ public class Purge {
     /**
      * Create the purge request
      *
-     * @param em         Entity manager that is base of the dao
-     * @param dao        data access object for database
-     * @param queue      Name of worker to put in queue
-     * @param agencyName The name of the agency to verify against
-     * @param agencyId   The agency ID to be processed
-     * @param dryRun     Optionally check but does not commit anything
+     * @param em                         Entity manager that is base of the dao
+     * @param dao                        data access object for database
+     * @param queue                      Name of worker to put in queue
+     * @param agencyName                 The name of the agency to verify
+     *                                   against
+     * @param agencyId                   The agency ID to be processed
+     * @param removeFirstAcquisitionDate if the bibliographic-item should be
+     *                                   removed too
+     * @param dryRun                     Optionally check but does not commit
+     *                                   anything
      */
-    public Purge(EntityManager em, HoldingsItemsDAO dao, String queue, String agencyName, int agencyId, boolean dryRun) {
+    public Purge(EntityManager em, HoldingsItemsDAO dao, String queue, String agencyName, int agencyId, boolean removeFirstAcquisitionDate, boolean dryRun) {
         log.debug("Purge for agency ID {} with Queue: '{}'", agencyId, queue);
         this.em = em;
         this.dao = dao;
@@ -72,6 +77,7 @@ public class Purge {
         this.agencyName = agencyName;
         this.agencyId = agencyId;
         this.dryRun = dryRun;
+        this.removeFirstAcquisitionDate = removeFirstAcquisitionDate;
     }
 
     /**
@@ -140,47 +146,22 @@ public class Purge {
         AtomicInteger records = new AtomicInteger(0);
         for (String bibliographicId : bibliographicIds) {
             log.trace("Bibliographic Id '{}'", bibliographicId);
-            boolean toQueue = false;
             BibliographicItemEntity bibItem = dao.getRecordCollection(bibliographicId, agencyId, null);
-            List<ItemEntity> itemsToDecommission = bibItem.stream()
-                    .flatMap(IssueEntity::stream)
-                    .filter(item -> item.getStatus() != Status.DECOMMISSIONED)
-                    .collect(toList());
-            if (!itemsToDecommission.isEmpty()) {
-                itemsToDecommission.forEach(ItemEntity::remove);
-                toQueue = true;
-            }
-            if (!dryRun)
-                bibItem.save();
-            if (!dryRun && toQueue) {
+            if (!dryRun) {
+                bibItem.stream()
+                        .flatMap(IssueEntity::stream)
+                        .collect(toList()).stream() // ConcurrentModificationException hack
+                        .forEach(ItemEntity::remove);
+                if (removeFirstAcquisitionDate) {
+                    em.remove(bibItem);
+                } else {
+                    bibItem.save(); // This removes issues too
+                }
                 dao.enqueue(bibliographicId, agencyId, "{}", queue);
             }
         }
 
         return records.get();
-    }
-
-    /**
-     * Cleanup the database
-     *
-     * @param removeFirstAcquisitionDate Remove all trace of the agency
-     * @throws HoldingsItemsException If dao somehow fails
-     */
-    public void removeDecommissioned(boolean removeFirstAcquisitionDate) throws HoldingsItemsException {
-        log.info("Removing records from database (wipe={})", removeFirstAcquisitionDate);
-        if (dryRun)
-            return;
-        Instant now = Instant.now();
-        dao.getBibliographicIdsIncludingDecommissioned(agencyId).stream()
-                .map(bibliographicId -> dao.getRecordCollection(bibliographicId, agencyId, now))
-                .forEach(removeFirstAcquisitionDate ?
-                         em::remove :
-                         bibItem -> {
-                     bibItem.stream()
-                             .collect(Collectors.toSet()).stream() // Hack to not modify container that is being iterated.
-                             .forEach(bibItem::removeIssue);
-                     bibItem.save();
-                 });
     }
 
 }
