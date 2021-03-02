@@ -290,8 +290,6 @@ public class HoldingsItemsDAO {
      *
      * @param bibliographicRecordId part of the primary key
      * @param agencyId              part of the primary key
-     * @param modified              timestamp to use for created/complete if a
-     *                              new record is created
      * @return record collection object null if non-existing
      */
     public BibliographicItemEntity getRecordCollectionUnLocked(String bibliographicRecordId, int agencyId) {
