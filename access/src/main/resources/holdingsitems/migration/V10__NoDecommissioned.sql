@@ -1,1 +1,1 @@
--- DELETE FROM  holdingsitems_status WHERE status = 'Decommissioned';
+DELETE FROM  holdingsitems_status WHERE status = 'Decommissioned';
