@@ -45,7 +45,6 @@ public enum SolrFields {
     FIRST_ACCESSION_DATE("holdingsitem.firstAccessionDate"),
     LOAN_RESTRICTION("holdingsitem.loanRestriction"),
     NOTE("holdingsitem.note"),
-    COLLECTION_ID("holdingsitem.collectionId"),
     TRACKING_ID("rec.trackingId"),
     INDEXED_DATE("rec.indexedDate");
 
