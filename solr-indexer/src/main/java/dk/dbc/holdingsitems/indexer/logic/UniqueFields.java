@@ -85,7 +85,6 @@ public class UniqueFields {
         node.putArray(SolrFields.ACCESSION_DATE.getFieldName()).add(isoDate(accessionDate));
         if (loanRestriction != null && !loanRestriction.toString().isEmpty())
             node.putArray(SolrFields.LOAN_RESTRICTION.getFieldName()).add(loanRestriction.toString());
-        node.putArray(SolrFields.COLLECTION_ID.getFieldName()).add(String.valueOf(agencyId) + "-" + bibliographicRecordId.replaceAll("[^0-9a-zA-Z]", "_"));
     }
 
     static String isoDate(LocalDate date) {
