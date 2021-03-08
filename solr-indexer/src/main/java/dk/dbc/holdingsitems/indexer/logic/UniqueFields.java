@@ -48,7 +48,7 @@ public class UniqueFields {
     private final String circulationRule;
     private final Status status;
     private final LocalDate accessionDate;
-    private final LoanRestriction loanRestriction;
+    private final LoanRestriction loanRestriction; // This needs to be unique - absence should be derived from a SolR document
 
     public UniqueFields(IssueEntity collection, ItemEntity record) {
         this.agencyId = collection.getAgencyId();
