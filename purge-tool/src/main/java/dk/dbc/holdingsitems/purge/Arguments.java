@@ -61,7 +61,7 @@ public final class Arguments {
                     .hasArg()
                     .required()
                     .argName("DB")
-                    .desc("Connectstring for database. E.g jdbc:postgresql://user:password@host:port/database")
+                    .desc("Connectstring for database. E.g user:password@host:port/database")
                     .build();
     private final Option queue =
             Option.builder("q")
