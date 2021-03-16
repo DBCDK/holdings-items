@@ -65,7 +65,7 @@ public class PurgeMain {
             String db = commandLine.getDatabase();
             log.info("DB: {}", db);
 
-            List<String> queues = Arrays.asList(commandLine.getQueue().split(","))
+            List<String> queues = Arrays.asList(commandLine.getQueues().split(","))
                     .stream()
                     .filter(s -> !s.isEmpty())
                     .collect(toList());
