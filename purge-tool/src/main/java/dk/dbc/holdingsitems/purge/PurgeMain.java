@@ -28,10 +28,14 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
+import java.util.List;
 import javax.sql.DataSource;
 import org.postgresql.ds.PGSimpleDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static java.util.stream.Collectors.toList;
 
 /**
  * Command line to purge an entire agency from holdings-items database
@@ -61,8 +65,14 @@ public class PurgeMain {
             String db = commandLine.getDatabase();
             log.info("DB: {}", db);
 
-            String queue = commandLine.getQueue();
-            log.info("Queue: {}", queue);
+            List<String> queues = Arrays.asList(commandLine.getQueues().split(","))
+                    .stream()
+                    .filter(s -> !s.isEmpty())
+                    .collect(toList());
+            if(queues.isEmpty()) {
+                throw new IllegalArgumentException("No queues are defined");
+            }
+            log.info("Queues: {}", queues);
 
             boolean removeFirstAcquisitionDate = commandLine.hasRemoveFirstAcquisitionDate();
             if (removeFirstAcquisitionDate) {
@@ -91,7 +101,7 @@ public class PurgeMain {
 
                 jpa.run(em -> {
                     HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, trackingId);
-                    Purge purge = new Purge(em, dao, queue, agencyName, agencyId, removeFirstAcquisitionDate, dryRun);
+                    Purge purge = new Purge(em, dao, queues, agencyName, agencyId, removeFirstAcquisitionDate, dryRun);
                     purge.process();
                 });
 

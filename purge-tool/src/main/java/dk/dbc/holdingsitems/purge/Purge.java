@@ -26,6 +26,7 @@ import dk.dbc.holdingsitems.jpa.ItemEntity;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -41,7 +42,7 @@ import static java.util.stream.Collectors.toList;
 public class Purge {
 
     private static final Logger log = LoggerFactory.getLogger(Purge.class);
-    private final String queue;
+    private final List<String> queues;
     private final String agencyName;
     private final int agencyId;
 
@@ -56,7 +57,7 @@ public class Purge {
      *
      * @param em                         Entity manager that is base of the dao
      * @param dao                        data access object for database
-     * @param queue                      Name of worker to put in queue
+     * @param queues                     Name(s) of worker to put in queue
      * @param agencyName                 The name of the agency to verify
      *                                   against
      * @param agencyId                   The agency ID to be processed
@@ -65,11 +66,11 @@ public class Purge {
      * @param dryRun                     Optionally check but does not commit
      *                                   anything
      */
-    public Purge(EntityManager em, HoldingsItemsDAO dao, String queue, String agencyName, int agencyId, boolean removeFirstAcquisitionDate, boolean dryRun) {
-        log.debug("Purge for agency ID {} with Queue: '{}'", agencyId, queue);
+    public Purge(EntityManager em, HoldingsItemsDAO dao, List<String> queues, String agencyName, int agencyId, boolean removeFirstAcquisitionDate, boolean dryRun) {
+        log.debug("Purge for agency ID {} with Queue: '{}'", agencyId, queues);
         this.em = em;
         this.dao = dao;
-        this.queue = queue;
+        this.queues = queues;
         this.agencyName = agencyName;
         this.agencyId = agencyId;
         this.dryRun = dryRun;
@@ -99,8 +100,8 @@ public class Purge {
         if (!userVerifyAgency())
             return;
 
-        log.debug("Purging {}: '{}' with queue worker: '{}'", agencyId, agencyName, queue);
-        System.out.printf("Purging %s: '%s' with queue worker: '%s'%n", agencyId, agencyName, queue);
+        log.debug("Purging {}: '{}' with queue worker(s): '{}'", agencyId, agencyName, queues);
+        System.out.printf("Purging %s: '%s' with queue worker(s): '%s'%n", agencyId, agencyName, queues);
 
         purgeCount = purge(bibliographicIds);
 
@@ -153,7 +154,9 @@ public class Purge {
                 } else {
                     bibItem.save(); // This removes issues too
                 }
-                dao.enqueue(bibliographicId, agencyId, "{}", queue);
+                for (String queue : queues) {
+                    dao.enqueue(bibliographicId, agencyId, "{}", queue);
+                }
             }
         }
 

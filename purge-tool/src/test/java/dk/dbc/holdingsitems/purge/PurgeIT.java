@@ -21,6 +21,7 @@ package dk.dbc.holdingsitems.purge;
 import java.time.Instant;
 import org.junit.Test;
 
+import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -46,7 +47,7 @@ public class PurgeIT extends JpaBase {
         verify(removed, unchanged);
 
         exec((em, dao) -> {
-            Purge purge = new Purge(em, dao, "[void]", "[void]", 700001, true, false) {
+            Purge purge = new Purge(em, dao, asList("[void]"), "[void]", 700001, true, false) {
                 @Override
                 protected boolean userVerifyAgency() {
                     return true;
@@ -79,7 +80,7 @@ public class PurgeIT extends JpaBase {
         verify(removed, unchanged);
 
         exec((em, dao) -> {
-            Purge purge = new Purge(em, dao, "[void]", "[void]", 700001, false, false) {
+            Purge purge = new Purge(em, dao, asList("[void]"), "[void]", 700001, false, false) {
                 @Override
                 protected boolean userVerifyAgency() {
                     return true;
