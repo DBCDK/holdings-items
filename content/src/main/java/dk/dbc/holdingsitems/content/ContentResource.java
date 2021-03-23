@@ -128,7 +128,7 @@ public class ContentResource {
         }
         log.debug("holdings-by-pids called with trackingId {} and pid-list of length {}", trackingId, pidList.size());
         HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, trackingId);
-        MultiValuedMap<String, String> agencyMap = new ArrayListValuedHashMap<>(); // map agency -> pids from agency
+        MultiValuedMap<Integer, String> agencyMap = new ArrayListValuedHashMap<>(); // map agency -> pids from agency
         Map<String, String> pidMap = new HashMap<>(); // map pid -> bibliographicRecordId
         final Map<String, Iterable<ItemEntity>> res = new HashMap<>(); // used for returning
         for (String pid : pidList) {
@@ -138,13 +138,12 @@ public class ContentResource {
             final String agencyStr = pidSplit[0].split("-",2)[0];
             if (StringUtils.isNumeric(agencyStr)) {
                 pidMap.put(pid, pidSplit[1]);
-                agencyMap.put(agencyStr, pid);
+                agencyMap.put(Integer.parseInt(agencyStr), pid);
             }
         }
-        final Set<String> agencies = agencyMap.keySet();
-        for (String agency : agencies) {
-            final int agencyId = Integer.parseInt(agency); // we have checked above that this does not fail (isNumeric)
-            final Collection<String> agencyPids = agencyMap.get(agency);
+        final Set<Integer> agencies = agencyMap.keySet();
+        for (Integer agencyId : agencies) {
+            final Collection<String> agencyPids = agencyMap.get(agencyId);
             for (String agencyPid : agencyPids) {
                 Set<ItemEntity> pidItems = dao.getItemsFromAgencyAndBibliographicRecordId(agencyId, pidMap.get(agencyPid));
                 res.put(agencyPid, pidItems);
