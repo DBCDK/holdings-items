@@ -1,22 +1,32 @@
 package dk.dbc.holdingsitems.content;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import dk.dbc.holdingsitems.HoldingsItemsDAO;
 import dk.dbc.holdingsitems.content.response.ContentServiceItemResponse;
 import dk.dbc.holdingsitems.content.response.ContentServicePidResponse;
 import dk.dbc.holdingsitems.content.response.IndexHtml;
 import dk.dbc.holdingsitems.jpa.ItemEntity;
+import org.apache.commons.collections4.MultiValuedMap;
+import org.apache.commons.collections4.multimap.ArrayListValuedHashMap;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.ejb.Stateless;
 import javax.inject.Inject;
 import javax.persistence.EntityManager;
+import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -33,6 +43,10 @@ public class ContentResource {
 
     @Inject
     public IndexHtml indexHtml;
+    private static final ObjectMapper O = new ObjectMapper()
+            .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+
 
     private static final Logger log = LoggerFactory.getLogger(ContentResource.class);
 
@@ -95,6 +109,49 @@ public class ContentResource {
         }
         return Response.ok(new ContentServicePidResponse(trackingId, res)).build();
     }
+
+    @POST
+    @Path("holdings-by-pids")
+    @Consumes({MediaType.APPLICATION_JSON})
+    @Produces({MediaType.APPLICATION_JSON})
+    public Response getItemEntitiesPost(
+            String pids,
+            @QueryParam("trackingId") String trackingId)
+    {
+        List<String> pidList = null;
+        try {
+            pidList = O.readValue(pids, List.class);
+        } catch (JsonProcessingException e) {
+            log.error("holdings-by-pids: error parsing request body!");
+            log.error(e.getMessage());
+            return Response.status(Response.Status.BAD_REQUEST.getStatusCode()).build();
+        }
+        log.debug("holdings-by-pids called with trackingId {} and pid-list of length {}", trackingId, pidList.size());
+        HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, trackingId);
+        MultiValuedMap<Integer, String> agencyMap = new ArrayListValuedHashMap<>(); // map agency -> pids from agency
+        Map<String, String> pidMap = new HashMap<>(); // map pid -> bibliographicRecordId
+        final Map<String, Iterable<ItemEntity>> res = new HashMap<>(); // used for returning
+        for (String pid : pidList) {
+            // pids are assumed to have form AAAAAA-something:BBBBBBBBBB where As are an agencyId and Bs is a
+            // bibliographicRecordId (not necessarily 10 digits)
+            final String[] pidSplit = pid.split(":", 2);
+            final String agencyStr = pidSplit[0].split("-",2)[0];
+            if (StringUtils.isNumeric(agencyStr)) {
+                pidMap.put(pid, pidSplit[1]);
+                agencyMap.put(Integer.parseInt(agencyStr), pid);
+            }
+        }
+        final Set<Integer> agencies = agencyMap.keySet();
+        for (Integer agencyId : agencies) {
+            final Collection<String> agencyPids = agencyMap.get(agencyId);
+            for (String agencyPid : agencyPids) {
+                Set<ItemEntity> pidItems = dao.getItemsFromAgencyAndBibliographicRecordId(agencyId, pidMap.get(agencyPid));
+                res.put(agencyPid, pidItems);
+            }
+        }
+        return Response.ok(new ContentServicePidResponse(trackingId, res)).build();
+    }
+
 
     @GET
     @Path("doc")

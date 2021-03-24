@@ -1,3 +1,4 @@
+import com.fasterxml.jackson.databind.ObjectMapper;
 import dk.dbc.holdingsitems.content.ContentResource;
 import dk.dbc.holdingsitems.content.response.ContentServiceItemResponse;
 import dk.dbc.holdingsitems.content.response.ContentServicePidResponse;
@@ -29,6 +30,8 @@ import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
 
 public class ContentIT extends JpaBase {
+
+    private static ObjectMapper O = new ObjectMapper();
 
     @Test(timeout = 30_000L)
     public void testGetItemEntityNoData() throws Exception {
@@ -268,8 +271,94 @@ public class ContentIT extends JpaBase {
         mock.em = em;
         doCallRealMethod().when(mock).getItemEntity(anyInt(), anyString(), anyString());
         doCallRealMethod().when(mock).getItemEntities(anyInt(), anyList(), anyString());
+        doCallRealMethod().when(mock).getItemEntitiesPost(anyString(), anyString());
         return mock;
     }
+
+    @Test(timeout = 30_000L)
+    public void testGetPidEntitiesOnePidPost() throws Exception {
+        System.out.println("Test POST getItemByPid endpoint, one pid");
+        ContentServicePidResponse pidResponse = jpa(em -> {
+            ContentResource contentResource = MockContentResource(em);
+            BibliographicItemEntity bibliographicItemEntity = BibliographicItemEntity.from(em, 654321, "23456781", Instant.now(), LocalDate.now());
+            bibliographicItemEntity.setTrackingId("somethingToMakeTestHappier");
+            IssueEntity issueEntity = IssueEntity.from(em, bibliographicItemEntity, "issue1");
+            issueEntity.setTrackingId("somethingToMakePostTestHappier");
+            issueEntity.setIssueText("#1");
+            issueEntity.setReadyForLoan(1);
+            bibliographicItemEntity.save();
+            itemEntity(issueEntity, "2341", Status.ON_SHELF);
+            itemEntity(issueEntity, "3452", Status.ON_LOAN);
+            issueEntity.save();
+            Response response = contentResource.getItemEntitiesPost(O.writeValueAsString(Arrays.asList("654321-hest:23456781")), "trackPidOnePidPost");
+            return (ContentServicePidResponse) response.getEntity();
+        });
+        assertNotNull(pidResponse);
+        assertEquals(pidResponse.trackingId, "trackPidOnePidPost");
+        Map<String, List<ResponseHoldingEntity>> holdingsMap = pidResponse.holdings;
+        assertTrue(holdingsMap.containsKey("654321-hest:23456781"));
+        List<ResponseHoldingEntity> holdings = holdingsMap.get("654321-hest:23456781");
+        assertNotNull(holdings);
+        assertEquals(holdings.size(), 2);
+        List<ResponseHoldingEntity> heOnShelfList = holdings.stream().filter(h -> h.status.equalsIgnoreCase("OnShelf")).collect(Collectors.toList());
+        assertEquals(heOnShelfList.size(), 1);
+        ResponseHoldingEntity heOnShelf = heOnShelfList.get(0);
+        assertNotNull(heOnShelf);
+        assertEquals(heOnShelf.itemId, "2341");
+    }
+
+    @Test(timeout = 30_000L)
+    public void testGetPidEntitiesTwoPidsPost() throws Exception {
+        System.out.println("Test getItemByPid endpoint, two pids");
+        ContentServicePidResponse pidResponse = jpa(em -> {
+            ContentResource contentResource = MockContentResource(em);
+            BibliographicItemEntity bibliographicItemEntity = BibliographicItemEntity.from(em, 654321, "12345678", Instant.now(), LocalDate.now());
+            bibliographicItemEntity.setTrackingId("somethingToMakePostTestHappier");
+            IssueEntity issueEntity = IssueEntity.from(em, bibliographicItemEntity, "issue1");
+            issueEntity.setTrackingId("somethingToMakeTestHappier");
+            issueEntity.setIssueText("#1");
+            issueEntity.setReadyForLoan(1);
+            bibliographicItemEntity.save();
+            itemEntity(issueEntity, "1234", Status.ON_SHELF);
+            itemEntity(issueEntity, "2345", Status.ON_LOAN);
+            issueEntity.save();
+
+            BibliographicItemEntity bibliographicItemEntity2 = BibliographicItemEntity.from(em, 654321, "87654321", Instant.now(), LocalDate.now());
+            bibliographicItemEntity2.setTrackingId("somethingToMakeTestHappier");
+            IssueEntity issueEntity2 = IssueEntity.from(em, bibliographicItemEntity2, "issue2");
+            issueEntity2.setTrackingId("somethingToMakeTestHappier");
+            issueEntity2.setIssueText("#2");
+            issueEntity2.setReadyForLoan(1);
+            bibliographicItemEntity2.save();
+            itemEntity(issueEntity2, "4321", Status.ON_SHELF);
+            issueEntity2.save();
+
+            Response response = contentResource.getItemEntitiesPost(O.writeValueAsString(Arrays.asList("654321-hest:12345678", "654321-fest:87654321")), "trackPidTwoPidsPost");
+            return (ContentServicePidResponse) response.getEntity();
+        });
+        assertNotNull(pidResponse);
+        assertEquals(pidResponse.trackingId, "trackPidTwoPidsPost");
+        Map<String, List<ResponseHoldingEntity>> holdingsMap = pidResponse.holdings;
+        assertTrue(holdingsMap.containsKey("654321-hest:12345678"));
+        List<ResponseHoldingEntity> holdingsHest = holdingsMap.get("654321-hest:12345678");
+        assertNotNull(holdingsHest);
+        assertEquals(holdingsHest.size(), 2);
+        List<ResponseHoldingEntity> heOnShelfList = holdingsHest.stream().filter(h -> h.status.equalsIgnoreCase("OnShelf")).collect(Collectors.toList());
+        assertEquals(heOnShelfList.size(), 1);
+        ResponseHoldingEntity heOnShelf = heOnShelfList.get(0);
+        assertNotNull(heOnShelf);
+        assertEquals(heOnShelf.itemId, "1234");
+
+        assertTrue(holdingsMap.containsKey("654321-fest:87654321"));
+        List<ResponseHoldingEntity> holdingsFest = holdingsMap.get("654321-fest:87654321");
+        assertNotNull(holdingsFest);
+        assertEquals(holdingsFest.size(), 1);
+        ResponseHoldingEntity heFest = holdingsFest.get(0);
+        assertNotNull(heFest);
+        assertEquals(heFest.itemId, "4321");
+    }
+
+
 
     private void itemEntity(IssueEntity issueEntity, String itemId, Status status) {
         ItemEntity itemEntity = issueEntity.item(itemId, Instant.now());
