@@ -26,10 +26,7 @@ import dk.dbc.holdingsitems.HoldingsItemsDAO;
 import dk.dbc.holdingsitems.QueueJob;
 import dk.dbc.holdingsitems.indexer.Config;
 import dk.dbc.holdingsitems.jpa.BibliographicItemEntity;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import javax.annotation.PostConstruct;
 import javax.ejb.Stateless;
@@ -44,8 +41,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import org.eclipse.microprofile.metrics.annotation.Timed;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -53,8 +48,6 @@ import org.slf4j.LoggerFactory;
  */
 @Stateless
 public class JobProcessor {
-
-    private static final Logger log = LoggerFactory.getLogger(JobProcessor.class);
 
     private static final ObjectMapper O = new ObjectMapper();
 
