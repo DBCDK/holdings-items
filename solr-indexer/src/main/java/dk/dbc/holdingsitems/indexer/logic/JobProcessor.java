@@ -26,10 +26,7 @@ import dk.dbc.holdingsitems.HoldingsItemsDAO;
 import dk.dbc.holdingsitems.QueueJob;
 import dk.dbc.holdingsitems.indexer.Config;
 import dk.dbc.holdingsitems.jpa.BibliographicItemEntity;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import javax.annotation.PostConstruct;
 import javax.ejb.Stateless;
@@ -44,8 +41,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import org.eclipse.microprofile.metrics.annotation.Timed;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -54,10 +49,7 @@ import org.slf4j.LoggerFactory;
 @Stateless
 public class JobProcessor {
 
-    private static final Logger log = LoggerFactory.getLogger(JobProcessor.class);
-
     private static final ObjectMapper O = new ObjectMapper();
-    private static final String VERSION = readVersion();
 
     private Client client;
     private UriBuilder uriBuilder;
@@ -146,27 +138,6 @@ public class JobProcessor {
     private void addMetadata(ObjectNode record, int agencyId, String bibliographicRecordId, String trackingId) {
         record.put("agencyId", agencyId);
         record.put("bibliographicRecordId", bibliographicRecordId);
-        record.put("producerVersion", VERSION);
         record.put("trackingId", trackingId);
     }
-
-    private static String readVersion() {
-        String ret = "UNKNOWN";
-
-        try (InputStream is = JobProcessor.class
-                .getResourceAsStream("/version.txt")) {
-            if (is != null) {
-                byte[] buffer = new byte[256];
-                int len = is.read(buffer); // Yes version is clipped at 256 bytes
-                ret = new String(buffer, 0, len, StandardCharsets.UTF_8).trim();
-            } else {
-                throw new FileNotFoundException("version.txt");
-            }
-        } catch (IOException ex) {
-            log.error("Error reading version text: {}", ex.getMessage());
-            log.debug("Error reading version text:", ex);
-        }
-        return ret;
-    }
-
 }
