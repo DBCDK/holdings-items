@@ -1,1 +1,0 @@
-${project.name}:${project.version}#${env.GIT_COMMIT}
