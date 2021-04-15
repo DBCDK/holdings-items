@@ -26,6 +26,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.sql.ResultSet;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -152,6 +153,32 @@ public class ContentResource {
         return Response.ok(new ContentServicePidResponse(trackingId, res)).build();
     }
 
+    @POST
+    @Path("holdings-by-item-ids")
+    @Consumes({MediaType.APPLICATION_JSON})
+    @Produces({MediaType.APPLICATION_JSON})
+    public Response getItemEntitiesByItemIdsPost(
+            String bibliographicRecordIds,
+            @QueryParam("agencyId") int agencyId,
+            @QueryParam("trackingId") String trackingId
+    ) {
+        List<String> bibRecordIdList = null;
+        try {
+            bibRecordIdList = O.readValue(bibliographicRecordIds, List.class);
+        } catch (JsonProcessingException e) {
+            log.error("holdings-by-item-ids: error parsing request body!");
+            log.error(e.getMessage());
+            return Response.status(Response.Status.BAD_REQUEST.getStatusCode()).build();
+        }
+        log.debug("holdings-by-item-ides called with trackingId {} and bibRecordId-list of length {}", trackingId, bibRecordIdList.size());
+        HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, trackingId);
+        Map<String, Iterable<ItemEntity>> res = new HashMap<>();
+        for (String bibliographicRecordId : bibRecordIdList) {
+            Set<ItemEntity> itemEntities = dao.getItemsFromAgencyAndBibliographicRecordId(agencyId, bibliographicRecordId);
+            res.put(bibliographicRecordId, itemEntities);
+        }
+        return Response.ok(new ContentServicePidResponse(trackingId, res)).build();
+    }
 
     @GET
     @Path("doc")
