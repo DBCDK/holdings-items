@@ -153,10 +153,10 @@ public class ContentResource {
     }
 
     @POST
-    @Path("holdings-by-item-ids")
+    @Path("holdings-by-bibliographicrecordids")
     @Consumes({MediaType.APPLICATION_JSON})
     @Produces({MediaType.APPLICATION_JSON})
-    public Response getItemEntitiesByItemIdsPost(
+    public Response getItemEntitiesByBibliographicRecordIdsPost(
             String bibliographicRecordIds,
             @QueryParam("trackingId") String trackingId
     ) {
