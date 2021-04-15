@@ -159,7 +159,6 @@ public class ContentResource {
     @Produces({MediaType.APPLICATION_JSON})
     public Response getItemEntitiesByItemIdsPost(
             String bibliographicRecordIds,
-            @QueryParam("agencyId") int agencyId,
             @QueryParam("trackingId") String trackingId
     ) {
         List<String> bibRecordIdList = null;
@@ -170,11 +169,11 @@ public class ContentResource {
             log.error(e.getMessage());
             return Response.status(Response.Status.BAD_REQUEST.getStatusCode()).build();
         }
-        log.debug("holdings-by-item-ides called with trackingId {} and bibRecordId-list of length {}", trackingId, bibRecordIdList.size());
+        log.debug("holdings-by-item-ids called with trackingId {} and bibRecordId-list of length {}", trackingId, bibRecordIdList.size());
         HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, trackingId);
         Map<String, Iterable<ItemEntity>> res = new HashMap<>();
         for (String bibliographicRecordId : bibRecordIdList) {
-            Set<ItemEntity> itemEntities = dao.getItemsFromAgencyAndBibliographicRecordId(agencyId, bibliographicRecordId);
+            Set<ItemEntity> itemEntities = dao.getItemsFromBibliographicRecordId(bibliographicRecordId);
             res.put(bibliographicRecordId, itemEntities);
         }
         return Response.ok(new ContentServicePidResponse(trackingId, res)).build();

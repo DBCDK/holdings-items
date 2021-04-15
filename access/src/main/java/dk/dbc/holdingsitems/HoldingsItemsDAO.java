@@ -268,6 +268,20 @@ public class HoldingsItemsDAO {
     }
 
     /**
+     * Get all items that match a given bibliographicRecordId (for læsekompas)
+     *
+     * @param bibliographicRecordId id of a bibliographic record (string)
+     * @return the set of holdings items that match the arguments.
+     */
+    public Set<ItemEntity> getItemsFromBibliographicRecordId(String bibliographicRecordId) {
+        List<ItemEntity> itemList =
+                em.createQuery("SELECT h from ItemEntity h WHERE h.bibliographicRecordId = :bibliographicRecordId", ItemEntity.class)
+                .setParameter("bibliographicRecordId", bibliographicRecordId)
+                .getResultList();
+        return new HashSet<>(itemList);
+    }
+
+    /**
      * Create / Get a collection of items defined by id/library/orderId
      *
      * @param bibliographicRecordId part of the primary key
