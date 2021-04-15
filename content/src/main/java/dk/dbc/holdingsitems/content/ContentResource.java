@@ -164,11 +164,11 @@ public class ContentResource {
         try {
             bibRecordIdList = O.readValue(bibliographicRecordIds, List.class);
         } catch (JsonProcessingException e) {
-            log.error("holdings-by-item-ids: error parsing request body!");
+            log.error("holdings-by-bibliographicrecordids: error parsing request body!");
             log.error(e.getMessage());
             return Response.status(Response.Status.BAD_REQUEST.getStatusCode()).build();
         }
-        log.debug("holdings-by-item-ids called with trackingId {} and bibRecordId-list of length {}", trackingId, bibRecordIdList.size());
+        log.debug("holdings-by-bibliographicrecordids called with trackingId {} and bibRecordId-list of length {}", trackingId, bibRecordIdList.size());
         HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, trackingId);
         Map<String, Iterable<ItemEntity>> res = new HashMap<>();
         for (String bibliographicRecordId : bibRecordIdList) {
