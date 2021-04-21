@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dk.dbc.holdingsitems.HoldingsItemsDAO;
+import dk.dbc.holdingsitems.content.response.ContentServiceAgencyBranchListResponse;
 import dk.dbc.holdingsitems.content.response.ContentServiceItemResponse;
 import dk.dbc.holdingsitems.content.response.ContentServicePidResponse;
 import dk.dbc.holdingsitems.content.response.IndexHtml;
@@ -177,6 +178,33 @@ public class ContentResource {
         }
         return Response.ok(new ContentServicePidResponse(trackingId, res)).build();
     }
+
+    @POST
+    @Path("agency-branch-lists-by-bibliographicrecordids")
+    @Consumes({MediaType.APPLICATION_JSON})
+    @Produces({MediaType.APPLICATION_JSON})
+    public Response getAgencyBranchStringsByBibliographicRecordIdsPost(
+            String bibliographicRecordIds,
+            @QueryParam("trackingId") String trackingId
+    ) {
+        List<String> bibRecordIdList = null;
+        try {
+            bibRecordIdList = O.readValue(bibliographicRecordIds, List.class);
+        } catch (JsonProcessingException e) {
+            log.error("holdings-by-bibliographicrecordids: error parsing request body!");
+            log.error(e.getMessage());
+            return Response.status(Response.Status.BAD_REQUEST.getStatusCode()).build();
+        }
+        log.debug("holdings-by-bibliographicrecordids called with trackingId {} and bibRecordId-list of length {}", trackingId, bibRecordIdList.size());
+        HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, trackingId);
+        Map<String, Iterable<String>> res = new HashMap<>();
+        for (String bibliographicRecordId : bibRecordIdList) {
+            List<String> agencyBranchStrings = dao.getAgencyBranchStringsForBibliographicRecordId(bibliographicRecordId);
+            res.put(bibliographicRecordId, agencyBranchStrings);
+        }
+        return Response.ok(new ContentServiceAgencyBranchListResponse(trackingId, res)).build();
+    }
+
 
     @GET
     @Path("doc")

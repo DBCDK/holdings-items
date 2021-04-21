@@ -24,6 +24,10 @@ import dk.dbc.holdingsitems.jpa.ItemEntity;
 import dk.dbc.holdingsitems.jpa.Status;
 import dk.dbc.pgqueue.PreparedQueueSupplier;
 import dk.dbc.pgqueue.QueueSupplier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.persistence.EntityManager;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.Instant;
@@ -35,9 +39,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import javax.persistence.EntityManager;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -146,6 +147,22 @@ public class HoldingsItemsDAO {
                                             String.class)
                 .setParameter("agencyId", agencyId)
                 .getResultList());
+    }
+
+    /**
+     * Get a list of "XXXXXX/YYYYY" strings for a bibliographic record id, where XXXXXX is an agencyId
+     * and YYYYY is a branch.
+     *
+     * @param bibliographicRecordId a bibliographicrecordId
+     * @return a list of agency/branch strings
+     */
+    public List<String> getAgencyBranchStringsForBibliographicRecordId(String bibliographicRecordId) {
+        return em.createQuery("SELECT DISTINCT(CONCAT(h.agencyId, '/', h.branch)) AS agencybranch" +
+                                " FROM ItemEntity h" +
+                                " WHERE h.bibliographicRecordId = :bibliographicRecordId",
+                                String.class)
+                .setParameter("bibliographicRecordId", bibliographicRecordId)
+                .getResultList();
     }
 
     /**

@@ -16,6 +16,23 @@ public class ContentServiceItemResponse {
         this.holdings = ResponseHoldingEntity.listFromItems(holdingsItems);
     }
 
+    public static ContentServiceItemResponse generateCompactContentServiceItemResponse(String trackingId, Iterable<ItemEntity> holdingsItems) {
+        final ContentServiceItemResponse res = new ContentServiceItemResponse(trackingId, holdingsItems);
+        res.holdings.stream().map(he -> {
+            he.circulationRule = null;
+            he.department = null;
+            he.issueText = null;
+            he.issueId = null;
+            he.itemId = null;
+            he.location = null;
+            he.note = null;
+            he.status = null;
+            he.subLocation = null;
+            return he;
+        });
+        return res;
+    }
+
     protected static String generateTrackingIdIfNullOrEmpty(String trackingId) {
         return trackingId == null || trackingId.isEmpty() ? UUID.randomUUID().toString() : trackingId;
     }
