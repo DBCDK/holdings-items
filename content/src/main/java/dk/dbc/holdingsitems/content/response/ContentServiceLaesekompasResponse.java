@@ -5,11 +5,11 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.Map;
 
 @SuppressFBWarnings("URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD")
-public class ContentServiceAgencyBranchListResponse {
+public class ContentServiceLaesekompasResponse {
     public String trackingId;
-    public Map<String, Iterable<String>> holdings;
+    public Map<String, Iterable<LaesekompasHoldingsEntity>> holdings;
 
-    public ContentServiceAgencyBranchListResponse(String trackingId, Map<String, Iterable<String>> holdings) {
+    public ContentServiceLaesekompasResponse(String trackingId, Map<String, Iterable<LaesekompasHoldingsEntity>> holdings) {
         this.trackingId = trackingId;
         this.holdings = holdings;
     }

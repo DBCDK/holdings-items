@@ -156,11 +156,11 @@ public class HoldingsItemsDAO {
      * @param bibliographicRecordId a bibliographicrecordId
      * @return a list of agency/branch strings
      */
-    public List<String> getAgencyBranchStringsForBibliographicRecordId(String bibliographicRecordId) {
-        return em.createQuery("SELECT DISTINCT(CONCAT(h.agencyId, '/', h.branch)) AS agencybranch" +
+    public List<Object[]> getAgencyBranchStringsForBibliographicRecordId(String bibliographicRecordId) {
+        return em.createQuery("SELECT h.agencyId, h.bibliographicRecordId, h.branch, h.status" +
                                 " FROM ItemEntity h" +
-                                " WHERE h.bibliographicRecordId = :bibliographicRecordId",
-                                String.class)
+                                " WHERE h.bibliographicRecordId = :bibliographicRecordId" +
+                                " AND h.branch != ''")
                 .setParameter("bibliographicRecordId", bibliographicRecordId)
                 .getResultList();
     }
