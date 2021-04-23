@@ -1,7 +1,9 @@
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dk.dbc.holdingsitems.content.ContentResource;
 import dk.dbc.holdingsitems.content.response.ContentServiceItemResponse;
+import dk.dbc.holdingsitems.content.response.ContentServiceLaesekompasResponse;
 import dk.dbc.holdingsitems.content.response.ContentServicePidResponse;
+import dk.dbc.holdingsitems.content.response.LaesekompasHoldingsEntity;
 import dk.dbc.holdingsitems.content.response.ResponseHoldingEntity;
 import dk.dbc.holdingsitems.jpa.BibliographicItemEntity;
 import dk.dbc.holdingsitems.jpa.IssueEntity;
@@ -19,6 +21,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -271,14 +274,14 @@ public class ContentIT extends JpaBase {
         mock.em = em;
         doCallRealMethod().when(mock).getItemEntity(anyInt(), anyString(), anyString());
         doCallRealMethod().when(mock).getItemEntities(anyInt(), anyList(), anyString());
-        doCallRealMethod().when(mock).getItemEntitiesPost(anyString(), anyString());
+        doCallRealMethod().when(mock).getLaesekompasdataForBibliographicRecordIdsPost(anyString(), anyString());
         return mock;
     }
 
     @Test(timeout = 30_000L)
-    public void testGetPidEntitiesOnePidPost() throws Exception {
+    public void testGetLaesekompasDataOnePidPost() throws Exception {
         System.out.println("Test POST getItemByPid endpoint, one pid");
-        ContentServicePidResponse pidResponse = jpa(em -> {
+        ContentServiceLaesekompasResponse pidResponse = jpa(em -> {
             ContentResource contentResource = MockContentResource(em);
             BibliographicItemEntity bibliographicItemEntity = BibliographicItemEntity.from(em, 654321, "23456781", Instant.now(), LocalDate.now());
             bibliographicItemEntity.setTrackingId("somethingToMakeTestHappier");
@@ -290,27 +293,26 @@ public class ContentIT extends JpaBase {
             itemEntity(issueEntity, "2341", Status.ON_SHELF);
             itemEntity(issueEntity, "3452", Status.ON_LOAN);
             issueEntity.save();
-            Response response = contentResource.getItemEntitiesPost(O.writeValueAsString(Arrays.asList("654321-hest:23456781")), "trackPidOnePidPost");
-            return (ContentServicePidResponse) response.getEntity();
+            Response response = contentResource.getLaesekompasdataForBibliographicRecordIdsPost(O.writeValueAsString(Arrays.asList("23456781")), "trackPidOnePidPost");
+            return (ContentServiceLaesekompasResponse) response.getEntity();
         });
         assertNotNull(pidResponse);
         assertEquals(pidResponse.trackingId, "trackPidOnePidPost");
-        Map<String, List<ResponseHoldingEntity>> holdingsMap = pidResponse.holdings;
-        assertTrue(holdingsMap.containsKey("654321-hest:23456781"));
-        List<ResponseHoldingEntity> holdings = holdingsMap.get("654321-hest:23456781");
+        Map<String, Iterable<LaesekompasHoldingsEntity>> holdingsMap = pidResponse.holdings;
+        assertTrue(holdingsMap.containsKey("23456781"));
+        List<LaesekompasHoldingsEntity> holdings = StreamSupport.stream(holdingsMap.get("23456781").spliterator(), false).collect(Collectors.toList());
         assertNotNull(holdings);
         assertEquals(holdings.size(), 2);
-        List<ResponseHoldingEntity> heOnShelfList = holdings.stream().filter(h -> h.status.equalsIgnoreCase("OnShelf")).collect(Collectors.toList());
+        List<LaesekompasHoldingsEntity> heOnShelfList = holdings.stream().filter(h -> h.status.equals(Status.ON_SHELF)).collect(Collectors.toList());
         assertEquals(heOnShelfList.size(), 1);
-        ResponseHoldingEntity heOnShelf = heOnShelfList.get(0);
+        LaesekompasHoldingsEntity heOnShelf = heOnShelfList.get(0);
         assertNotNull(heOnShelf);
-        assertEquals(heOnShelf.itemId, "2341");
     }
 
     @Test(timeout = 30_000L)
     public void testGetPidEntitiesTwoPidsPost() throws Exception {
         System.out.println("Test getItemByPid endpoint, two pids");
-        ContentServicePidResponse pidResponse = jpa(em -> {
+        ContentServiceLaesekompasResponse pidResponse = jpa(em -> {
             ContentResource contentResource = MockContentResource(em);
             BibliographicItemEntity bibliographicItemEntity = BibliographicItemEntity.from(em, 654321, "12345678", Instant.now(), LocalDate.now());
             bibliographicItemEntity.setTrackingId("somethingToMakePostTestHappier");
@@ -333,29 +335,27 @@ public class ContentIT extends JpaBase {
             itemEntity(issueEntity2, "4321", Status.ON_SHELF);
             issueEntity2.save();
 
-            Response response = contentResource.getItemEntitiesPost(O.writeValueAsString(Arrays.asList("654321-hest:12345678", "654321-fest:87654321")), "trackPidTwoPidsPost");
-            return (ContentServicePidResponse) response.getEntity();
+            Response response = contentResource.getLaesekompasdataForBibliographicRecordIdsPost(O.writeValueAsString(Arrays.asList("12345678", "87654321")), "trackPidTwoPidsPost");
+            return (ContentServiceLaesekompasResponse) response.getEntity();
         });
         assertNotNull(pidResponse);
         assertEquals(pidResponse.trackingId, "trackPidTwoPidsPost");
-        Map<String, List<ResponseHoldingEntity>> holdingsMap = pidResponse.holdings;
-        assertTrue(holdingsMap.containsKey("654321-hest:12345678"));
-        List<ResponseHoldingEntity> holdingsHest = holdingsMap.get("654321-hest:12345678");
+        Map<String, Iterable<LaesekompasHoldingsEntity>> holdingsMap = pidResponse.holdings;
+        assertTrue(holdingsMap.containsKey("12345678"));
+        List<LaesekompasHoldingsEntity> holdingsHest = StreamSupport.stream(holdingsMap.get("12345678").spliterator(), false).collect(Collectors.toList());
         assertNotNull(holdingsHest);
         assertEquals(holdingsHest.size(), 2);
-        List<ResponseHoldingEntity> heOnShelfList = holdingsHest.stream().filter(h -> h.status.equalsIgnoreCase("OnShelf")).collect(Collectors.toList());
+        List<LaesekompasHoldingsEntity> heOnShelfList = holdingsHest.stream().filter(h -> h.status.equals(Status.ON_SHELF)).collect(Collectors.toList());
         assertEquals(heOnShelfList.size(), 1);
-        ResponseHoldingEntity heOnShelf = heOnShelfList.get(0);
+        LaesekompasHoldingsEntity heOnShelf = heOnShelfList.get(0);
         assertNotNull(heOnShelf);
-        assertEquals(heOnShelf.itemId, "1234");
 
-        assertTrue(holdingsMap.containsKey("654321-fest:87654321"));
-        List<ResponseHoldingEntity> holdingsFest = holdingsMap.get("654321-fest:87654321");
+        assertTrue(holdingsMap.containsKey("87654321"));
+        List<LaesekompasHoldingsEntity> holdingsFest = StreamSupport.stream(holdingsMap.get("87654321").spliterator(), false).collect(Collectors.toList());
         assertNotNull(holdingsFest);
         assertEquals(holdingsFest.size(), 1);
-        ResponseHoldingEntity heFest = holdingsFest.get(0);
+        LaesekompasHoldingsEntity heFest = holdingsFest.get(0);
         assertNotNull(heFest);
-        assertEquals(heFest.itemId, "4321");
     }
 
 

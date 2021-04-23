@@ -113,7 +113,7 @@ public class ContentResource {
     @Path("laesekompas-data-for-bibliographicrecordids")
     @Consumes({MediaType.APPLICATION_JSON})
     @Produces({MediaType.APPLICATION_JSON})
-    public Response getAgencyBranchStringsByBibliographicRecordIdsPost(
+    public Response getLaesekompasdataForBibliographicRecordIdsPost(
             String bibliographicRecordIds,
             @QueryParam("trackingId") String trackingId
     ) {
@@ -133,7 +133,7 @@ public class ContentResource {
             List<LaesekompasHoldingsEntity> laesekompasHoldingsEntities =
                     laesekompasObjects.stream()
                             .map(oa -> LaesekompasHoldingsEntity.fromDatabaseObjects(oa))
-                            .filter(lke -> (lke != null) && (lke.status != Status.DECOMMISSIONED && !lke.branch.isEmpty()))
+                            .filter(lke -> lke != null && lke.status != Status.DECOMMISSIONED && !lke.branch.isEmpty())
                             .collect(Collectors.toList());
             res.put(bibliographicRecordId, laesekompasHoldingsEntities);
         }
