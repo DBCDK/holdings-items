@@ -19,5 +19,4 @@ public class ContentServiceItemResponse {
     protected static String generateTrackingIdIfNullOrEmpty(String trackingId) {
         return trackingId == null || trackingId.isEmpty() ? UUID.randomUUID().toString() : trackingId;
     }
-
 }

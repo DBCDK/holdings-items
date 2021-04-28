@@ -5,13 +5,13 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dk.dbc.holdingsitems.HoldingsItemsDAO;
+import dk.dbc.holdingsitems.content.response.ContentServiceLaesekompasResponse;
 import dk.dbc.holdingsitems.content.response.ContentServiceItemResponse;
 import dk.dbc.holdingsitems.content.response.ContentServicePidResponse;
 import dk.dbc.holdingsitems.content.response.IndexHtml;
+import dk.dbc.holdingsitems.content.response.LaesekompasHoldingsEntity;
 import dk.dbc.holdingsitems.jpa.ItemEntity;
-import org.apache.commons.collections4.MultiValuedMap;
-import org.apache.commons.collections4.multimap.ArrayListValuedHashMap;
-import org.apache.commons.lang3.StringUtils;
+import dk.dbc.holdingsitems.jpa.Status;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,7 +26,6 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -111,47 +110,35 @@ public class ContentResource {
     }
 
     @POST
-    @Path("holdings-by-pids")
+    @Path("laesekompas-data-for-bibliographicrecordids")
     @Consumes({MediaType.APPLICATION_JSON})
     @Produces({MediaType.APPLICATION_JSON})
-    public Response getItemEntitiesPost(
-            String pids,
-            @QueryParam("trackingId") String trackingId)
-    {
-        List<String> pidList = null;
+    public Response getLaesekompasdataForBibliographicRecordIdsPost(
+            String bibliographicRecordIds,
+            @QueryParam("trackingId") String trackingId
+    ) {
+        List<String> bibRecordIdList = null;
         try {
-            pidList = O.readValue(pids, List.class);
+            bibRecordIdList = O.readValue(bibliographicRecordIds, List.class);
         } catch (JsonProcessingException e) {
-            log.error("holdings-by-pids: error parsing request body!");
+            log.error("holdings-by-bibliographicrecordids: error parsing request body!");
             log.error(e.getMessage());
             return Response.status(Response.Status.BAD_REQUEST.getStatusCode()).build();
         }
-        log.debug("holdings-by-pids called with trackingId {} and pid-list of length {}", trackingId, pidList.size());
+        log.debug("holdings-by-bibliographicrecordids called with trackingId {} and bibRecordId-list of length {}", trackingId, bibRecordIdList.size());
         HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, trackingId);
-        MultiValuedMap<Integer, String> agencyMap = new ArrayListValuedHashMap<>(); // map agency -> pids from agency
-        Map<String, String> pidMap = new HashMap<>(); // map pid -> bibliographicRecordId
-        final Map<String, Iterable<ItemEntity>> res = new HashMap<>(); // used for returning
-        for (String pid : pidList) {
-            // pids are assumed to have form AAAAAA-something:BBBBBBBBBB where As are an agencyId and Bs is a
-            // bibliographicRecordId (not necessarily 10 digits)
-            final String[] pidSplit = pid.split(":", 2);
-            final String agencyStr = pidSplit[0].split("-",2)[0];
-            if (StringUtils.isNumeric(agencyStr)) {
-                pidMap.put(pid, pidSplit[1]);
-                agencyMap.put(Integer.parseInt(agencyStr), pid);
-            }
+        Map<String, Iterable<LaesekompasHoldingsEntity>> res = new HashMap<>();
+        for (String bibliographicRecordId : bibRecordIdList) {
+            List<Object[]> laesekompasObjects = dao.getAgencyBranchStringsForBibliographicRecordId(bibliographicRecordId);
+            List<LaesekompasHoldingsEntity> laesekompasHoldingsEntities =
+                    laesekompasObjects.stream()
+                            .map(oa -> LaesekompasHoldingsEntity.fromDatabaseObjects(oa))
+                            .filter(lke -> lke != null && lke.status != Status.DECOMMISSIONED && !lke.branch.isEmpty())
+                            .collect(Collectors.toList());
+            res.put(bibliographicRecordId, laesekompasHoldingsEntities);
         }
-        final Set<Integer> agencies = agencyMap.keySet();
-        for (Integer agencyId : agencies) {
-            final Collection<String> agencyPids = agencyMap.get(agencyId);
-            for (String agencyPid : agencyPids) {
-                Set<ItemEntity> pidItems = dao.getItemsFromAgencyAndBibliographicRecordId(agencyId, pidMap.get(agencyPid));
-                res.put(agencyPid, pidItems);
-            }
-        }
-        return Response.ok(new ContentServicePidResponse(trackingId, res)).build();
+        return Response.ok(new ContentServiceLaesekompasResponse(trackingId, res)).build();
     }
-
 
     @GET
     @Path("doc")
