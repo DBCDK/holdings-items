@@ -97,8 +97,10 @@ public class Purge {
         // Confirm agency to purge
         System.out.printf("Agency: %s, Name: '%s'%n", agencyId, agencyName);
 
-        if (!userVerifyAgency())
+        if (!userVerifyAgency()) {
+            System.out.printf("Aborting...%n");
             return;
+        }
 
         log.debug("Purging {}: '{}' with queue worker(s): '{}'", agencyId, agencyName, queues);
         System.out.printf("Purging %s: '%s' with queue worker(s): '%s'%n", agencyId, agencyName, queues);
