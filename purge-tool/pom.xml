@@ -176,7 +176,7 @@
         <dependency>
             <groupId>org.eclipse.persistence</groupId>
             <artifactId>eclipselink</artifactId>
-            <scope>provided</scope>
+            <scope>compile</scope>
             <exclusions>
                 <exclusion>
                     <groupId>org.eclipse.persistence</groupId>
@@ -212,6 +212,13 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>javax.activation</groupId>
+            <artifactId>activation</artifactId>
+            <version>1.1.1</version>
+            <scope>compile</scope>
         </dependency>
 
         <dependency>
@@ -291,6 +298,14 @@
                 <version>${jackson.version}</version>
                 <scope>compile</scope>
             </dependency>
+
+            <dependency>
+                <groupId>javax.activation</groupId>
+                <artifactId>activation</artifactId>
+                <version>1.1.1</version>
+                <scope>compile</scope>
+            </dependency>
+
 
             <!-- testing -->
 
