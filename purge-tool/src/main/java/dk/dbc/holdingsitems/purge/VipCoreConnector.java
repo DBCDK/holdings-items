@@ -69,10 +69,11 @@ public class VipCoreConnector {
             Iterator<PickupAgency> iter = val.getPickupAgency().iterator();
             if (iter.hasNext()) {
                 PickupAgency agency = iter.next();
-                return agency.getAgencyName();
-            } else {
-                return UNKNOWN;
+                String agencyName = agency.getAgencyName();
+                if (agencyName != null)
+                    return agencyName;
             }
+            return UNKNOWN;
         } catch (ClientErrorException ex) {
             return UNKNOWN;
         }
