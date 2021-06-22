@@ -20,7 +20,6 @@ package dk.dbc.holdingsitems.content.response;
 
 import dk.dbc.holdingsitems.jpa.ItemEntity;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import java.time.LocalDate;
 
 /**
  *
@@ -37,7 +36,7 @@ public class CompleteItem {
     public String subLocation;
     public String circulationRule;
     public String loanRestriction;
-    public LocalDate accessionDate;
+    public String accessionDate;
     public String status;
 
     public CompleteItem() {
@@ -53,7 +52,7 @@ public class CompleteItem {
         this.subLocation = item.getSubLocation();
         this.circulationRule = item.getCirculationRule();
         this.loanRestriction = item.getLoanRestriction().toString();
-        this.accessionDate = item.getAccessionDate();
+        this.accessionDate = item.getAccessionDate().toString();
         this.status = item.getStatus().toString();
     }
 

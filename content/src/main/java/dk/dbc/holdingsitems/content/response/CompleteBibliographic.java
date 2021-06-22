@@ -20,7 +20,6 @@ package dk.dbc.holdingsitems.content.response;
 
 import dk.dbc.holdingsitems.jpa.BibliographicItemEntity;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import java.time.LocalDate;
 import java.util.List;
 
 import static java.util.stream.Collectors.toList;
@@ -35,7 +34,7 @@ public class CompleteBibliographic {
     public int agencyId;
     public String bibliographicRecordId;
     public String note;
-    public LocalDate firstAccessionDate;
+    public String firstAccessionDate;
     public List<CompleteIssue> issues;
     public String trackingId;
 
@@ -46,7 +45,7 @@ public class CompleteBibliographic {
         this.agencyId = rec.getAgencyId();
         this.bibliographicRecordId = rec.getBibliographicRecordId();
         this.note = rec.getNote();
-        this.firstAccessionDate = rec.getFirstAccessionDate();
+        this.firstAccessionDate = rec.getFirstAccessionDate().toString();
         this.issues = rec.stream()
                 .sorted((l,r) -> l.getIssueId().compareTo(r.getIssueId()))
                 .map(CompleteIssue::new)
