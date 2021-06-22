@@ -48,7 +48,8 @@ public class CompleteItem {
         this.branchId = item.getBranchId();
         this.branch = item.getBranch();
         this.department = item.getDepartment();
-        this.loanRestriction = item.getLocation();
+        this.loanRestriction = item.getLoanRestriction().toString();
+        this.location = item.getLocation();
         this.subLocation = item.getSubLocation();
         this.circulationRule = item.getCirculationRule();
         this.loanRestriction = item.getLoanRestriction().toString();
