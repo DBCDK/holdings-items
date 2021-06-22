@@ -19,6 +19,7 @@
 package dk.dbc.holdingsitems.content.response;
 
 import dk.dbc.holdingsitems.jpa.IssueEntity;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -28,6 +29,7 @@ import static java.util.stream.Collectors.toList;
  *
  * @author Morten Bøgeskov (mb@dbc.dk)
  */
+@SuppressFBWarnings("URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD")
 public class CompleteIssue {
 
     public String issueId;

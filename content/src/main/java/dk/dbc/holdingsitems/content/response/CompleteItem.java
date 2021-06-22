@@ -19,12 +19,14 @@
 package dk.dbc.holdingsitems.content.response;
 
 import dk.dbc.holdingsitems.jpa.ItemEntity;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.time.LocalDate;
 
 /**
  *
  * @author Morten Bøgeskov (mb@dbc.dk)
  */
+@SuppressFBWarnings("URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD")
 public class CompleteItem {
 
     public String itemId;
