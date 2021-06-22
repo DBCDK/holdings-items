@@ -5,13 +5,16 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dk.dbc.holdingsitems.HoldingsItemsDAO;
+import dk.dbc.holdingsitems.content.response.CompleteBibliographic;
 import dk.dbc.holdingsitems.content.response.ContentServiceLaesekompasResponse;
 import dk.dbc.holdingsitems.content.response.ContentServiceItemResponse;
 import dk.dbc.holdingsitems.content.response.ContentServicePidResponse;
 import dk.dbc.holdingsitems.content.response.IndexHtml;
 import dk.dbc.holdingsitems.content.response.LaesekompasHoldingsEntity;
+import dk.dbc.holdingsitems.jpa.BibliographicItemEntity;
 import dk.dbc.holdingsitems.jpa.ItemEntity;
 import dk.dbc.holdingsitems.jpa.Status;
+import dk.dbc.log.LogWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,12 +34,15 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
+import javax.ws.rs.PathParam;
 
 @Stateless
 @Path("/")
 @Produces("application/json")
 public class ContentResource {
+
     @Inject
     public EntityManager em;
 
@@ -46,7 +52,6 @@ public class ContentResource {
             .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
             .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 
-
     private static final Logger log = LoggerFactory.getLogger(ContentResource.class);
 
     @GET
@@ -54,14 +59,13 @@ public class ContentResource {
     public Response getItemEntity(
             @QueryParam("agency") Integer agencyId,
             @QueryParam("itemId") String itemId,
-            @QueryParam("trackingId") String trackingId)
-    {
+            @QueryParam("trackingId") String trackingId) {
         { // argument validation
             if (agencyId == null || agencyId < 0) {
                 log.error("holdings-by-item-id called with no agency");
                 return Response.status(Response.Status.BAD_REQUEST).build();
             }
-            if (!(itemId.trim().length() > 0)) {
+            if (!( itemId.trim().length() > 0 )) {
                 log.error("holdings-by-item-id called with no item");
                 return Response.status(Response.Status.BAD_REQUEST).build();
             }
@@ -89,7 +93,7 @@ public class ContentResource {
                 log.error("holdings-by-pid: All argument pids must contain at least one colon");
                 return Response.status(Response.Status.BAD_REQUEST.getStatusCode()).build();
             }
-            List<String> bibliographicRecordIds = pids.stream().map(s -> s.split(":",2)[1]).collect(Collectors.toList());
+            List<String> bibliographicRecordIds = pids.stream().map(s -> s.split(":", 2)[1]).collect(Collectors.toList());
             HashSet<String> uniqueBibliographicRecordIds = new HashSet<>(bibliographicRecordIds);
             if (uniqueBibliographicRecordIds.size() < bibliographicRecordIds.size()) {
                 return Response.status(Response.Status.BAD_REQUEST).build();
@@ -138,6 +142,28 @@ public class ContentResource {
             res.put(bibliographicRecordId, laesekompasHoldingsEntities);
         }
         return Response.ok(new ContentServiceLaesekompasResponse(trackingId, res)).build();
+    }
+
+    @GET
+    @Path("complete/{agencyId:\\d+}/{bibliographicRecordId}")
+    public Response getComplete(@PathParam("agencyId") int agencyId,
+                                @PathParam("bibliographicRecordId") String bibliographicRecordId,
+                                @QueryParam("trackingId") String trackingId) {
+        if (trackingId == null || trackingId.isEmpty()) {
+            trackingId = UUID.randomUUID().toString();
+        }
+        try (LogWith l = LogWith.track(trackingId)) {
+            l.agencyId(agencyId).bibliographicRecordId(bibliographicRecordId);
+
+            HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, trackingId);
+            BibliographicItemEntity rec = dao.getRecordCollectionUnLocked(bibliographicRecordId, agencyId);
+            if (rec == null) {
+                log.info("Requested {}:{} Not found", agencyId, bibliographicRecordId);
+                return Response.status(Response.Status.NOT_FOUND).build();
+            }
+            log.info("Requested {}:{}", agencyId, bibliographicRecordId);
+            return Response.ok(new CompleteBibliographic(rec, trackingId)).build();
+        }
     }
 
     @GET
