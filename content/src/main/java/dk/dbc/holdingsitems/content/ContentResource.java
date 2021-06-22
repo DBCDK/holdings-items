@@ -158,10 +158,10 @@ public class ContentResource {
             HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, trackingId);
             BibliographicItemEntity rec = dao.getRecordCollectionUnLocked(bibliographicRecordId, agencyId);
             if (rec == null) {
-                log.info("Requested {}:{} Not found", agencyId, bibliographicRecordId);
+                log.info("Requested complete {}:{} Not found", agencyId, bibliographicRecordId);
                 return Response.status(Response.Status.NOT_FOUND).build();
             }
-            log.info("Requested {}:{}", agencyId, bibliographicRecordId);
+            log.info("Requested complete {}:{}", agencyId, bibliographicRecordId);
             return Response.ok(new CompleteBibliographic(rec, trackingId)).build();
         }
     }
