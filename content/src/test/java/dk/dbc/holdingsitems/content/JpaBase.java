@@ -1,3 +1,5 @@
+package dk.dbc.holdingsitems.content;
+
 import dk.dbc.commons.persistence.JpaIntegrationTest;
 import dk.dbc.commons.persistence.JpaTestEnvironment;
 import dk.dbc.holdingsitems.DatabaseMigrator;

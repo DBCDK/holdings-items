@@ -1,5 +1,7 @@
+package dk.dbc.holdingsitems.content;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
-import dk.dbc.holdingsitems.content.ContentResource;
+import dk.dbc.holdingsitems.content.response.CompleteBibliographic;
 import dk.dbc.holdingsitems.content.response.ContentServiceItemResponse;
 import dk.dbc.holdingsitems.content.response.ContentServiceLaesekompasResponse;
 import dk.dbc.holdingsitems.content.response.ContentServicePidResponse;
@@ -34,7 +36,7 @@ import static org.mockito.Mockito.mock;
 
 public class ContentIT extends JpaBase {
 
-    private static ObjectMapper O = new ObjectMapper();
+    private static final ObjectMapper O = new ObjectMapper();
 
     @Test(timeout = 30_000L)
     public void testGetItemEntityNoData() throws Exception {
@@ -253,8 +255,8 @@ public class ContentIT extends JpaBase {
     public void testGetPidEntitiesRepeatedPid() throws Exception {
         System.out.println("Test getItemByPid endpoint, repeated pid");
         Response response = jpa(em -> {
-           ContentResource contentResource = MockContentResource(em);
-           return contentResource.getItemEntities(654321, Arrays.asList("hest:12345678", "fest:12345678"), "trackPidRepeatedPid");
+            ContentResource contentResource = MockContentResource(em);
+            return contentResource.getItemEntities(654321, Arrays.asList("hest:12345678", "fest:12345678"), "trackPidRepeatedPid");
         });
         assertEquals(response.getStatusInfo().getStatusCode(), Response.Status.BAD_REQUEST.getStatusCode());
     }
@@ -275,6 +277,7 @@ public class ContentIT extends JpaBase {
         doCallRealMethod().when(mock).getItemEntity(anyInt(), anyString(), anyString());
         doCallRealMethod().when(mock).getItemEntities(anyInt(), anyList(), anyString());
         doCallRealMethod().when(mock).getLaesekompasdataForBibliographicRecordIdsPost(anyString(), anyString());
+        doCallRealMethod().when(mock).getComplete(anyInt(), anyString(), anyString());
         return mock;
     }
 
@@ -358,7 +361,43 @@ public class ContentIT extends JpaBase {
         assertNotNull(heFest);
     }
 
+    @Test(timeout = 2_000L)
+    public void testGetCompleteNotFound() throws Exception {
+        System.out.println("testGetCompleteNotFound");
+        Response response = jpa(em -> {
+            ContentResource contentResource = MockContentResource(em);
+            return contentResource.getComplete(-1, "12345678", "trackPidNoAgency");
+        });
+        assertEquals(response.getStatusInfo().getStatusCode(), Response.Status.NOT_FOUND.getStatusCode());
+    }
 
+    @Test(timeout = 2_000L)
+    public void testComplete() throws Exception {
+        System.out.println("testComplete");
+        jpa(em -> {
+            BibliographicItemEntity bibliographicItemEntity = BibliographicItemEntity.from(em, 654321, "12345678", Instant.now(), LocalDate.now());
+            bibliographicItemEntity.setTrackingId("somethingToMakePostTestHappier");
+            IssueEntity issueEntity = IssueEntity.from(em, bibliographicItemEntity, "issue1");
+            issueEntity.setTrackingId("somethingToMakeTestHappier");
+            issueEntity.setIssueText("#1");
+            issueEntity.setReadyForLoan(1);
+            bibliographicItemEntity.save();
+            itemEntity(issueEntity, "1234", Status.ON_SHELF);
+            itemEntity(issueEntity, "2345", Status.ON_LOAN);
+            issueEntity.save();
+        });
+        Response response = jpa(em -> {
+            ContentResource contentResource = MockContentResource(em);
+            return contentResource.getComplete(654321, "12345678", "trackPidNoAgency");
+        });
+        assertEquals(response.getStatusInfo().getStatusCode(), Response.Status.OK.getStatusCode());
+        CompleteBibliographic entity = (CompleteBibliographic) response.getEntity();
+        assertEquals(entity.issues.size(), 1);
+        assertEquals(entity.issues.get(0).issueId, "issue1");
+        assertEquals(entity.issues.get(0).items.size(), 2);
+        assertEquals(entity.issues.get(0).items.get(0).itemId, "1234");
+        assertEquals(entity.issues.get(0).items.get(1).itemId, "2345");
+    }
 
     private void itemEntity(IssueEntity issueEntity, String itemId, Status status) {
         ItemEntity itemEntity = issueEntity.item(itemId, Instant.now());
