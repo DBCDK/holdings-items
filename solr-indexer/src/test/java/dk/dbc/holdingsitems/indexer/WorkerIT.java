@@ -22,7 +22,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import dk.dbc.commons.testutils.postgres.connection.PostgresITDataSource;
 import dk.dbc.holdingsitems.QueueJob;
 import dk.dbc.holdingsitems.indexer.logic.JobProcessor;
 import dk.dbc.pgqueue.PreparedQueueSupplier;
@@ -30,6 +29,7 @@ import dk.dbc.pgqueue.QueueSupplier;
 import dk.dbc.pgqueue.consumer.JobMetaData;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.sql.Connection;
 import java.sql.Date;
 import java.sql.PreparedStatement;
@@ -40,6 +40,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -55,8 +56,10 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.Invocation;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -77,7 +80,6 @@ public class WorkerIT extends JpaBase {
     private static final ObjectMapper O = new ObjectMapper();
     private static final Logger log = LoggerFactory.getLogger(WorkerIT.class);
 
-    private PostgresITDataSource pgds;
     private Config config;
     private static int solrDocStorePort;
     private static Server jettyServer;
@@ -85,11 +87,11 @@ public class WorkerIT extends JpaBase {
 
     @BeforeClass
     public static void setUpClass() throws Exception {
-        solrDocStorePort = Integer.parseInt(System.getProperty("solr-doc-store.port", "8877"));
-        jettyServer = new Server(solrDocStorePort);
+        jettyServer = new Server(0);
         consumer = new Consumer();
         jettyServer.setHandler(consumer);
         jettyServer.start();
+        solrDocStorePort = ( (ServerConnector) jettyServer.getConnectors()[0] ).getLocalPort();
     }
 
     @Before
@@ -142,14 +144,14 @@ public class WorkerIT extends JpaBase {
     @Test
     public void testBuildRequest() throws Exception {
         System.out.println("testBuildRequest");
-        try (Connection connection = dataSource.getConnection()) {
+        try (Connection connection = pg.createConnection()) {
             insert(connection, "inserts/insert1.json");
         }
 
         jpa(em -> {
             JobProcessor jobProcessor = new JobProcessor(config, em);
             jobProcessor.init();
-            try (Connection connection = dataSource.getConnection()) {
+            try (Connection connection = pg.createConnection()) {
                 ObjectNode json = jobProcessor.buildRequestJson(new QueueJob(700000, "87654321", "{}", "T#1"));
                 System.out.println("json = " + json);
                 assertJson(700000, json, "/agencyId");
@@ -211,7 +213,7 @@ public class WorkerIT extends JpaBase {
     public void testConsumerDequeues() throws Exception {
         log.info("testConsumerDequeues");
 
-        try (Connection connection = dataSource.getConnection()) {
+        try (Connection connection = pg.createConnection()) {
             PreparedQueueSupplier<QueueJob> supplier = new QueueSupplier<>(QueueJob.STORAGE_ABSTRACTION)
                     .preparedSupplier(connection);
             supplier.enqueue("q1", new QueueJob(700000, "87654321", "{}", "foo1"));
@@ -225,7 +227,7 @@ public class WorkerIT extends JpaBase {
             }
         };
         worker.config = config;
-        worker.dataSource = dataSource;
+        worker.dataSource = pg.datasource();
         worker.init();
         QueueJob job = jobs.poll(10, TimeUnit.SECONDS);
         worker.destroy();
@@ -235,11 +237,11 @@ public class WorkerIT extends JpaBase {
     @Test
     public void testConsumer() throws Exception {
         log.info("testConsumer");
-        try (Connection connection = dataSource.getConnection()) {
+        try (Connection connection = pg.createConnection()) {
             insert(connection, "inserts/insert1.json");
         }
 
-        try (Connection connection = dataSource.getConnection()) {
+        try (Connection connection = pg.createConnection()) {
             PreparedQueueSupplier<QueueJob> supplier = new QueueSupplier<>(QueueJob.STORAGE_ABSTRACTION)
                     .preparedSupplier(connection);
             supplier.enqueue("q1", new QueueJob(700000, "87654321", "{}", "foo1"));
@@ -248,7 +250,7 @@ public class WorkerIT extends JpaBase {
         jpa(em -> {
             Worker worker = new Worker();
             worker.config = config;
-            worker.dataSource = dataSource;
+            worker.dataSource = pg.datasource();
             worker.jobProcessor = new JobProcessor(config, em);
             worker.jobProcessor.init();
             worker.init();
@@ -269,7 +271,7 @@ public class WorkerIT extends JpaBase {
     public void testPurgedRecord() throws Exception {
         System.out.println("testPurgedRecord");
 
-        try (Connection connection = dataSource.getConnection()) {
+        try (Connection connection = pg.createConnection()) {
             PreparedQueueSupplier<QueueJob> supplier = new QueueSupplier<>(QueueJob.STORAGE_ABSTRACTION)
                     .preparedSupplier(connection);
             supplier.enqueue("q1", new QueueJob(700000, "87654321", "{}", "foo1"));
@@ -278,7 +280,7 @@ public class WorkerIT extends JpaBase {
         jpa(em -> {
             Worker worker = new Worker();
             worker.config = config;
-            worker.dataSource = dataSource;
+            worker.dataSource = pg.datasource();
             worker.jobProcessor = new JobProcessor(config, em);
             worker.jobProcessor.init();
             worker.init();

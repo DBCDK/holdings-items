@@ -20,6 +20,7 @@ package dk.dbc.holdingsitems.indexer;
 
 import dk.dbc.commons.persistence.JpaIntegrationTest;
 import dk.dbc.commons.persistence.JpaTestEnvironment;
+import dk.dbc.commons.testcontainers.postgres.DBCPostgreSQLContainer;
 import dk.dbc.holdingsitems.DatabaseMigrator;
 import dk.dbc.holdingsitems.jpa.BibliographicItemEntity;
 import dk.dbc.holdingsitems.jpa.IssueEntity;
@@ -35,9 +36,13 @@ import java.time.LocalDate;
 import java.util.Map;
 import javax.persistence.EntityManager;
 import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.postgresql.ds.PGSimpleDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.eclipse.persistence.config.PersistenceUnitProperties.*;
 
 /**
  *
@@ -47,7 +52,19 @@ public class JpaBase extends JpaIntegrationTest {
 
     private static final Logger log = LoggerFactory.getLogger(JpaBase.class);
 
-    protected static PGSimpleDataSource dataSource;
+    @ClassRule
+    public static DBCPostgreSQLContainer pg = new DBCPostgreSQLContainer();
+    private static Map<String, String> emProperties;
+
+    @BeforeClass
+    public static void migrateTestPg() {
+        DatabaseMigrator.migrate(pg.datasource());
+        emProperties = Map.of(JDBC_USER, pg.getUsername(),
+                JDBC_PASSWORD, pg.getPassword(),
+                JDBC_URL, pg.getJdbcUrl(),
+                JDBC_DRIVER, "org.postgresql.Driver",
+                "eclipselink.logging.level", "FINE");
+    }
 
     @FunctionalInterface
     public static interface JpaVoidExecution {
@@ -100,14 +117,12 @@ public class JpaBase extends JpaIntegrationTest {
 
     @Override
     public JpaTestEnvironment setup() {
-        dataSource = getDataSource("holdingsitems");
-        DatabaseMigrator.migrate(dataSource);
-        return new JpaTestEnvironment(dataSource, "holdingsItemsManual_PU");
+        return new JpaTestEnvironment(pg.datasource(), "holdingsItemsManual_PU", emProperties);
     }
 
     @Before
     public void cleanTables() throws Exception {
-        try (Connection connection = dataSource.getConnection() ;
+        try (Connection connection = pg.createConnection() ;
              Statement stmt = connection.createStatement()) {
             stmt.execute("TRUNCATE item CASCADE");
             stmt.execute("TRUNCATE issue CASCADE");
@@ -144,7 +159,7 @@ public class JpaBase extends JpaIntegrationTest {
 
         String userName = System.getProperty("user.name");
         if (testPort != null) {
-            ds.setServerNames(new String[] {"localhost"} );
+            ds.setServerNames(new String[] {"localhost"});
             ds.setDatabaseName(databaseName);
             ds.setUser(userName);
             ds.setPassword(userName);
