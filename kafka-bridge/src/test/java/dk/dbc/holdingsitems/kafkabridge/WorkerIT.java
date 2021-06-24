@@ -20,17 +20,18 @@ package dk.dbc.holdingsitems.kafkabridge;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.salesforce.kafka.test.KafkaTestServer;
-import com.salesforce.kafka.test.junit4.SharedKafkaTestResource;
 import dk.dbc.holdingsitems.HoldingsItemsDAO;
 import dk.dbc.holdingsitems.QueueJob;
 import dk.dbc.holdingsitems.StateChangeMetadata;
 import dk.dbc.holdingsitems.jpa.BibliographicItemEntity;
 import dk.dbc.holdingsitems.jpa.IssueEntity;
 import dk.dbc.holdingsitems.jpa.Status;
-import dk.dbc.kafka.consumer.SimpleConsumer;
+import dk.dbc.kafka.testutil.KafkaContainer;
+import dk.dbc.kafka.testutil.KafkaContainerTools;
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -45,108 +46,103 @@ import static org.junit.Assert.*;
  * @author DBC {@literal <dbc.dk>}
  */
 public class WorkerIT extends JpaBase {
-//
-//    private static final Logger log = LoggerFactory.getLogger(WorkerIT.class);
-//    private static final ObjectMapper O = new ObjectMapper();
-//
-//    private static final String TOPIC = "my-topic";
-//
-//    @ClassRule
-//    public static final SharedKafkaTestResource KAFKA = new SharedKafkaTestResource();
-//
-//    private String brokers;
-//
-//    @Before
-//    public void setUp() throws Exception {
-//
-//        brokers = KAFKA.getKafkaConnectString();
-//        KAFKA.getKafkaTestUtils().createTopic(TOPIC, 2, (short)1);
-//    }
-//
-//    @Test(timeout = 30_000L)
-//    public void test() throws Exception {
-//        System.out.println("TESTING");
-//
-//        jpa(em -> {
-//
-//            HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, "track1");
-//            BibliographicItemEntity b = dao.getRecordCollection("12345678", 654321, Instant.now());
-//            IssueEntity issue1 = fill(b.issue("Issue#1", Instant.now()));
-//            issue1.setIssueText("#1");
-//            issue1.setReadyForLoan(1);
-//            fill(issue1.item("1234", Instant.MIN))
-//                    .setStatus(Status.ON_SHELF);
-//            fill(issue1.item("2345", Instant.MIN))
-//                    .setStatus(Status.ON_LOAN);
-//            issue1.save();
-//            IssueEntity issue2 = fill(b.issue("Issue#2", Instant.now()));
-//            issue2.setIssueText("#2");
-//            issue2.setReadyForLoan(1);
-//            fill(issue2.item("5432", Instant.MIN))
-//                    .setStatus(Status.ON_SHELF);
-//            fill(issue2.item("4321", Instant.MIN))
-//                    .setStatus(Status.ON_ORDER);
-//            issue2.save();
-//            b.save();
-//        });
-//
-//        jpa(em -> {
-//            JobProcessor kafkaWorker = new JobProcessor();
-//            kafkaWorker.config = new Config() {
-//                @Override
-//                public String getKafkaServers() {
-//                    return brokers;
-//                }
-//
-//                @Override
-//                public String getKafkaTopic() {
-//                    return TOPIC;
-//                }
-//            };
-//            kafkaWorker.em = em;
-//            HashMap<String, StateChangeMetadata> stateChange = new HashMap<>();
-//            stateChange.put("1234", new StateChangeMetadata(Status.ON_LOAN, Status.ON_SHELF, Instant.parse("2018-01-01T12:34:56Z")));
-//
-//            kafkaWorker.transferJob(new QueueJob(654321, "12345678", "", "t1"));
-//            kafkaWorker.transferJob(new QueueJob(123456, "87654321", O.writeValueAsString(stateChange), "t1"));
-//        });
-//
-//        try (SimpleConsumer consumer = SimpleConsumer.builder()
-//                .withServers(brokers)
-//                .withTopic(TOPIC)
-//                .withGroupId("any")
-//                .build()) {
-//
-//            HashMap<String, SimpleConsumer.Message> records = new HashMap<>();
-//            while (records.size() < 2) {
-//                consumer.poll().stream()
-//                        .forEach(m -> records.put(m.getKey(), m));
-//            }
-//            System.out.println("records = " + records);
-//            JsonNode tree;
-//
-//            assertTrue("has 12345678", records.containsKey("12345678"));
-//            tree = O.readTree(records.get("12345678").getValue());
-//            System.out.println("tree = " + tree);
-//            assertEquals(true, tree.at("/complete").asBoolean(false));
-//            assertEquals("OnShelf", tree.at("/items/1234/oldStatus").asText());
-//            assertEquals("OnShelf", tree.at("/items/1234/newStatus").asText());
-//            assertEquals("OnLoan", tree.at("/items/2345/oldStatus").asText());
-//            assertEquals("OnLoan", tree.at("/items/2345/newStatus").asText());
-//            assertEquals("OnShelf", tree.at("/items/5432/oldStatus").asText());
-//            assertEquals("OnShelf", tree.at("/items/5432/newStatus").asText());
-//            assertEquals("OnOrder", tree.at("/items/4321/oldStatus").asText());
-//            assertEquals("OnOrder", tree.at("/items/4321/newStatus").asText());
-//
-//            assertTrue("has 87654321", records.containsKey("87654321"));
-//            tree = O.readTree(records.get("87654321").getValue());
-//            System.out.println("tree = " + tree);
-//            assertEquals(false, tree.at("/complete").asBoolean(true));
-//            assertEquals("OnShelf", tree.at("/items/1234/oldStatus").asText());
-//            assertEquals("OnLoan", tree.at("/items/1234/newStatus").asText());
-//
-//            assertEquals(2, records.size());
-//        }
-//    }
+
+    private static final Logger log = LoggerFactory.getLogger(WorkerIT.class);
+    private static final ObjectMapper O = new ObjectMapper();
+
+    private static final String TOPIC = "my-topic";
+
+    @ClassRule
+    public static final KafkaContainer kafkaContainer = new KafkaContainer();
+    public static final KafkaContainerTools kafka = kafkaContainer.tools();
+
+    @Before
+    public void setUp() throws Exception {
+
+        kafka.recreateTopic(TOPIC, "-p 1 -r 1");
+    }
+
+    @Test(timeout = 30_000L)
+    public void test() throws Exception {
+        System.out.println("TESTING");
+
+        jpa(em -> {
+
+            HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, "track1");
+            BibliographicItemEntity b = dao.getRecordCollection("12345678", 654321, Instant.now());
+            IssueEntity issue1 = fill(b.issue("Issue#1", Instant.now()));
+            issue1.setIssueText("#1");
+            issue1.setReadyForLoan(1);
+            fill(issue1.item("1234", Instant.MIN))
+                    .setStatus(Status.ON_SHELF);
+            fill(issue1.item("2345", Instant.MIN))
+                    .setStatus(Status.ON_LOAN);
+            issue1.save();
+            IssueEntity issue2 = fill(b.issue("Issue#2", Instant.now()));
+            issue2.setIssueText("#2");
+            issue2.setReadyForLoan(1);
+            fill(issue2.item("5432", Instant.MIN))
+                    .setStatus(Status.ON_SHELF);
+            fill(issue2.item("4321", Instant.MIN))
+                    .setStatus(Status.ON_ORDER);
+            issue2.save();
+            b.save();
+        });
+
+        jpa(em -> {
+            JobProcessor kafkaWorker = new JobProcessor();
+            Config config = new Config() {
+                @Override
+                public String getKafkaServers() {
+                    return kafka.boostrapServers();
+                }
+
+                @Override
+                public String getKafkaTopic() {
+                    return TOPIC;
+                }
+            };
+            KafkaSender sender = new KafkaSender();
+            sender.config = config;
+            sender.init();
+
+            kafkaWorker.config = config;
+            kafkaWorker.em = em;
+            kafkaWorker.sender = sender;
+
+            HashMap<String, StateChangeMetadata> stateChange = new HashMap<>();
+            stateChange.put("1234", new StateChangeMetadata(Status.ON_LOAN, Status.ON_SHELF, Instant.parse("2018-01-01T12:34:56Z")));
+
+            kafkaWorker.transferJob(new QueueJob(654321, "12345678", "", "t1"));
+            kafkaWorker.transferJob(new QueueJob(123456, "87654321", O.writeValueAsString(stateChange), "t1"));
+        });
+
+        Map<String, List<String>> records = kafka.consume(TOPIC);
+
+        System.out.println("records = " + records);
+        JsonNode tree;
+
+        assertTrue("has 12345678", records.containsKey("12345678"));
+        tree = O.readTree(records.get("12345678").get(0));
+        System.out.println("tree = " + tree);
+        assertEquals(true, tree.at("/complete").asBoolean(false));
+        assertEquals("OnShelf", tree.at("/items/1234/oldStatus").asText());
+        assertEquals("OnShelf", tree.at("/items/1234/newStatus").asText());
+        assertEquals("OnLoan", tree.at("/items/2345/oldStatus").asText());
+        assertEquals("OnLoan", tree.at("/items/2345/newStatus").asText());
+        assertEquals("OnShelf", tree.at("/items/5432/oldStatus").asText());
+        assertEquals("OnShelf", tree.at("/items/5432/newStatus").asText());
+        assertEquals("OnOrder", tree.at("/items/4321/oldStatus").asText());
+        assertEquals("OnOrder", tree.at("/items/4321/newStatus").asText());
+
+        assertTrue("has 87654321", records.containsKey("87654321"));
+        tree = O.readTree(records.get("87654321").get(0));
+        System.out.println("tree = " + tree);
+        assertEquals(false, tree.at("/complete").asBoolean(true));
+        assertEquals("OnShelf", tree.at("/items/1234/oldStatus").asText());
+        assertEquals("OnLoan", tree.at("/items/1234/newStatus").asText());
+
+        assertEquals(2, records.size());
+    }
 
 }
