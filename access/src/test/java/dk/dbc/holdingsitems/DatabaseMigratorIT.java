@@ -18,13 +18,13 @@
  */
 package dk.dbc.holdingsitems;
 
-import dk.dbc.commons.testutils.postgres.connection.PostgresITDataSource;
+import dk.dbc.commons.testcontainers.postgres.DBCPostgreSQLContainer;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import javax.sql.DataSource;
 import org.junit.Assert;
-import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 /**
@@ -33,23 +33,13 @@ import org.junit.Test;
  */
 public class DatabaseMigratorIT {
 
-    private static PostgresITDataSource pg;
-    private static DataSource dataSource;
-
-    @Before
-    public void setUp() throws Exception {
-        pg = new PostgresITDataSource("holdingsitems");
-        dataSource = pg.getDataSource();
-        try (Connection connection = dataSource.getConnection() ;
-             Statement stmt = connection.createStatement()) {
-            stmt.executeUpdate("DROP SCHEMA public CASCADE");
-            stmt.executeUpdate("CREATE SCHEMA public");
-        }
-    }
+    @Rule
+    public DBCPostgreSQLContainer pg = new DBCPostgreSQLContainer();
 
     @Test
     public void testMigrate() throws Exception {
         System.out.println("migrate");
+        DataSource dataSource = pg.datasource();
         DatabaseMigrator.migrate(dataSource);
         try (Connection connection = dataSource.getConnection() ;
              Statement stmt = connection.createStatement() ;

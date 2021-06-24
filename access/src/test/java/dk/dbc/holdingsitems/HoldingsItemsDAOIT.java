@@ -56,7 +56,7 @@ public class HoldingsItemsDAOIT extends JpaBase {
             dao.enqueue("87654321", 888888, "{}", "worker", 1000);
         });
         flushAndEvict();
-        try (Connection connection = dataSource.getConnection() ;
+        try (Connection connection = pg.createConnection() ;
              Statement stmt = connection.createStatement() ;
              ResultSet resultSet = stmt.executeQuery("SELECT bibliographicRecordId, agencyId, trackingId FROM queue")) {
             HashSet<String> results = new HashSet<>();
