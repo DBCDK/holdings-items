@@ -34,13 +34,11 @@ import java.util.TreeSet;
  */
 public class QueueJob {
 
-    protected String bibliographicRecordId;
-    protected int agencyId;
-    protected String additionalData;
-    protected String stateChange;
-    protected String trackingId;
-    protected Set<String> trackingIds;
-
+    private String bibliographicRecordId;
+    private int agencyId;
+    private String stateChange;
+    private String trackingId;
+    private Set<String> trackingIds;
 
     QueueJob() {
         this.trackingIds = null;

@@ -30,7 +30,6 @@ import java.util.HashMap;
 import java.util.Set;
 import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
-import javax.enterprise.inject.spi.Producer;
 import javax.inject.Inject;
 import javax.persistence.EntityManager;
 import org.eclipse.microprofile.metrics.annotation.Timed;
