@@ -27,9 +27,7 @@
 
     <properties>
         <pg-queue.version>1.5-SNAPSHOT</pg-queue.version>
-
-        <endorsed.dir>${project.build.directory}/endorsed</endorsed.dir>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <jakarta-xml-ws.version>2.3.3</jakarta-xml-ws.version>
     </properties>
 
     <modules>
