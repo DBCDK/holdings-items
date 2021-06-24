@@ -572,7 +572,7 @@ public class UpdateBeanIT extends JpaBase {
     }
 
     private void clearQueue() throws SQLException {
-        try (Connection connection = dataSource.getConnection() ;
+        try (Connection connection = pg.createConnection() ;
              Statement stmt = connection.createStatement()) {
             stmt.executeUpdate("TRUNCATE queue");
         }
@@ -580,7 +580,7 @@ public class UpdateBeanIT extends JpaBase {
 
     private HashMap<String, Set<String>> getQueue() throws SQLException {
         HashMap<String, Set<String>> result = new HashMap<>();
-        try (Connection connection = dataSource.getConnection() ;
+        try (Connection connection = pg.createConnection() ;
              PreparedStatement stmt = connection.prepareStatement("SELECT consumer, agencyId, bibliographicRecordId, stateChange FROM queue") ;
              ResultSet resultSet = stmt.executeQuery()) {
             while (resultSet.next()) {
@@ -702,7 +702,7 @@ public class UpdateBeanIT extends JpaBase {
     }
 
     private int countAllIssues() throws SQLException {
-        try (Connection db = dataSource.getConnection() ;
+        try (Connection db = pg.createConnection() ;
              PreparedStatement stmt = db.prepareStatement("SELECT COUNT(*) FROM issue") ;
              ResultSet resultSet = stmt.executeQuery()) {
             if (resultSet.next()) {
@@ -713,7 +713,7 @@ public class UpdateBeanIT extends JpaBase {
     }
 
     private int countAllItems() throws SQLException {
-        try (Connection db = dataSource.getConnection() ;
+        try (Connection db = pg.createConnection() ;
              PreparedStatement stmt = db.prepareStatement("SELECT COUNT(*) FROM item") ;
              ResultSet resultSet = stmt.executeQuery()) {
             if (resultSet.next()) {
@@ -724,7 +724,7 @@ public class UpdateBeanIT extends JpaBase {
     }
 
     private int countItems(StatusType type) throws SQLException {
-        try (Connection db = dataSource.getConnection() ;
+        try (Connection db = pg.createConnection() ;
              PreparedStatement stmt = db.prepareStatement("SELECT COUNT(*) FROM item WHERE status=?")) {
             stmt.setString(1, type.value());
             try (ResultSet resultSet = stmt.executeQuery()) {
@@ -737,7 +737,7 @@ public class UpdateBeanIT extends JpaBase {
     }
 
     private HashMap<String, String> checkRow(int agencyId, String bibliographicRecordId, String issueId, String itemId) throws SQLException {
-        try (Connection db = dataSource.getConnection() ;
+        try (Connection db = pg.createConnection() ;
              PreparedStatement stmt = db.prepareStatement(
                      "SELECT " +
                      "c.agencyid, " +
