@@ -1,18 +1,14 @@
 package dk.dbc.holdingsitems.content;
 
-import dk.dbc.commons.persistence.JpaIntegrationTest;
 import dk.dbc.commons.persistence.JpaTestEnvironment;
 import dk.dbc.commons.testcontainers.postgres.DBCPostgreSQLContainer;
 import dk.dbc.holdingsitems.DatabaseMigrator;
 import org.junit.Before;
-import org.postgresql.ds.PGSimpleDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.persistence.EntityManager;
 import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Map;
 import org.junit.BeforeClass;
@@ -26,7 +22,7 @@ import static org.eclipse.persistence.config.PersistenceUnitProperties.JDBC_USER
 /**
  * Copied from the other modules. Dunno if this is the right way to do it...
  */
-public class JpaBase extends JpaIntegrationTest {
+public class JpaBase {
 
     private static final Logger log = LoggerFactory.getLogger(JpaBase.class);
 
@@ -70,8 +66,7 @@ public class JpaBase extends JpaIntegrationTest {
         return e.getPersistenceContext().run(() -> ex.execute(em));
     }
 
-    @Override
-    public JpaTestEnvironment setup() {
+    public JpaTestEnvironment env() {
         return new JpaTestEnvironment(pg.datasource(), "holdingsItemsManual_PU", emProperties);
     }
 

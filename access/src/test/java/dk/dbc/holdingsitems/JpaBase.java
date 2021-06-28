@@ -18,7 +18,6 @@
  */
 package dk.dbc.holdingsitems;
 
-import dk.dbc.commons.persistence.JpaIntegrationTest;
 import dk.dbc.commons.persistence.JpaTestEnvironment;
 import dk.dbc.commons.testcontainers.postgres.DBCPostgreSQLContainer;
 import dk.dbc.holdingsitems.jpa.BibliographicItemEntity;
@@ -47,7 +46,7 @@ import static org.eclipse.persistence.config.PersistenceUnitProperties.JDBC_USER
  *
  * @author Morten Bøgeskov (mb@dbc.dk)
  */
-public class JpaBase extends JpaIntegrationTest {
+public class JpaBase {
 
     private static final Logger log = LoggerFactory.getLogger(JpaBase.class);
 
@@ -59,10 +58,10 @@ public class JpaBase extends JpaIntegrationTest {
     public static void migrateTestPg() {
         DatabaseMigrator.migrate(pg.datasource());
         emProperties = Map.of(JDBC_USER, pg.getUsername(),
-                JDBC_PASSWORD, pg.getPassword(),
-                JDBC_URL, pg.getJdbcUrl(),
-                JDBC_DRIVER, "org.postgresql.Driver",
-                "eclipselink.logging.level", "FINE");
+                              JDBC_PASSWORD, pg.getPassword(),
+                              JDBC_URL, pg.getJdbcUrl(),
+                              JDBC_DRIVER, "org.postgresql.Driver",
+                              "eclipselink.logging.level", "FINE");
     }
 
     @FunctionalInterface
@@ -103,8 +102,7 @@ public class JpaBase extends JpaIntegrationTest {
         env().getEntityManagerFactory().getCache().evictAll();
     }
 
-    @Override
-    public JpaTestEnvironment setup() {
+    public JpaTestEnvironment env() {
         return new JpaTestEnvironment(pg.datasource(), "holdingsItemsManual_PU", emProperties);
     }
 

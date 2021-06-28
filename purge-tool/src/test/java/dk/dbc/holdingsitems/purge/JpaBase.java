@@ -18,7 +18,6 @@
  */
 package dk.dbc.holdingsitems.purge;
 
-import dk.dbc.commons.persistence.JpaIntegrationTest;
 import dk.dbc.commons.persistence.JpaTestEnvironment;
 import dk.dbc.commons.testcontainers.postgres.DBCPostgreSQLContainer;
 import dk.dbc.holdingsitems.DatabaseMigrator;
@@ -56,7 +55,7 @@ import static org.eclipse.persistence.config.PersistenceUnitProperties.JDBC_USER
  *
  * @author Morten Bøgeskov (mb@dbc.dk)
  */
-public class JpaBase extends JpaIntegrationTest {
+public class JpaBase {
 
     private static final Logger log = LoggerFactory.getLogger(JpaBase.class);
 
@@ -122,8 +121,7 @@ public class JpaBase extends JpaIntegrationTest {
         }
     }
 
-    @Override
-    public JpaTestEnvironment setup() {
+    public JpaTestEnvironment env() {
         return new JpaTestEnvironment(pg.datasource(), "holdingsItemsManual_PU", emProperties);
     }
 
