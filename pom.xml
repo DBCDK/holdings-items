@@ -13,13 +13,13 @@
     <parent>
         <groupId>dk.dbc</groupId>
         <artifactId>microservice-pom</artifactId>
-        <version>latest-SNAPSHOT</version>
+        <version>java11-SNAPSHOT</version>
         <relativePath/>
     </parent>
 
     <groupId>dk.dbc</groupId>
     <artifactId>holdings-items</artifactId>
-    <version>1.2-SNAPSHOT</version>
+    <version>1.3-SNAPSHOT</version>
     <name>${project.artifactId}</name>
 
     <packaging>pom</packaging>
@@ -27,9 +27,7 @@
 
     <properties>
         <pg-queue.version>1.5-SNAPSHOT</pg-queue.version>
-
-        <endorsed.dir>${project.build.directory}/endorsed</endorsed.dir>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <jakarta-xml-ws.version>2.3.3</jakarta-xml-ws.version>
     </properties>
 
     <modules>

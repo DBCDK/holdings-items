@@ -25,7 +25,6 @@ import dk.dbc.holdingsitems.HoldingsItemsException;
 import dk.dbc.holdingsitems.QueueJob;
 import dk.dbc.holdingsitems.StateChangeMetadata;
 import dk.dbc.holdingsitems.jpa.BibliographicItemEntity;
-import dk.dbc.kafka.producer.Producer;
 import dk.dbc.log.LogWith;
 import java.util.HashMap;
 import java.util.Set;
@@ -53,11 +52,13 @@ public class JobProcessor {
     @Inject
     EntityManager em;
 
+    @Inject
+    KafkaSender sender;
+
     @Timed(reusable = true)
     @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
     public void transferJob(QueueJob job) throws Exception {
-        try (Producer messageTarget = makeKafkaTarget() ;
-             LogWith logWith = new LogWith(job.getTrackingId())) {
+        try (LogWith logWith = new LogWith(job.getTrackingId())) {
             String stateChange = job.getStateChange();
             ObjectNode message = O.createObjectNode();
             message.put("agencyId", job.getAgencyId());
@@ -77,15 +78,8 @@ public class JobProcessor {
             }
             String json = O.writeValueAsString(message);
             log.debug("posting: {}", json);
-            messageTarget.send(job.getBibliographicRecordId(), json);
+            sender.send(job.getBibliographicRecordId(), json);
         }
-    }
-
-    Producer makeKafkaTarget() {
-        return Producer.builder()
-                .withServers(config.getKafkaServers())
-                .withTopic(config.getKafkaTopic())
-                .build();
     }
 
     private ObjectNode buildFullStatus(QueueJob job) throws HoldingsItemsException {

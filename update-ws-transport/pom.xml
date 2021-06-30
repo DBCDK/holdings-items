@@ -5,27 +5,26 @@
     <parent>
         <groupId>dk.dbc</groupId>
         <artifactId>holdings-items</artifactId>
-        <version>1.2-SNAPSHOT</version>
+        <version>1.3-SNAPSHOT</version>
     </parent>
 
     <artifactId>holdings-items-ws-transport</artifactId>
     <packaging>jar</packaging>
-    <name>${project.artifactId}</name>
 
     <build>
         <plugins>
 
             <plugin>
-                <groupId>org.jvnet.jax-ws-commons</groupId>
+                <groupId>org.codehaus.mojo</groupId>
                 <artifactId>jaxws-maven-plugin</artifactId>
-                <version>2.3</version>
+                <version>2.6</version>
                 <executions>
                     <execution>
                         <goals>
                             <goal>wsimport</goal>
                         </goals>
                         <configuration>
-                            <wsdlLocation>https://holdingsitemsupdate.addi.dk/holdingsitemsupdate-1.1/HoldingsItemsUpdateServices?wsdl</wsdlLocation>
+                            <wsdlLocation>https://holdingsitemsupdate.addi.dk/holdingsitemsupdate-1.3/HoldingsItemsUpdateServices?wsdl</wsdlLocation>
                             <wsdlDirectory>src/main/wsdl/svn.dbc.dk/repos/WSContracts/holdingsItemsUpdate/trunk</wsdlDirectory>
                             <wsdlFiles>
                                 <wsdlFile>holdingsItemsUpdate.wsdl</wsdlFile>
@@ -42,7 +41,7 @@
                     <dependency>
                         <groupId>javax.xml</groupId>
                         <artifactId>webservices-api</artifactId>
-                        <version>2.0</version>
+                        <version>2.0.1</version>
                     </dependency>
                 </dependencies>
                 <configuration>
@@ -89,4 +88,17 @@
 
         </plugins>
     </build>
+
+    <dependencies>
+        <dependency>
+            <groupId>jakarta.xml.ws</groupId>
+            <artifactId>jakarta.xml.ws-api</artifactId>
+            <version>${jakarta-xml-ws.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.sun.xml.ws</groupId>
+            <artifactId>jaxws-rt</artifactId>
+            <version>${jakarta-xml-ws.version}</version>
+        </dependency>
+    </dependencies>
 </project>

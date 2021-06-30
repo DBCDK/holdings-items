@@ -23,7 +23,6 @@ import dk.dbc.pgqueue.QueueStorageAbstraction;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Set;
@@ -35,44 +34,13 @@ import java.util.TreeSet;
  */
 public class QueueJob {
 
-    @Deprecated
-    public static final String SQL_COLUMNS = "worker, queued, bibliographicRecordId, agencyId, additionalData, trackingId";
-
-    protected String worker;
-    protected Instant queued;
-    protected String bibliographicRecordId;
-    protected int agencyId;
-    protected String additionalData;
-    protected String stateChange;
-    protected String trackingId;
-    protected Set<String> trackingIds;
-
-    @Deprecated
-    public QueueJob(ResultSet resultSet) throws SQLException {
-        this(resultSet, 1);
-        this.trackingIds = null;
-    }
-
-    @Deprecated
-    public QueueJob(ResultSet resultSet, int column) throws SQLException {
-        this.worker = resultSet.getString(column++);
-        this.queued = resultSet.getTimestamp(column++).toInstant();
-        this.bibliographicRecordId = resultSet.getString(column++);
-        this.agencyId = resultSet.getInt(column++);
-        this.additionalData = resultSet.getString(column++);
-        this.trackingId = resultSet.getString(column++);
-        this.trackingIds = null;
-    }
+    private String bibliographicRecordId;
+    private int agencyId;
+    private String stateChange;
+    private String trackingId;
+    private Set<String> trackingIds;
 
     QueueJob() {
-        this.trackingIds = null;
-    }
-
-    @Deprecated
-    public QueueJob(String bibliographicRecordId, int agencyId, String additionalData) {
-        this.bibliographicRecordId = bibliographicRecordId;
-        this.agencyId = agencyId;
-        this.additionalData = additionalData;
         this.trackingIds = null;
     }
 
@@ -80,27 +48,8 @@ public class QueueJob {
         this.trackingIds = null;
         this.agencyId = agencyId;
         this.bibliographicRecordId = bibliographicRecordId;
-        this.trackingId = trackingId;
         this.stateChange = stateChange;
-    }
-
-    @Deprecated
-    public QueueJob(String worker, Instant queued, String bibliographicRecordId, int agencyId, String additionalData, String trackingId) {
-        this.trackingIds = null;
-        this.worker = worker;
-        this.queued = queued;
-        this.bibliographicRecordId = bibliographicRecordId;
-        this.agencyId = agencyId;
-        this.additionalData = additionalData;
         this.trackingId = trackingId;
-    }
-
-    public String getWorker() {
-        return worker;
-    }
-
-    public Instant getQueued() {
-        return queued;
     }
 
     public String getBibliographicRecordId() {
@@ -113,11 +62,6 @@ public class QueueJob {
 
     public String getStateChange() {
         return stateChange;
-    }
-
-    @Deprecated
-    public String getAdditionalData() {
-        return additionalData;
     }
 
     public String getTrackingId() {
@@ -145,7 +89,7 @@ public class QueueJob {
 
     @Override
     public String toString() {
-        return "QueueJob{" + "worker=" + worker + ", queued=" + queued + ", bibliographicRecordId=" + bibliographicRecordId + ", agencyId=" + agencyId + ", stateChange=" + stateChange + ", stateChange=" + stateChange + ", trackingId=" + getTrackingId() + '}';
+        return "QueueJob{" + "bibliographicRecordId=" + bibliographicRecordId + ", agencyId=" + agencyId + ", stateChange=" + stateChange + ", trackingId=" + getTrackingId() + '}';
     }
 
     public static final QueueStorageAbstraction<QueueJob> STORAGE_ABSTRACTION = new QueueStorageAbstraction<QueueJob>() {

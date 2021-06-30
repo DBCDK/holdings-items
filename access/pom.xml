@@ -5,7 +5,7 @@
     <parent>
         <groupId>dk.dbc</groupId>
         <artifactId>holdings-items</artifactId>
-        <version>1.2-SNAPSHOT</version>
+        <version>1.3-SNAPSHOT</version>
     </parent>
 
     <artifactId>holdings-items-access</artifactId>
@@ -14,55 +14,6 @@
 
     <build>
         <plugins>
-
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>build-helper-maven-plugin</artifactId>
-                <version>3.0.0</version>
-                <executions>
-                    <execution>
-                        <id>reserve-network-port</id>
-                        <goals>
-                            <goal>reserve-network-port</goal>
-                        </goals>
-                        <phase>initialize</phase>
-                        <configuration>
-                            <portNames>
-                                <portName>postgresql.port</portName>
-                            </portNames>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
-                <groupId>dk.dbc</groupId>
-                <artifactId>postgresql-maven-plugin</artifactId>
-                <version>1.3-SNAPSHOT</version>
-                <executions>
-                    <execution>
-                        <id>start-postgresql</id>
-                        <phase>pre-integration-test</phase>
-                        <goals>
-                            <goal>start</goal>
-                        </goals>
-                        <configuration>
-                            <pgPort>${postgresql.port}</pgPort>
-                            <pgDbName>holdingsitems</pgDbName>
-                            <pgDbScripts>
-                            </pgDbScripts>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>stop-postgresql</id>
-                        <phase>post-integration-test</phase>
-                        <goals>
-                            <goal>shutdown</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
@@ -85,20 +36,9 @@
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.0.0-M3</version>
-                <configuration>
-                </configuration>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-failsafe-plugin</artifactId>
                 <configuration>
                     <redirectTestOutputToFile>false</redirectTestOutputToFile>
-                    <systemPropertyVariables>
-                        <postgresql.port>${postgresql.port}</postgresql.port>
-                    </systemPropertyVariables>
                 </configuration>
                 <executions>
                     <execution>
@@ -109,7 +49,6 @@
                     </execution>
                 </executions>
             </plugin>
-
         </plugins>
     </build>
     
@@ -150,16 +89,17 @@
         </dependency>
 
         <dependency>
-            <groupId>dk.dbc.commoms.testutils</groupId>
-            <artifactId>dbc-commons-testutil-postgres-connection</artifactId>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
             <groupId>dk.dbc</groupId>
             <artifactId>pg-queue-supplier</artifactId>
         </dependency>
         
+        <dependency>
+            <groupId>dk.dbc</groupId>
+            <artifactId>dbc-commons-testcontainers-postgres</artifactId>
+            <version>1.0-SNAPSHOT</version>
+            <scope>test</scope>
+        </dependency>
+
         <dependency>
             <groupId>dk.dbc</groupId>
             <artifactId>pg-queue-consumer</artifactId>
