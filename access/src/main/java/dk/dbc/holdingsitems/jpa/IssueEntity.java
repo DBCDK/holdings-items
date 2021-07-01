@@ -61,13 +61,13 @@ import javax.persistence.Version;
                         " WHERE h.agencyId = :agencyId" +
                         "  AND h.bibliographicRecordId = :bibliographicRecordId")
 })
+@SuppressWarnings("PMD.UnusedPrivateField")
 public class IssueEntity implements Serializable {
 
     private static final long serialVersionUID = 1089023457634768914L;
 
     @EmbeddedId
-    @SuppressWarnings("PMD.UnusedPrivateField")
-    private final IssueKey pk;
+    private IssueKey pk;
 
     // Mirrors of values from IssueKey
     // Needed for EntityManager.createQuery to access these fields

@@ -34,7 +34,7 @@ public class IssueKey implements Serializable {
     private static final long serialVersionUID = -7890645376134515443L;
 
     @EmbeddedId
-    private final BibliographicItemKey collection;
+    private BibliographicItemKey collection;
 
     @Column(updatable = false, insertable = false, nullable = false)
     private String issueId;
