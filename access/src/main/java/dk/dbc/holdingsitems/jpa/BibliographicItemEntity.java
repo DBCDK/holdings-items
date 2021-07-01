@@ -53,13 +53,13 @@ import static java.util.Collections.EMPTY_SET;
  */
 @Entity
 @Table(name = "bibliographicItem")
+@SuppressWarnings("PMD.UnusedPrivateField")
 public class BibliographicItemEntity implements Serializable {
 
     private static final long serialVersionUID = 1089023457634768914L;
 
     @EmbeddedId
-    @SuppressWarnings("PMD.UnusedPrivateField")
-    private final BibliographicItemKey pk;
+    private BibliographicItemKey pk;
 
     // Mirrors of values from IssueKey
     // Needed for EntityManager.createQuery to access these fields

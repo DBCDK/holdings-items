@@ -49,7 +49,7 @@ public class ItemEntity implements Serializable {
     private static final long serialVersionUID = 1089023457634768914L;
 
     @EmbeddedId
-    private final ItemKey pk;
+    private ItemKey pk;
 
     // Mirrors of values from ItemKey
     // Needed for EntityManager.createQuery to access these fields
