@@ -83,7 +83,7 @@ public class BibliographicItemEntity implements Serializable {
     private String trackingId;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "owner", orphanRemoval = true, cascade = {CascadeType.MERGE, CascadeType.PERSIST})
-    private final Set<IssueEntity> issues;
+    private Set<IssueEntity> issues;
 
     @Transient
     transient boolean persist;
