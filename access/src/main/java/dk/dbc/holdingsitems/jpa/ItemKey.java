@@ -36,7 +36,7 @@ public class ItemKey implements Serializable {
     private static final long serialVersionUID = -1235435134573567276L;
 
     @EmbeddedId
-    private final IssueKey collection;
+    private IssueKey collection;
 
     @Column(updatable = false, insertable = false, nullable = false)
     private String itemId;
