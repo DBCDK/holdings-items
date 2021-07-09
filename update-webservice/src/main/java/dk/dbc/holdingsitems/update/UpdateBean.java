@@ -169,7 +169,7 @@ public class UpdateBean {
      * @param req soap request
      * @return soap response
      */
-    @Timed(reusable = true)
+    @Timed
     public HoldingsItemsUpdateResult holdingsItemsUpdate(final HoldingsItemsUpdateRequest req) {
         requestUpdateCounter.inc();
         if (req.getTrackingId() == null || req.getTrackingId().isEmpty()) {
@@ -246,7 +246,7 @@ public class UpdateBean {
      * @param req soap request
      * @return soap response
      */
-    @Timed(reusable = true)
+    @Timed
     public HoldingsItemsUpdateResult completeHoldingsItemsUpdate(final CompleteHoldingsItemsUpdateRequest req) {
         requestCompleteCounter.inc();
         if (req.getTrackingId() == null || req.getTrackingId().isEmpty()) {
@@ -344,7 +344,7 @@ public class UpdateBean {
      * @param req soap request
      * @return soap response
      */
-    @Timed(reusable = true)
+    @Timed
     public HoldingsItemsUpdateResult onlineHoldingsItemsUpdate(final OnlineHoldingsItemsUpdateRequest req) {
         requestOnlineCounter.inc();
         if (req.getTrackingId() == null || req.getTrackingId().isEmpty()) {

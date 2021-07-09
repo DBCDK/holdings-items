@@ -55,7 +55,7 @@ public class JobProcessor {
     @Inject
     KafkaSender sender;
 
-    @Timed(reusable = true)
+    @Timed
     @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
     public void transferJob(QueueJob job) throws Exception {
         try (LogWith logWith = new LogWith(job.getTrackingId())) {

@@ -55,7 +55,7 @@ public class UpdateWebservice {
      * @param req soap request
      * @return soap response
      */
-    @Timed(reusable = true)
+    @Timed
     public HoldingsItemsUpdateResult holdingsItemsUpdate(final HoldingsItemsUpdateRequest req) {
         updateBean.setWebServiceContext(wsc);
         return updateBean.holdingsItemsUpdate(req);
@@ -67,7 +67,7 @@ public class UpdateWebservice {
      * @param req soap request
      * @return soap response
      */
-    @Timed(reusable = true)
+    @Timed
     public HoldingsItemsUpdateResult completeHoldingsItemsUpdate(final CompleteHoldingsItemsUpdateRequest req) {
         updateBean.setWebServiceContext(wsc);
         return updateBean.completeHoldingsItemsUpdate(req);
@@ -82,7 +82,7 @@ public class UpdateWebservice {
      * @param req soap request
      * @return soap response
      */
-    @Timed(reusable = true)
+    @Timed
     public HoldingsItemsUpdateResult onlineHoldingsItemsUpdate(final OnlineHoldingsItemsUpdateRequest req) {
         updateBean.setWebServiceContext(wsc);
         return updateBean.onlineHoldingsItemsUpdate(req);

@@ -50,7 +50,7 @@ public class Status {
 
     @GET
     @Produces({MediaType.APPLICATION_JSON})
-    @Timed(reusable = true)
+    @Timed
     public Response getStatus() {
         log.info("getStatus called ");
         try (Connection connection = dataSource.getConnection() ;
