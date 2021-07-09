@@ -75,7 +75,7 @@ public class JobProcessor {
         uriBuilder = UriBuilder.fromUri(config.getSolrDocStoreUrl());
     }
 
-    @Timed(reusable = true)
+    @Timed
     @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
     public ObjectNode buildRequestJson(QueueJob job) throws Exception {
         String trackingId = job.getTrackingId();

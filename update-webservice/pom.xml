@@ -172,16 +172,7 @@
             <artifactId>jaxws-ri</artifactId>
             <version>${jakarta-xml-ws.version}</version>
             <type>pom</type>
-        </dependency>
-        <dependency>
-            <groupId>jakarta.xml.bind</groupId>
-            <artifactId>jakarta.xml.bind-api</artifactId>
-            <version>${jakarta-xml-ws.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>jakarta.xml.ws</groupId>
-            <artifactId>jakarta.xml.ws-api</artifactId>
-            <version>${jakarta-xml-ws.version}</version>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
@@ -246,9 +237,8 @@
         </dependency>
 
         <dependency>
-            <groupId>org.eclipse.microprofile</groupId>
-            <artifactId>microprofile</artifactId>
-            <type>pom</type>
+            <groupId>org.eclipse.microprofile.metrics</groupId>
+            <artifactId>microprofile-metrics-api</artifactId>
         </dependency>
 
         <dependency>
