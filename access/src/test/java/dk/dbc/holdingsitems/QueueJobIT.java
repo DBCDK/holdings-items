@@ -18,8 +18,8 @@
  */
 package dk.dbc.holdingsitems;
 
-import dk.dbc.pgqueue.PreparedQueueSupplier;
-import dk.dbc.pgqueue.QueueSupplier;
+import dk.dbc.pgqueue.supplier.PreparedQueueSupplier;
+import dk.dbc.pgqueue.supplier.QueueSupplier;
 import dk.dbc.pgqueue.consumer.JobConsumer;
 import dk.dbc.pgqueue.consumer.JobMetaData;
 import dk.dbc.pgqueue.consumer.QueueWorker;
