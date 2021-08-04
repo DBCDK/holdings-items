@@ -26,7 +26,7 @@
     <url>http://oss.dbc.dk</url>
 
     <properties>
-        <pg-queue.version>1.5-SNAPSHOT</pg-queue.version>
+        <pg-queue.version>2.0-SNAPSHOT</pg-queue.version>
         <jakarta-xml-ws.version>2.3.2</jakarta-xml-ws.version>
     </properties>
 
