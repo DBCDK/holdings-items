@@ -18,12 +18,14 @@
  */
 package dk.dbc.holdingsitems.kafkabridge;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import javax.ejb.EJBException;
 import javax.ejb.Stateless;
 import javax.inject.Inject;
@@ -59,13 +61,18 @@ public class KafkaSender {
         String clientId = UUID.randomUUID().toString();
         producerProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, config.getKafkaServers());
         producerProps.put(ProducerConfig.CLIENT_ID_CONFIG, clientId);
-        producerProps.put(ProducerConfig.MAX_REQUEST_SIZE_CONFIG, 1024*1024);
+        producerProps.put(ProducerConfig.MAX_REQUEST_SIZE_CONFIG, 1024 * 1024);
         producerProps.put(ProducerConfig.TRANSACTIONAL_ID_CONFIG, clientId + "-" + instanceNo);
         producerProps.put(ProducerConfig.TRANSACTION_TIMEOUT_CONFIG, 120_000);
         producerProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getCanonicalName());
         producerProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getCanonicalName());
         this.producer = new KafkaProducer<>(producerProps);
         this.producer.initTransactions();
+    }
+
+    @PreDestroy
+    public void delete() {
+        this.producer.close(Duration.ofSeconds(60));
     }
 
     @Timed

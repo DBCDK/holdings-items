@@ -94,7 +94,7 @@ public class WorkerIT extends JpaBase {
             Config config = new Config() {
                 @Override
                 public String getKafkaServers() {
-                    return kafka.boostrapServers();
+                    return kafka.bootstrapServers();
                 }
 
                 @Override
