@@ -73,6 +73,8 @@ import static org.mockito.Mockito.*;
  */
 public class UpdateBeanIT extends JpaBase {
 
+    private static final ObjectMapper O = new ObjectMapper();
+
     String branch = "My Branch";
     String department = "My Department";
     String location = "My Location";
@@ -187,13 +189,73 @@ public class UpdateBeanIT extends JpaBase {
                 .filter(s -> s.contains("87654321"))
                 .findAny().orElseThrow(() -> new RuntimeException("Cannot find 87654321 record"));
         System.out.println("rec87654321 = " + rec87654321str);
-        ObjectMapper O = new ObjectMapper();
         JsonNode rec12345678 = O.readTree(rec12345678str.substring(rec12345678str.indexOf('{')));
         assertEquals("OnLoan", rec12345678.at("/it1-2/newStatus").asText(""));
         assertEquals("OnShelf", rec12345678.at("/it1-2/oldStatus").asText(""));
         JsonNode rec87654321 = O.readTree(rec87654321str.substring(rec87654321str.indexOf('{')));
         assertEquals("OnLoan", rec87654321.at("/it3-1/newStatus").asText(""));
         assertEquals("UNKNOWN", rec87654321.at("/it3-1/oldStatus").asText(""));
+    }
+
+    @Test(timeout = 2_000L)
+    public void testUpdateHoldingsItemsFromKnownToDecommissioned() throws Exception {
+        System.out.println("testUpdateHoldingsItemsFromKnownToDecommissioned");
+        jpa(em -> {
+            mockUpdateBean(em)
+                    .holdingsItemsUpdate(holdingsItemsUpdateRequest(
+                            101010, null, "track-update-2",
+                            bibliographicItem("12345678", modified("2017-09-07T09:09:01.000Z"), "note",
+                                              holding("i1", "issue1", date("2222-11-11"), 0,
+                                                      item("i1", "b", "123456", "dep", "loc", "sloc", "cr", StatusType.ON_SHELF, date("1911-01-01"))))
+                    ));
+        });
+        System.out.println("getQueue() = " + getQueue());
+        clearQueue();
+        jpa(em -> {
+            mockUpdateBean(em)
+                    .holdingsItemsUpdate(holdingsItemsUpdateRequest(
+                            101010, null, "track-update-3",
+                            bibliographicItem("12345678", modified("2018-09-07T09:09:01.000Z"), "note",
+                                              holding("i1", "issue1", date("2222-11-11"), 0,
+                                                      item("i1", "b", "123456", "dep", "loc", "sloc", "cr", StatusType.DECOMMISSIONED, date("1911-01-01"))))
+                    ));
+        });
+        HashMap<String, Set<String>> queue = getQueue();
+        assertEquals("queue size", 1, queue.get("update").size());
+
+        String rec12345678str = queue.get("update").stream()
+                .filter(s -> s.contains("12345678"))
+                .findAny().orElseThrow(() -> new RuntimeException("Cannot find 12345678 record"));
+        System.out.println("rec12345678 = " + rec12345678str);
+        JsonNode rec12345678 = O.readTree(rec12345678str.substring(rec12345678str.indexOf('{'), rec12345678str.lastIndexOf('}') + 1));
+        System.out.println("rec12345678 = " + rec12345678);
+        assertEquals("Decommissioned", rec12345678.at("/i1/newStatus").asText(""));
+        assertEquals("OnShelf", rec12345678.at("/i1/oldStatus").asText(""));
+    }
+
+    @Test(timeout = 2_000L)
+    public void testUpdateHoldingsItemsFromUnknownToDecommissioned() throws Exception {
+        System.out.println("testUpdateHoldingsItemsFromUnknownToDecommissioned");
+        clearQueue();
+        jpa(em -> {
+            mockUpdateBean(em)
+                    .holdingsItemsUpdate(holdingsItemsUpdateRequest(
+                            101010, null, "track-update-2",
+                            bibliographicItem("12345678", modified("2017-09-07T09:09:01.000Z"), "note",
+                                              holding("i1", "issue1", date("2222-11-11"), 0,
+                                                      item("i1", "b", "123456", "dep", "loc", "sloc", "cr", StatusType.DECOMMISSIONED, date("1911-01-01"))))
+                    ));
+        });
+        HashMap<String, Set<String>> queue = getQueue();
+        assertEquals("queue size", 1, queue.get("update").size());
+
+        String rec12345678str = queue.get("update").stream()
+                .filter(s -> s.contains("12345678"))
+                .findAny().orElseThrow(() -> new RuntimeException("Cannot find 12345678 record"));
+        System.out.println("rec12345678 = " + rec12345678str);
+        JsonNode rec12345678 = O.readTree(rec12345678str.substring(rec12345678str.indexOf('{'), rec12345678str.lastIndexOf('}') + 1));
+        System.out.println("rec12345678 = " + rec12345678);
+        assertEquals(null, rec12345678.get("i1"));
     }
 
     @Test
@@ -216,7 +278,6 @@ public class UpdateBeanIT extends JpaBase {
                 .filter(s -> s.contains("12345678"))
                 .findAny().orElseThrow(() -> new RuntimeException("Cannot find 12345678 record"));
         System.out.println("rec12345678 = " + rec12345678str);
-        ObjectMapper O = new ObjectMapper();
         JsonNode rec12345678 = O.readTree(rec12345678str.substring(rec12345678str.indexOf('{')));
         assertEquals("OnLoan", rec12345678.at("/it3-2/newStatus").asText(""));
         assertEquals("UNKNOWN", rec12345678.at("/it3-2/oldStatus").asText(""));
@@ -247,7 +308,6 @@ public class UpdateBeanIT extends JpaBase {
                 .filter(s -> s.contains("12345678"))
                 .findAny().orElseThrow(() -> new RuntimeException("Cannot find 12345678 record"));
         System.out.println("rec12345678 = " + rec12345678str);
-        ObjectMapper O = new ObjectMapper();
         JsonNode rec12345678 = O.readTree(rec12345678str.substring(rec12345678str.indexOf('{')));
         assertEquals("Decommissioned", rec12345678.at("/it3-1/newStatus").asText(""));
         assertEquals("OnLoan", rec12345678.at("/it3-1/oldStatus").asText(""));
