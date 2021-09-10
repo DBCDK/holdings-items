@@ -1,5 +1,5 @@
 FROM docker.dbc.dk/dbc-postgres-13:latest
-MAINTAINER os-team
+MAINTAINER de-team
 
 ENV POSTGRES_DB=holdingsitems
 ENV POSTGRES_USER=holdingsitems
