@@ -318,11 +318,15 @@ public abstract class UpdateRequest {
             if (status == StatusType.ONLINE) {
                 throw new FailedUpdateInternalException("Use endpoint onlineHoldingsItemsUpdate - got status ONLINE");
             }
-            oldItemStatus.computeIfAbsent(issue.getBibliographicRecordId(),
-                                          f -> new HashMap<>())
-                    .computeIfAbsent(itemId, f -> new StateChangeMetadata(
-                                     item.getStatus(), item.getModified()))
-                    .update(Status.parse(status.value()), modified);
+
+            if (status != StatusType.DECOMMISSIONED || !item.isNew()) { // Should not go from UNKNOWN -> Decommissioned
+                oldItemStatus.computeIfAbsent(issue.getBibliographicRecordId(),
+                                              f -> new HashMap<>())
+                        .computeIfAbsent(itemId, f -> new StateChangeMetadata(
+                                         item.getStatus(), item.getModified()))
+                        .update(Status.parse(status.value()), modified);
+            }
+
             if (status == StatusType.DECOMMISSIONED) {
                 item.remove();
             } else {
