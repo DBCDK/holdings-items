@@ -22,6 +22,7 @@ import com.sun.xml.ws.developer.SchemaValidation;
 import dk.dbc.oss.ns.holdingsitemsupdate.CompleteHoldingsItemsUpdateRequest;
 import dk.dbc.oss.ns.holdingsitemsupdate.HoldingsItemsUpdateRequest;
 import dk.dbc.oss.ns.holdingsitemsupdate.HoldingsItemsUpdateResult;
+import dk.dbc.oss.ns.holdingsitemsupdate.HoldingsItemsUpdateStatusEnum;
 import dk.dbc.oss.ns.holdingsitemsupdate.OnlineHoldingsItemsUpdateRequest;
 import javax.annotation.Resource;
 import javax.inject.Inject;
@@ -44,6 +45,8 @@ public class UpdateWebservice {
     @Inject
     UpdateBean updateBean;
 
+    @Inject StatusCounterBean statusCounterBean;
+
     @Resource
     WebServiceContext wsc;
 
@@ -58,7 +61,9 @@ public class UpdateWebservice {
     @Timed
     public HoldingsItemsUpdateResult holdingsItemsUpdate(final HoldingsItemsUpdateRequest req) {
         updateBean.setWebServiceContext(wsc);
-        return updateBean.holdingsItemsUpdate(req);
+        HoldingsItemsUpdateResult result = updateBean.holdingsItemsUpdate(req);
+        countStatusValue(result);
+        return result;
     }
 
     /**
@@ -70,7 +75,9 @@ public class UpdateWebservice {
     @Timed
     public HoldingsItemsUpdateResult completeHoldingsItemsUpdate(final CompleteHoldingsItemsUpdateRequest req) {
         updateBean.setWebServiceContext(wsc);
-        return updateBean.completeHoldingsItemsUpdate(req);
+        HoldingsItemsUpdateResult result = updateBean.completeHoldingsItemsUpdate(req);
+        countStatusValue(result);
+        return result;
     }
 
     /**
@@ -85,6 +92,16 @@ public class UpdateWebservice {
     @Timed
     public HoldingsItemsUpdateResult onlineHoldingsItemsUpdate(final OnlineHoldingsItemsUpdateRequest req) {
         updateBean.setWebServiceContext(wsc);
-        return updateBean.onlineHoldingsItemsUpdate(req);
+        HoldingsItemsUpdateResult result = updateBean.onlineHoldingsItemsUpdate(req);
+        countStatusValue(result);
+        return result;
+    }
+
+    private void countStatusValue(HoldingsItemsUpdateResult result) {
+        if (result.getHoldingsItemsUpdateStatus() == HoldingsItemsUpdateStatusEnum.OK) {
+            statusCounterBean.success();
+        } else {
+            statusCounterBean.failure();
+        }
     }
 }
