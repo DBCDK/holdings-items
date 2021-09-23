@@ -16,11 +16,11 @@ import org.eclipse.microprofile.metrics.annotation.Counted;
 @Lock(LockType.READ)
 public class StatusCounterBean {
 
-    @Counted(name = "request-success")
+    @Counted(name = "request-success", absolute = true, tags = {"request=holdings-items-update"})
     public void success() {
     }
 
-    @Counted(name = "request-failure")
+    @Counted(name = "request-failure", absolute = true, tags = {"request=holdings-items-update"})
     public void failure() {
     }
 
