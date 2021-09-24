@@ -61,9 +61,12 @@ public class UpdateWebservice {
     @Timed
     public HoldingsItemsUpdateResult holdingsItemsUpdate(final HoldingsItemsUpdateRequest req) {
         updateBean.setWebServiceContext(wsc);
-        HoldingsItemsUpdateResult result = updateBean.holdingsItemsUpdate(req);
-        countStatusValue(result);
-        return result;
+        try (StatusCounterBean.Context context = statusCounterBean.count("update")) {
+            HoldingsItemsUpdateResult result = updateBean.holdingsItemsUpdate(req);
+            if (result.getHoldingsItemsUpdateStatus() == HoldingsItemsUpdateStatusEnum.OK)
+                context.success();
+            return result;
+        }
     }
 
     /**
@@ -75,9 +78,12 @@ public class UpdateWebservice {
     @Timed
     public HoldingsItemsUpdateResult completeHoldingsItemsUpdate(final CompleteHoldingsItemsUpdateRequest req) {
         updateBean.setWebServiceContext(wsc);
-        HoldingsItemsUpdateResult result = updateBean.completeHoldingsItemsUpdate(req);
-        countStatusValue(result);
-        return result;
+        try (StatusCounterBean.Context context = statusCounterBean.count("complete")) {
+            HoldingsItemsUpdateResult result = updateBean.completeHoldingsItemsUpdate(req);
+            if (result.getHoldingsItemsUpdateStatus() == HoldingsItemsUpdateStatusEnum.OK)
+                context.success();
+            return result;
+        }
     }
 
     /**
@@ -92,16 +98,11 @@ public class UpdateWebservice {
     @Timed
     public HoldingsItemsUpdateResult onlineHoldingsItemsUpdate(final OnlineHoldingsItemsUpdateRequest req) {
         updateBean.setWebServiceContext(wsc);
-        HoldingsItemsUpdateResult result = updateBean.onlineHoldingsItemsUpdate(req);
-        countStatusValue(result);
-        return result;
-    }
-
-    private void countStatusValue(HoldingsItemsUpdateResult result) {
-        if (result.getHoldingsItemsUpdateStatus() == HoldingsItemsUpdateStatusEnum.OK) {
-            statusCounterBean.success();
-        } else {
-            statusCounterBean.failure();
+        try (StatusCounterBean.Context context = statusCounterBean.count("online")) {
+            HoldingsItemsUpdateResult result = updateBean.onlineHoldingsItemsUpdate(req);
+            if (result.getHoldingsItemsUpdateStatus() == HoldingsItemsUpdateStatusEnum.OK)
+                context.success();
+            return result;
         }
     }
 }
