@@ -174,7 +174,7 @@ pipeline {
                             body: "<p>The master build failed. Log attached. </p><p><a href=\"${env.BUILD_URL}\">Build information</a>.</p>",
                             attachLog: true,
                     )
-                    slackSend(channel: 'de-team',
+                    slackSend(channel: 'de-notifications',
                             color: 'warning',
                             message: "${env.JOB_NAME} #${env.BUILD_NUMBER} failed and needs attention: ${env.BUILD_URL}",
                             tokenCredentialId: 'slack-global-integration-token')
@@ -203,7 +203,7 @@ pipeline {
                             mimeType: 'text/html; charset=UTF-8',
                             body: "<p>The master is back to normal.</p><p><a href=\"${env.BUILD_URL}\">Build information</a>.</p>",
                             attachLog: false)
-                    slackSend(channel: 'de-team',
+                    slackSend(channel: 'de-notifications',
                             color: 'good',
                             message: "${env.JOB_NAME} #${env.BUILD_NUMBER} back to normal: ${env.BUILD_URL}",
                             tokenCredentialId: 'slack-global-integration-token')
