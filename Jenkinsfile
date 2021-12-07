@@ -44,7 +44,7 @@ pipeline {
 
                     // We want code-coverage and pmd/spotbugs even if unittests fails
                     status += sh returnStatus: true, script:  """
-                        mvn -B -Dmaven.repo.local=\$WORKSPACE/.repo -pl !update-ws-transport pmd:pmd pmd:cpd spotbugs:spotbugs javadoc:aggregate
+                        mvn -B -Dmaven.repo.local=\$WORKSPACE/.repo -pl !update-ws-transport pmd:pmd pmd:cpd spotbugs:spotbugs javadoc:aggregate -Dspotbugs.excludeFilterFile=src/test/spotbugs/spotbugs-exclude.xml
                     """
 
                     junit testResults: '**/target/*-reports/TEST-*.xml'
