@@ -43,7 +43,6 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import javax.ws.rs.PathParam;
 
-import static java.util.Collections.EMPTY_LIST;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
@@ -68,7 +67,7 @@ public class ContentResource {
     public Response getItemEntity(
             @QueryParam("agency") Integer agencyId,
             @QueryParam("itemId") String itemId,
-            @QueryParam("trackingId") String trackingId) {
+            @QueryParam("trackingId") @LogAs("trackingId") @GenerateTrackingId String trackingId) {
         { // argument validation
             if (agencyId == null || agencyId < 0) {
                 log.error("holdings-by-item-id called with no agency");
@@ -125,7 +124,7 @@ public class ContentResource {
     public Response getItemEntities(
             @QueryParam("agency") Integer agencyId,
             @QueryParam("pid") List<String> pids,
-            @QueryParam("trackingId") String trackingId) {
+            @QueryParam("trackingId") @LogAs("trackingId") @GenerateTrackingId String trackingId) {
         { // argument validation
             if (agencyId == null || agencyId < 0) {
                 log.error("holdings-by-pid called with no agency");
@@ -161,7 +160,7 @@ public class ContentResource {
     @Produces({MediaType.APPLICATION_JSON})
     public Response getLaesekompasdataForBibliographicRecordIdsPost(
             String bibliographicRecordIds,
-            @QueryParam("trackingId") String trackingId
+            @QueryParam("trackingId") @LogAs("trackingId") @GenerateTrackingId String trackingId
     ) {
         List<String> bibRecordIdList = null;
         try {
@@ -190,10 +189,7 @@ public class ContentResource {
     @Path("complete/{agencyId:\\d+}/{bibliographicRecordId}")
     public Response getComplete(@PathParam("agencyId") int agencyId,
                                 @PathParam("bibliographicRecordId") String bibliographicRecordId,
-                                @QueryParam("trackingId") String trackingId) {
-        if (trackingId == null || trackingId.isEmpty()) {
-            trackingId = UUID.randomUUID().toString();
-        }
+                                @QueryParam("trackingId") @LogAs("trackingId") @GenerateTrackingId String trackingId) {
         try (LogWith l = LogWith.track(trackingId)) {
             l.agencyId(agencyId).bibliographicRecordId(bibliographicRecordId);
 
