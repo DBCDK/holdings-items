@@ -4,8 +4,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import dk.dbc.commons.mdc.GenerateTrackingId;
+import dk.dbc.commons.mdc.LogAs;
 import dk.dbc.holdingsitems.HoldingsItemsDAO;
 import dk.dbc.holdingsitems.content.response.CompleteBibliographic;
+import dk.dbc.holdingsitems.content.response.CompleteItemFull;
+import dk.dbc.holdingsitems.content.response.ContentServiceBranchResponse;
 import dk.dbc.holdingsitems.content.response.ContentServiceLaesekompasResponse;
 import dk.dbc.holdingsitems.content.response.ContentServiceItemResponse;
 import dk.dbc.holdingsitems.content.response.ContentServicePidResponse;
@@ -15,6 +19,7 @@ import dk.dbc.holdingsitems.jpa.BibliographicItemEntity;
 import dk.dbc.holdingsitems.jpa.ItemEntity;
 import dk.dbc.holdingsitems.jpa.Status;
 import dk.dbc.log.LogWith;
+import java.util.Collection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,6 +42,10 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import javax.ws.rs.PathParam;
+
+import static java.util.Collections.EMPTY_LIST;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
 
 @Stateless
 @Path("/")
@@ -79,6 +88,39 @@ public class ContentResource {
     }
 
     @GET
+    @Path("holdings-by-branch")
+    public Response getByBranch(@QueryParam("branch") String branchId,
+                                @QueryParam("pid") List<String> pids,
+                                @QueryParam("trackingId") @LogAs("trackingId") @GenerateTrackingId String trackingId) {
+
+        if (branchId == null || branchId.isEmpty()) {
+            log.error("holdings-by-branch called with no branch");
+            return Response.status(Response.Status.BAD_REQUEST).build();
+        }
+        if (pids == null || pids.isEmpty()) {
+            log.error("holdings-by-branch called with no pids");
+            return Response.status(Response.Status.BAD_REQUEST).build();
+        }
+        log.debug("holdings-by-pid called with branch {},  pids: {}, trackingId: {}", branchId, pids, trackingId);
+        HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, trackingId);
+        Set<String> bibliographicIds = pids.stream().map(s -> s.replaceFirst("^\\d+-[a-z0-9]+:", "")).collect(toSet());
+
+        try {
+            List<CompleteItemFull> completeItems = bibliographicIds.stream()
+                    .map(b -> dao.getItemsFromBranchIdAndBibliographicRecordId(branchId, b))
+                    .flatMap(Collection::stream)
+                    .map(CompleteItemFull::new)
+                    .collect(toList());
+            ContentServiceBranchResponse res = new ContentServiceBranchResponse(trackingId, completeItems);
+            return Response.ok(res, MediaType.APPLICATION_JSON_TYPE).build();
+        } catch (Exception e) {
+            log.error("Exception requesting for branch: {}: {}", branchId, e.getMessage());
+            log.debug("Exception requesting for branch: {}: ", branchId, e);
+            return Response.serverError().build();
+        }
+    }
+
+    @GET
     @Path("holdings-by-pid")
     public Response getItemEntities(
             @QueryParam("agency") Integer agencyId,
@@ -87,11 +129,11 @@ public class ContentResource {
         { // argument validation
             if (agencyId == null || agencyId < 0) {
                 log.error("holdings-by-pid called with no agency");
-                return Response.status(Response.Status.BAD_REQUEST.getStatusCode()).build();
+                return Response.status(Response.Status.BAD_REQUEST).build();
             }
             if (!pids.stream().allMatch(s -> s.contains(":"))) {
                 log.error("holdings-by-pid: All argument pids must contain at least one colon");
-                return Response.status(Response.Status.BAD_REQUEST.getStatusCode()).build();
+                return Response.status(Response.Status.BAD_REQUEST).build();
             }
             List<String> bibliographicRecordIds = pids.stream().map(s -> s.split(":", 2)[1]).collect(Collectors.toList());
             HashSet<String> uniqueBibliographicRecordIds = new HashSet<>(bibliographicRecordIds);
@@ -127,7 +169,7 @@ public class ContentResource {
         } catch (JsonProcessingException e) {
             log.error("holdings-by-bibliographicrecordids: error parsing request body!");
             log.error(e.getMessage());
-            return Response.status(Response.Status.BAD_REQUEST.getStatusCode()).build();
+            return Response.status(Response.Status.BAD_REQUEST).build();
         }
         log.debug("holdings-by-bibliographicrecordids called with trackingId {} and bibRecordId-list of length {}", trackingId, bibRecordIdList.size());
         HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, trackingId);
