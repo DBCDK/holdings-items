@@ -39,8 +39,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
 import javax.ws.rs.PathParam;
 
 import static java.util.stream.Collectors.toList;
@@ -134,7 +132,7 @@ public class ContentResource {
                 log.error("holdings-by-pid: All argument pids must contain at least one colon");
                 return Response.status(Response.Status.BAD_REQUEST).build();
             }
-            List<String> bibliographicRecordIds = pids.stream().map(s -> s.split(":", 2)[1]).collect(Collectors.toList());
+            List<String> bibliographicRecordIds = pids.stream().map(s -> s.split(":", 2)[1]).collect(toList());
             HashSet<String> uniqueBibliographicRecordIds = new HashSet<>(bibliographicRecordIds);
             if (uniqueBibliographicRecordIds.size() < bibliographicRecordIds.size()) {
                 return Response.status(Response.Status.BAD_REQUEST).build();
@@ -179,7 +177,7 @@ public class ContentResource {
                     laesekompasObjects.stream()
                             .map(oa -> LaesekompasHoldingsEntity.fromDatabaseObjects(oa))
                             .filter(lke -> lke != null && lke.status != Status.DECOMMISSIONED && !lke.branch.isEmpty())
-                            .collect(Collectors.toList());
+                            .collect(toList());
             res.put(bibliographicRecordId, laesekompasHoldingsEntities);
         }
         return Response.ok(new ContentServiceLaesekompasResponse(trackingId, res)).build();
