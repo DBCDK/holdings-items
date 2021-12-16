@@ -161,20 +161,6 @@ public class IssueEntity implements Serializable {
         this.items = new HashSet<>();
     }
 
-    public static IssueEntity from(EntityManager em, BibliographicItemEntity owner, String issueId) {
-        IssueEntity res = em.find(IssueEntity.class, new IssueKey(owner.getAgencyId(), owner.getBibliographicRecordId(), issueId));
-        if (res == null) {
-            res = new IssueEntity(owner, issueId);
-            res.setComplete(Instant.now());
-            res.setModified(Instant.now());
-            res.setCreated(Instant.now());
-            res.setUpdated(Instant.now());
-        }
-        res.em = em;
-        res.pessimisticForceIncrement = owner.pessimisticForceIncrement;
-        return res;
-    }
-
     /**
      * persist or merge depending on which is appropriate
      */
