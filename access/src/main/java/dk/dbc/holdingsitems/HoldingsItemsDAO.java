@@ -229,17 +229,20 @@ public class HoldingsItemsDAO {
     /**
      * Find all item entities that match the given branchId and itemId.
      *
+     * @param agencyId              id of library in question
      * @param branchId              id of branch in question
      * @param bibliographicRecordId record id to search for
      * @return a collection of ItemEntity objects that match the parameters.
      */
-    public Set<ItemEntity> getItemsFromBranchIdAndBibliographicRecordId(String branchId, String bibliographicRecordId) {
+    public Set<ItemEntity> getItemsFromBranchIdAndBibliographicRecordId(int agencyId, String branchId, String bibliographicRecordId) {
         List<ItemEntity> itemList =
                 em.createQuery("SELECT h" +
                                " FROM ItemEntity h" +
-                               " WHERE h.branchId = :branchId" +
+                               " WHERE h.agencyId = :agencyId" +
+                               "  AND h.branchId = :branchId" +
                                "  AND h.bibliographicRecordId = :bibliographicRecordId",
                                ItemEntity.class)
+                        .setParameter("agencyId", agencyId)
                         .setParameter("branchId", branchId)
                         .setParameter("bibliographicRecordId", bibliographicRecordId)
                         .getResultList();

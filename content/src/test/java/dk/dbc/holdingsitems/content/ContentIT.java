@@ -157,7 +157,7 @@ public class ContentIT extends JpaBase {
             itemEntity(issueEntity, "3456", Status.ON_LOAN).setBranchId("000000");
             bibliographicItemEntity.save();
             ContentResource contentResource = MockContentResource(em);
-            Response response = contentResource.getByBranch("123456", Arrays.asList("870970-basis:25912233"), "trackItemEntity");
+            Response response = contentResource.getByBranch(654321, "123456", Arrays.asList("870970-basis:25912233"), "trackItemEntity");
             return (ContentServiceBranchResponse) response.getEntity();
         });
         assertThat(branchResponse.completeItems.size(), is(2));
@@ -297,7 +297,7 @@ public class ContentIT extends JpaBase {
         mock.em = em;
         doCallRealMethod().when(mock).getItemEntity(anyInt(), anyString(), anyString());
         doCallRealMethod().when(mock).getItemEntities(anyInt(), anyList(), anyString());
-        doCallRealMethod().when(mock).getByBranch(anyString(), anyList(), anyString());
+        doCallRealMethod().when(mock).getByBranch(anyInt(), anyString(), anyList(), anyString());
         doCallRealMethod().when(mock).getLaesekompasdataForBibliographicRecordIdsPost(anyString(), anyString());
         doCallRealMethod().when(mock).getComplete(anyInt(), anyString(), anyString());
         return mock;

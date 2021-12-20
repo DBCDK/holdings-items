@@ -86,10 +86,15 @@ public class ContentResource {
 
     @GET
     @Path("holdings-by-branch")
-    public Response getByBranch(@QueryParam("branch") String branchId,
+    public Response getByBranch(@QueryParam("agencyId") Integer agencyId,
+                                @QueryParam("branchId") String branchId,
                                 @QueryParam("pid") List<String> pids,
                                 @QueryParam("trackingId") @LogAs("trackingId") @GenerateTrackingId String trackingId) {
 
+        if (agencyId == null || agencyId == 0) {
+            log.error("holdings-by-branch called with no agency");
+            return Response.status(Response.Status.BAD_REQUEST).build();
+        }
         if (branchId == null || branchId.isEmpty()) {
             log.error("holdings-by-branch called with no branch");
             return Response.status(Response.Status.BAD_REQUEST).build();
@@ -104,7 +109,7 @@ public class ContentResource {
 
         try {
             List<CompleteItemFull> completeItems = bibliographicIds.stream()
-                    .map(b -> dao.getItemsFromBranchIdAndBibliographicRecordId(branchId, b))
+                    .map(b -> dao.getItemsFromBranchIdAndBibliographicRecordId(agencyId, branchId, b))
                     .flatMap(Collection::stream)
                     .map(CompleteItemFull::new)
                     .collect(toList());
