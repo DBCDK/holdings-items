@@ -158,9 +158,9 @@ public class HoldingsItemsDAO {
      */
     public List<Object[]> getAgencyBranchStringsForBibliographicRecordId(String bibliographicRecordId) {
         return em.createQuery("SELECT h.agencyId, h.bibliographicRecordId, h.branch, h.status" +
-                                " FROM ItemEntity h" +
-                                " WHERE h.bibliographicRecordId = :bibliographicRecordId" +
-                                " AND h.branch != ''")
+                              " FROM ItemEntity h" +
+                              " WHERE h.bibliographicRecordId = :bibliographicRecordId" +
+                              " AND h.branch != ''")
                 .setParameter("bibliographicRecordId", bibliographicRecordId)
                 .getResultList();
     }
@@ -222,6 +222,29 @@ public class HoldingsItemsDAO {
                                ItemEntity.class)
                         .setParameter("agencyId", agencyId)
                         .setParameter("itemId", itemId)
+                        .getResultList();
+        return new HashSet<>(itemList);
+    }
+
+    /**
+     * Find all item entities that match the given branchId and itemId.
+     *
+     * @param agencyId              id of library in question
+     * @param branchId              id of branch in question
+     * @param bibliographicRecordId record id to search for
+     * @return a collection of ItemEntity objects that match the parameters.
+     */
+    public Set<ItemEntity> getItemsFromBranchIdAndBibliographicRecordId(int agencyId, String branchId, String bibliographicRecordId) {
+        List<ItemEntity> itemList =
+                em.createQuery("SELECT h" +
+                               " FROM ItemEntity h" +
+                               " WHERE h.agencyId = :agencyId" +
+                               "  AND h.branchId = :branchId" +
+                               "  AND h.bibliographicRecordId = :bibliographicRecordId",
+                               ItemEntity.class)
+                        .setParameter("agencyId", agencyId)
+                        .setParameter("branchId", branchId)
+                        .setParameter("bibliographicRecordId", bibliographicRecordId)
                         .getResultList();
         return new HashSet<>(itemList);
     }
@@ -310,7 +333,7 @@ public class HoldingsItemsDAO {
      * @return record collection object null if non-existing
      */
     public BibliographicItemEntity getRecordCollectionUnLocked(String bibliographicRecordId, int agencyId) {
-        return  BibliographicItemEntity.fromUnLocked(
+        return BibliographicItemEntity.fromUnLocked(
                 em, agencyId, bibliographicRecordId);
     }
 

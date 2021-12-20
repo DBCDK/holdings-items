@@ -197,6 +197,7 @@ public class BibliographicItemEntity implements Serializable {
             issue.setComplete(modified);
             issue.setCreated(modified);
             issue.setModified(modified);
+            issue.setUpdated(modified);
             issue.setTrackingId(trackingId);
         } else {
             issue.persist = false;
