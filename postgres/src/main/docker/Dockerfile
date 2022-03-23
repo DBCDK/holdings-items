@@ -1,4 +1,4 @@
-FROM docker.dbc.dk/dbc-postgres-13:latest
+FROM docker-dbc.artifacts.dbccloud.dk/dbc-postgres-13:latest
 MAINTAINER de-team
 
 ENV POSTGRES_DB=holdingsitems

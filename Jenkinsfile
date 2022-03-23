@@ -112,7 +112,7 @@ pipeline {
                             def app = docker.build("$imageName:${imageLabel}", "--pull --file target/docker/Dockerfile .")
 
                             if (currentBuild.resultIsBetterOrEqualTo('SUCCESS')) {
-                                docker.withRegistry('https://docker-os.dbc.dk', 'docker') {
+                                docker.withRegistry('https://docker-de.artifacts.dbccloud.dk', 'docker') {
                                     app.push()
                                     if (env.BRANCH_NAME ==~ /master|trunk/) {
                                         app.push "latest"
@@ -140,7 +140,7 @@ pipeline {
             agent {
                 docker {
                     label workerNode
-                    image "docker.dbc.dk/build-env:latest"
+                    image "docker-dbc.artifacts.dbccloud.dk/build-env:latest"
                     alwaysPull true
                 }
             }

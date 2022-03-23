@@ -1,4 +1,4 @@
-FROM docker.dbc.dk/payara5-full:latest
+FROM docker-dbc.artifacts.dbccloud.dk/payara5-full:latest
 MAINTAINER os-team
 
 COPY target/docker/*.jar /opt/payara5/jars/
