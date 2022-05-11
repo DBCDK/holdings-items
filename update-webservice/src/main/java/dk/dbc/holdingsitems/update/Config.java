@@ -19,10 +19,8 @@
 package dk.dbc.holdingsitems.update;
 
 import java.util.Arrays;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.annotation.PostConstruct;
 import javax.ejb.EJBException;
