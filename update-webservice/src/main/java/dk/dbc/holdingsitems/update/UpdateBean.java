@@ -18,7 +18,6 @@
  */
 package dk.dbc.holdingsitems.update;
 
-import dk.dbc.forsrights.client.ForsRightsException;
 import dk.dbc.holdingsitems.HoldingsItemsDAO;
 import dk.dbc.holdingsitems.HoldingsItemsException;
 import dk.dbc.holdingsitems.StateChangeMetadata;
@@ -177,7 +176,7 @@ public class UpdateBean {
             log.info("Setting tracking id to: {}", trackingId);
             req.setTrackingId(trackingId);
         }
-        try (LogWith logWith = new LogWith(req.getTrackingId())) {
+        try ( LogWith logWith = new LogWith(req.getTrackingId())) {
             logWith.agencyId(req.getAgencyId());
 
             logXml(req.getAgencyId(), req, req.getAuthentication());
@@ -217,7 +216,7 @@ public class UpdateBean {
 
                                 Instant modified = parseTimestamp(bibliographicItem.getModificationTimeStamp());
                                 String bibliographicRecordId = bibliographicItem.getBibliographicRecordId();
-                                try (LogWith logWith = new LogWith()) {
+                                try ( LogWith logWith = new LogWith()) {
                                     logWith.bibliographicRecordId(bibliographicRecordId);
                                     BibliographicItemEntity bibItem = dao.getRecordCollection(bibliographicRecordId, getAgencyId(), modified);
                                     if (!bibItem.getModified().isAfter(modified)) {
@@ -254,7 +253,7 @@ public class UpdateBean {
             log.info("Setting tracking id to: {}", trackingId);
             req.setTrackingId(trackingId);
         }
-        try (LogWith logWith = new LogWith(req.getTrackingId())) {
+        try ( LogWith logWith = new LogWith(req.getTrackingId())) {
             logWith.agencyId(req.getAgencyId());
 
             logXml(req.getAgencyId(), req, req.getAuthentication());
@@ -289,7 +288,7 @@ public class UpdateBean {
                     CompleteBibliographicItem bibliographicItem = req.getCompleteBibliographicItem();
                     Instant modified = parseTimestamp(bibliographicItem.getModificationTimeStamp());
                     String bibliographicRecordId = bibliographicItem.getBibliographicRecordId();
-                    try (LogWith logWith = new LogWith()) {
+                    try ( LogWith logWith = new LogWith()) {
                         logWith.bibliographicRecordId(bibliographicRecordId);
                         BibliographicItemEntity bibItem = dao.getRecordCollection(bibliographicRecordId, getAgencyId(), modified);
 
@@ -352,7 +351,7 @@ public class UpdateBean {
             log.info("Setting tracking id to: {}", trackingId);
             req.setTrackingId(trackingId);
         }
-        try (LogWith logWith = new LogWith(req.getTrackingId())) {
+        try ( LogWith logWith = new LogWith(req.getTrackingId())) {
             logWith.agencyId(req.getAgencyId());
 
             logXml(req.getAgencyId(), req, req.getAuthentication());
@@ -393,11 +392,11 @@ public class UpdateBean {
                 private void processBibliograhicItem(OnlineBibliographicItem bibliographicItem) {
                     Instant modified = parseTimestamp(bibliographicItem.getModificationTimeStamp());
                     String bibliographicRecordId = bibliographicItem.getBibliographicRecordId();
-                    try (LogWith logWith = new LogWith()) {
+                    try ( LogWith logWith = new LogWith()) {
                         logWith.bibliographicRecordId(bibliographicRecordId);
                         log.info("OnlineItem");
                         IssueEntity collection;
-                        try (Timer.Context time = loadCollectionTimer.time()) {
+                        try ( Timer.Context time = loadCollectionTimer.time()) {
                             collection = dao.getRecordCollection(bibliographicRecordId, getAgencyId(), modified)
                                     .issue("", modified);
                         }
@@ -554,35 +553,30 @@ public class UpdateBean {
      */
     void userValidation(UpdateRequest req) throws AuthenticationException, FailedUpdateInternalException {
         Authentication authentication = req.getAuthentication();
-        try {
-            if (authentication == null) {
-                log.error("No authentication supplied. Agency requested modified: {}", req.getAgencyId());
+        if (authentication == null) {
+            log.error("No authentication supplied. Agency requested modified: {}", req.getAgencyId());
+            if (config.getDisableAuthentication()) {
+                return;
+            }
+            throw new AuthenticationException("No authentication supplied");
+        } else {
+            String validatedAgencyId = validator.validate(authentication);
+            // Not validated
+            if (validatedAgencyId == null) {
+                log.error("User not validated {}/{}/...", authentication.getUserIdAut(), authentication.getGroupIdAut());
                 if (config.getDisableAuthentication()) {
                     return;
                 }
-                throw new AuthenticationException("No authentication supplied");
-            } else {
-                String validatedAgencyId = validator.validate(authentication, config.getRightsGroup(), config.getRightsName());
-                // Not validated
-                if (validatedAgencyId == null) {
-                    log.error("User not validated {}/{}/...", authentication.getUserIdAut(), authentication.getGroupIdAut());
-                    if (config.getDisableAuthentication()) {
-                        return;
-                    }
-                    throw new AuthenticationException("User not validated");
-                }
-                // Validated verify agency match
-                if (Integer.parseUnsignedInt(validatedAgencyId) != req.getAgencyId()) {
-                    log.error("User validation ({}), record update mismatch ({})", validatedAgencyId, req.getAgencyId());
-                    if (config.getDisableAuthentication()) {
-                        return;
-                    }
-                    throw new AuthenticationException("User validation, record update mismatch");
-                }
+                throw new AuthenticationException("User not validated");
             }
-        } catch (ForsRightsException ex) {
-            log.error("Cannot get rights: {}", ex.getMessage());
-            throw new FailedUpdateInternalException("Authentication service unavailable");
+            // Validated verify agency match
+            if (Integer.parseUnsignedInt(validatedAgencyId) != req.getAgencyId()) {
+                log.error("User validation ({}), record update mismatch ({})", validatedAgencyId, req.getAgencyId());
+                if (config.getDisableAuthentication()) {
+                    return;
+                }
+                throw new AuthenticationException("User validation, record update mismatch");
+            }
         }
     }
 

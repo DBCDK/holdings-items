@@ -187,8 +187,15 @@
 
         <dependency>
             <groupId>dk.dbc</groupId>
-            <artifactId>forsrights-ws-client</artifactId>
-            <version>1.2-SNAPSHOT</version>
+            <artifactId>idpcommon</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+            <classifier>idp-client</classifier>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
@@ -250,6 +257,17 @@
             <groupId>dk.dbc</groupId>
             <artifactId>dbc-commons-testutil-jpa</artifactId>
             <version>1.3-SNAPSHOT</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.glassfish.jersey.core</groupId>
+            <artifactId>jersey-client</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.glassfish.jersey.inject</groupId>
+            <artifactId>jersey-hk2</artifactId>
             <scope>test</scope>
         </dependency>
 
