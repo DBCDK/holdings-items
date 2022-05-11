@@ -81,8 +81,6 @@ public class AccessValidator {
         log.debug("req = {}", req);
         try {
             String payload = O.writeValueAsString(req);
-            System.out.println("payload = " + payload);
-            System.out.println("uri = " + uri);
             try( InputStream is = client.target(uri)
                     .request(MediaType.APPLICATION_JSON_TYPE)
                     .accept(MediaType.APPLICATION_JSON_TYPE)
