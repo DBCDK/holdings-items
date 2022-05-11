@@ -136,27 +136,4 @@ public class Config {
     public boolean shouldLogXml(int agencyId) {
         return shouldLogXmlAgenciesSet.contains(agencyId);
     }
-
-    private static long milliseconds(String spec) {
-        String[] split = spec.split("(?<=\\d)(?=\\D)");
-        if (split.length == 2) {
-            long units = Long.parseUnsignedLong(split[0], 10);
-            switch (split[1].toLowerCase(Locale.ROOT).trim()) {
-                case "ms":
-                    return TimeUnit.MILLISECONDS.toMillis(units);
-                case "s":
-                    return TimeUnit.SECONDS.toMillis(units);
-                case "m":
-                    return TimeUnit.MINUTES.toMillis(units);
-                case "h":
-                    return TimeUnit.HOURS.toMillis(units);
-                case "d":
-                    return TimeUnit.DAYS.toMillis(units);
-                default:
-                    break;
-            }
-        }
-        throw new IllegalArgumentException("Invalid time spec: " + spec);
-    }
-
 }
