@@ -20,7 +20,6 @@ package dk.dbc.holdingsitems.update;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import dk.dbc.forsrights.client.ForsRightsException;
 import dk.dbc.holdingsitems.HoldingsItemsDAO;
 import dk.dbc.holdingsitems.jpa.BibliographicItemEntity;
 import dk.dbc.holdingsitems.jpa.ItemEntity;
@@ -596,7 +595,7 @@ public class UpdateBeanIT extends JpaBase {
                 ));
     }
 
-    private UpdateBean mockUpdateBean(EntityManager em) throws SQLException, ForsRightsException {
+    private UpdateBean mockUpdateBean(EntityManager em) throws SQLException {
         UpdateBean mock = mock(UpdateBean.class);
         mock.config = mockConfig();
         mock.em = em;
@@ -611,7 +610,7 @@ public class UpdateBeanIT extends JpaBase {
         mock.loadCollectionTimer = mock(Timer.class);
         AccessValidator validator = mock(AccessValidator.class);
         mock.validator = validator;
-        when(validator.validate(any(Authentication.class), anyString(), anyString()))
+        when(validator.validate(any(Authentication.class)))
                 .then((invocation) -> {
                     Authentication auth = (Authentication) invocation.getArguments()[0];
                     if (auth == null)
@@ -664,10 +663,8 @@ public class UpdateBeanIT extends JpaBase {
                           "UPDATE_QUEUE_LIST=update",
                           "COMPLETE_QUEUE_LIST=complete",
                           "ONLINE_QUEUE_LIST=online",
-                          "FORS_RIGHTS_URL=ANY",
-                          "FORS_RIGHT_CACHE_AGE=8h",
-                          "RIGHTS_NAME=any",
-                          "RIGHTS_GROUP=common");
+                          "IDP_URL=ANY",
+                          "IDP_RIGHTS=common,any");
     }
 
     private HoldingsItemsUpdateRequest holdingsItemsUpdateRequest(int agencyId, Authentication authentication, String trackingId, BibliographicItem... bibliographicItems) {

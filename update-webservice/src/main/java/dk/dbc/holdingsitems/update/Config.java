@@ -19,10 +19,8 @@
 package dk.dbc.holdingsitems.update;
 
 import java.util.Arrays;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.annotation.PostConstruct;
 import javax.ejb.EJBException;
@@ -31,6 +29,7 @@ import javax.ejb.LockType;
 import javax.ejb.Singleton;
 import javax.ejb.Startup;
 import javax.enterprise.context.ApplicationScoped;
+import javax.ws.rs.core.UriBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,10 +51,9 @@ public class Config {
     private String onlineQueueList;
     private Set<Integer> shouldLogXmlAgenciesSet;
     private boolean disableAuthentication;
-    private String forsRightsUrl;
-    private long maxAgeMs;
-    private String rightsName;
-    private String rightsGroup;
+    private UriBuilder idpUrl;
+    private String idpProductName;
+    private String idpName;
 
     private final Map<String, String> env;
 
@@ -85,10 +83,13 @@ public class Config {
                 .collect(Collectors.toSet());
         log.debug("shouldLogXmlAgenciesSet = {}", shouldLogXmlAgenciesSet);
         disableAuthentication = Boolean.valueOf(get("DISABLE_AUTHENTICATION", "false"));
-        forsRightsUrl = get("FORS_RIGHTS_URL");
-        maxAgeMs = milliseconds(get("FORS_RIGHT_CACHE_AGE", "8h"));
-        rightsName = get("RIGHTS_NAME");
-        rightsGroup = get("RIGHTS_GROUP");
+        idpUrl = UriBuilder.fromUri(get("IDP_URL"));
+        String[] idpRule = get("IDP_RIGHTS").split(",");
+        if (idpRule.length != 2)
+            throw new EJBException("Invalid required configuration: IDP_RIGHTS, doesn't have format (product,name)");
+        idpProductName = idpRule[0];
+        idpName = idpRule[1];
+
     }
 
     private String get(String var) {
@@ -118,46 +119,19 @@ public class Config {
         return disableAuthentication;
     }
 
-    public String getForsRightsUrl() {
-        return forsRightsUrl;
+    public UriBuilder getIdpUrl() {
+        return idpUrl.clone();
     }
 
-    public long getMaxAgeMS() {
-        return maxAgeMs;
+    public String getIdpProductName() {
+        return idpProductName;
     }
 
-    public String getRightsGroup() {
-        return rightsGroup;
-    }
-
-    public String getRightsName() {
-        return rightsName;
+    public String getIdpName() {
+        return idpName;
     }
 
     public boolean shouldLogXml(int agencyId) {
         return shouldLogXmlAgenciesSet.contains(agencyId);
     }
-
-    private static long milliseconds(String spec) {
-        String[] split = spec.split("(?<=\\d)(?=\\D)");
-        if (split.length == 2) {
-            long units = Long.parseUnsignedLong(split[0], 10);
-            switch (split[1].toLowerCase(Locale.ROOT).trim()) {
-                case "ms":
-                    return TimeUnit.MILLISECONDS.toMillis(units);
-                case "s":
-                    return TimeUnit.SECONDS.toMillis(units);
-                case "m":
-                    return TimeUnit.MINUTES.toMillis(units);
-                case "h":
-                    return TimeUnit.HOURS.toMillis(units);
-                case "d":
-                    return TimeUnit.DAYS.toMillis(units);
-                default:
-                    break;
-            }
-        }
-        throw new IllegalArgumentException("Invalid time spec: " + spec);
-    }
-
 }

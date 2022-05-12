@@ -18,7 +18,6 @@
  */
 package dk.dbc.holdingsitems.update;
 
-import dk.dbc.forsrights.client.ForsRightsException;
 import dk.dbc.oss.ns.holdingsitemsupdate.Authentication;
 import org.junit.Test;
 
@@ -74,12 +73,12 @@ public class UpdateBeanTest {
         UpdateBean updateBean = new UpdateBean();
         updateBean.config = new Config() {
             @Override
-            public String getRightsGroup() {
+            public String getIdpName() {
                 return "";
             }
 
             @Override
-            public String getRightsName() {
+            public String getIdpProductName() {
                 return "";
             }
 
@@ -91,7 +90,7 @@ public class UpdateBeanTest {
         };
         updateBean.validator = new AccessValidator() {
             @Override
-            public String validate(Authentication auth, String rightsGroup, String rightsName) throws ForsRightsException {
+            public String validate(Authentication auth)  {
                 if (auth == null) {
                     return null; // No auth supplied
                 }
