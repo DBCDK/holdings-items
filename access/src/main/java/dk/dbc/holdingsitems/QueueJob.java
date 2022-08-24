@@ -20,11 +20,13 @@ package dk.dbc.holdingsitems;
 
 import dk.dbc.pgqueue.common.DeduplicateAbstraction;
 import dk.dbc.pgqueue.common.QueueStorageAbstraction;
+import java.io.Serializable;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -32,7 +34,9 @@ import java.util.TreeSet;
  *
  * @author DBC {@literal <dbc.dk>}
  */
-public class QueueJob {
+public class QueueJob implements Serializable {
+
+    private static final long serialVersionUID = 0xE5404923EAE9696CL;
 
     private String bibliographicRecordId;
     private int agencyId;
@@ -88,6 +92,25 @@ public class QueueJob {
     }
 
     @Override
+    public int hashCode() {
+        return Objects.hash(bibliographicRecordId, agencyId, stateChange, trackingId, trackingIds);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null || getClass() != obj.getClass())
+            return false;
+        final QueueJob other = (QueueJob) obj;
+        return this.agencyId == other.agencyId &&
+               Objects.equals(this.bibliographicRecordId, other.bibliographicRecordId) &&
+               Objects.equals(this.stateChange, other.stateChange) &&
+               Objects.equals(this.trackingId, other.trackingId) &&
+               Objects.equals(this.trackingIds, other.trackingIds);
+    }
+
+    @Override
     public String toString() {
         return "QueueJob{" + "bibliographicRecordId=" + bibliographicRecordId + ", agencyId=" + agencyId + ", stateChange=" + stateChange + ", trackingId=" + getTrackingId() + '}';
     }
@@ -116,8 +139,8 @@ public class QueueJob {
             stmt.setString(startColumn++, job.getStateChange());
             stmt.setString(startColumn++, job.getTrackingId());
         }
-
     };
+
     public static final DeduplicateAbstraction<QueueJob> DEDUPLICATION_ABSTRACTION_IGNORE_STATECHANGE = new DeduplicateAbstraction<QueueJob>() {
         private final String[] COLUMNS = "agencyId,bibliographicRecordId".split(",");
 
@@ -135,6 +158,8 @@ public class QueueJob {
         @Override
         public QueueJob mergeJob(QueueJob originalJob, QueueJob skippedJob) {
             originalJob.addTrackingIds(skippedJob.getTrackingIds());
+            if (!"{}".equals(skippedJob.stateChange))
+                originalJob.stateChange = skippedJob.stateChange;
             return originalJob;
         }
     };

@@ -52,25 +52,28 @@ public class HoldingsItemsDAOIT extends JpaBase {
         System.out.println("testEnqueue");
         jpa(em -> {
             HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, "FOO");
-            dao.enqueue("12345678", 888888, "{}", "worker");
-            dao.enqueue("87654321", 888888, "{}", "worker", 1000);
+            try (EnqueueService enqueueService = dao.enqueueService()) {
+                enqueueService.enqueue("supa", 888888, "12345678", "{}");
+                enqueueService.enqueue("supa", 888888, "87654321", "{}");
+            }
         });
         flushAndEvict();
         try (Connection connection = pg.createConnection() ;
              Statement stmt = connection.createStatement() ;
-             ResultSet resultSet = stmt.executeQuery("SELECT bibliographicRecordId, agencyId, trackingId FROM queue")) {
+             ResultSet resultSet = stmt.executeQuery("SELECT consumer, bibliographicRecordId, agencyId, trackingId FROM queue")) {
             HashSet<String> results = new HashSet<>();
             while (resultSet.next()) {
                 int i = 0;
+                String consumer = resultSet.getString(++i);
                 String biblId = resultSet.getString(++i);
                 int agencyId = resultSet.getInt(++i);
                 String tracking = resultSet.getString(++i);
-                results.add(biblId + "|" + agencyId + "|" + tracking);
+                results.add(consumer + "|" + biblId + "|" + agencyId + "|" + tracking);
             }
             System.out.println("results = " + results);
             assertEquals(2, results.size());
-            assertTrue(results.contains("12345678|888888|FOO"));
-            assertTrue(results.contains("87654321|888888|FOO"));
+            assertTrue(results.contains("consa|12345678|888888|FOO"));
+            assertTrue(results.contains("consa|87654321|888888|FOO"));
         }
     }
 
