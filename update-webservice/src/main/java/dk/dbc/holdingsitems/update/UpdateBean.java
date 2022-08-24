@@ -49,6 +49,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
@@ -198,8 +199,8 @@ public class UpdateBean {
                 }
 
                 @Override
-                public String getQueueList() {
-                    return config.getUpdateQueueList();
+                public String getQueueSupplierName() {
+                    return config.getUpdateSupplier();
                 }
 
                 /**
@@ -275,8 +276,8 @@ public class UpdateBean {
                 }
 
                 @Override
-                public String getQueueList() {
-                    return config.getCompleteQueueList();
+                public String getQueueSupplierName() {
+                    return config.getCompleteSupplier();
                 }
 
                 /**
@@ -305,7 +306,7 @@ public class UpdateBean {
                                 .forEachOrdered(holding -> {
                                     processHolding(modified, bibItem, holding, processIssuesAndItems);
                                 });
-                        HashMap<String, StateChangeMetadata> statuses = oldItemStatus.computeIfAbsent(bibliographicRecordId, f -> new HashMap<>());
+                        Map<String, StateChangeMetadata> statuses = oldItemStatus.computeIfAbsent(bibliographicRecordId, f -> new HashMap<>());
 
                         bibItem.stream().forEach(issue -> {
                             if (issue.getComplete().isBefore(modified)) {
@@ -373,8 +374,8 @@ public class UpdateBean {
                 }
 
                 @Override
-                public String getQueueList() {
-                    return config.getOnlineQueueList();
+                public String getQueueSupplierName() {
+                    return config.getOnlineSupplier();
                 }
 
                 @Override

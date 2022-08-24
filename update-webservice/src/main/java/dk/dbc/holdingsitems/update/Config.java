@@ -46,9 +46,9 @@ public class Config {
 
     private static final Logger log = LoggerFactory.getLogger(Config.class);
 
-    private String updateQueueList;
-    private String completeQueueList;
-    private String onlineQueueList;
+    private String updateSupplier;
+    private String completeSupplier;
+    private String onlineSupplier;
     private Set<Integer> shouldLogXmlAgenciesSet;
     private boolean disableAuthentication;
     private UriBuilder idpUrl;
@@ -74,9 +74,9 @@ public class Config {
     }
 
     private void configure() {
-        updateQueueList = get("UPDATE_QUEUE_LIST");
-        completeQueueList = get("COMPLETE_QUEUE_LIST");
-        onlineQueueList = get("ONLINE_QUEUE_LIST");
+        updateSupplier = get("UPDATE_SUPPLIER", "UPDATE");
+        completeSupplier = get("COMPLETE_SUPPLIER", "COMPLETE");
+        onlineSupplier = get("ONLINE_SUPPLIER", "ONLINE");
         shouldLogXmlAgenciesSet = Arrays.stream(get("DEBUG_XML_AGENCIES", "").split(";"))
                 .filter(s -> !s.isEmpty())
                 .map(Integer::parseInt)
@@ -103,16 +103,16 @@ public class Config {
         return env.getOrDefault(var, defaultValue);
     }
 
-    public String getUpdateQueueList() {
-        return updateQueueList;
+    public String getUpdateSupplier() {
+        return updateSupplier;
     }
 
-    public String getCompleteQueueList() {
-        return completeQueueList;
+    public String getCompleteSupplier() {
+        return completeSupplier;
     }
 
-    public String getOnlineQueueList() {
-        return onlineQueueList;
+    public String getOnlineSupplier() {
+        return onlineSupplier;
     }
 
     public boolean getDisableAuthentication() {

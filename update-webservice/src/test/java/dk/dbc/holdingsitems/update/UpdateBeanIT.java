@@ -660,9 +660,6 @@ public class UpdateBeanIT extends JpaBase {
 
     private Config mockConfig() {
         return new Config("DISABLE_AUTHENTICATION=true",
-                          "UPDATE_QUEUE_LIST=update",
-                          "COMPLETE_QUEUE_LIST=complete",
-                          "ONLINE_QUEUE_LIST=online",
                           "IDP_URL=ANY",
                           "IDP_RIGHTS=common,any");
     }

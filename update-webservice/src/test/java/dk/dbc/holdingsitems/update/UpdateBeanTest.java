@@ -90,7 +90,7 @@ public class UpdateBeanTest {
         };
         updateBean.validator = new AccessValidator() {
             @Override
-            public String validate(Authentication auth)  {
+            public String validate(Authentication auth) {
                 if (auth == null) {
                     return null; // No auth supplied
                 }
@@ -126,7 +126,7 @@ public class UpdateBeanTest {
             }
 
             @Override
-            public String getQueueList() {
+            public String getQueueSupplierName() {
                 throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
             }
 

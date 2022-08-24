@@ -21,6 +21,7 @@ package dk.dbc.holdingsitems.update;
 import dk.dbc.holdingsitems.StateChangeMetadata;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import dk.dbc.holdingsitems.EnqueueService;
 import dk.dbc.holdingsitems.HoldingsItemsDAO;
 import dk.dbc.holdingsitems.HoldingsItemsException;
 import dk.dbc.holdingsitems.jpa.BibliographicItemEntity;
@@ -40,6 +41,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
@@ -94,7 +96,8 @@ public abstract class UpdateRequest {
      *
      * @return comma separated list of queues for this endpoint
      */
-    public abstract String getQueueList();
+//    public abstract String getQueueList();
+    public abstract String getQueueSupplierName();
 
     /**
      * Actually process the request content
@@ -102,8 +105,9 @@ public abstract class UpdateRequest {
     public abstract void processBibliograhicItems();
 
     private final UpdateBean updateWebService;
-    private final HashSet<QueueEntry> queueEntries;
-    protected final HashMap<String, HashMap<String, StateChangeMetadata>> oldItemStatus; // Bibl -> item -> status
+//    private final HashSet<QueueEntry> queueEntries;
+    private final HashSet<String> touchedBibliographicRecordIds;
+    protected final HashMap<String, Map<String, StateChangeMetadata>> oldItemStatus; // Bibl -> item -> status
     protected HoldingsItemsDAO dao;
 
     /**
@@ -113,7 +117,8 @@ public abstract class UpdateRequest {
      */
     public UpdateRequest(UpdateBean updateBean) {
         this.updateWebService = updateBean;
-        this.queueEntries = new HashSet<>();
+//        this.queueEntries = new HashSet<>();
+        this.touchedBibliographicRecordIds = new HashSet<>();
         this.oldItemStatus = new HashMap<>();
     }
 
@@ -139,37 +144,36 @@ public abstract class UpdateRequest {
      * @param agencyId              jobId
      */
     public void addQueueJob(String bibliographicRecordId, int agencyId) {
-        queueEntries.add(new QueueEntry(agencyId, bibliographicRecordId));
+        touchedBibliographicRecordIds.add(bibliographicRecordId);
     }
 
     /**
      * Send all cached queue jobs to the queue
      */
-    protected void queue() {
-        String[] queues = getQueueList().split("[^-0-9a-zA-Z_]+");
-        for (QueueEntry queueEntry : queueEntries) {
-            for (String queue : queues) {
-                if (queue.isEmpty()) {
-                    continue;
-                }
-                log.info("QUEUE: " +
-                         queueEntry.getAgencyId() + "|" +
-                         queueEntry.getBibliographicRecordId() + "|" +
-                         queue);
+    protected final void queue() throws HoldingsItemsException {
+        String supplier = getQueueSupplierName();
+        if (supplier == null || supplier.isEmpty())
+            return;
+        int agencyId = getAgencyId();
+        try (EnqueueService enqueueService = dao.enqueueService()) {
+            for (String bibliographicRecordId : touchedBibliographicRecordIds) {
+                log.info("QUEUE: {}|{}|{}", agencyId, bibliographicRecordId, supplier);
                 try {
                     String saveStateChangeText = "{}";
                     try {
-                        HashMap<String, StateChangeMetadata> saveStateChange = oldItemStatus.computeIfAbsent(queueEntry.getBibliographicRecordId(), f -> new HashMap<>());
+                        Map<String, StateChangeMetadata> saveStateChange = oldItemStatus.computeIfAbsent(bibliographicRecordId, f -> Collections.emptyMap());
                         saveStateChangeText = O.writeValueAsString(saveStateChange);
                     } catch (JsonProcessingException ex) {
                         log.error("Cannot make json to string: {}", ex.getMessage());
                         log.debug("Cannot make json to string: ", ex);
                     }
-                    dao.enqueue(queueEntry.getBibliographicRecordId(), queueEntry.getAgencyId(), saveStateChangeText, queue);
+                    enqueueService.enqueue(supplier, agencyId, bibliographicRecordId, saveStateChangeText);
                 } catch (HoldingsItemsException ex) {
                     throw new WrapperException(ex);
                 }
+
             }
+
         }
     }
 
@@ -238,7 +242,7 @@ public abstract class UpdateRequest {
     public void decommissionEntireHolding(IssueEntity collection, Instant modified) {
         collection.setComplete(modified);
         String bibliographicRecordId = collection.getBibliographicRecordId();
-        HashMap<String, StateChangeMetadata> statuses = oldItemStatus.computeIfAbsent(bibliographicRecordId, f -> new HashMap<>());
+        Map<String, StateChangeMetadata> statuses = oldItemStatus.computeIfAbsent(bibliographicRecordId, f -> new HashMap<>());
         List<ItemEntity> decommissioned = collection.stream()
                 .filter(item -> item.getStatus() != Status.ONLINE)
                 .filter(item -> !item.getModified().isAfter(modified)) // This is modified after complete - keep it
@@ -268,7 +272,7 @@ public abstract class UpdateRequest {
                                                                       modified);
             bibItem.setTrackingId(getTrakingId());
             IssueEntity collection = bibItem.issue(issueId, modified);
-            HashMap<String, StateChangeMetadata> biblItemStatus = oldItemStatus.computeIfAbsent(bibliographicRecordId, b -> new HashMap<>());
+            Map<String, StateChangeMetadata> biblItemStatus = oldItemStatus.computeIfAbsent(bibliographicRecordId, b -> new HashMap<>());
             collection.stream()
                     .forEach(record -> biblItemStatus.putIfAbsent(record.getItemId(), new StateChangeMetadata(record.getStatus(), modified)));
             log.debug("oldItemStatus = {}", oldItemStatus);
@@ -409,52 +413,52 @@ public abstract class UpdateRequest {
     /**
      * Simple queue entry wrapper, only data structure, no logic
      */
-    private static class QueueEntry {
-
-        private final int agencyId;
-        private final String bibliographicRecordId;
-
-        public QueueEntry(int agencyId, String bibliographicRecordId) {
-            this.agencyId = agencyId;
-            this.bibliographicRecordId = bibliographicRecordId;
-        }
-
-        public int getAgencyId() {
-            return agencyId;
-        }
-
-        public String getBibliographicRecordId() {
-            return bibliographicRecordId;
-        }
-
-        @Override
-        public int hashCode() {
-            int hash = 5;
-            hash = 37 * hash + this.agencyId;
-            hash = 37 * hash + Objects.hashCode(this.bibliographicRecordId);
-            return hash;
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            if (this == obj) {
-                return true;
-            }
-            if (obj == null) {
-                return false;
-            }
-            if (getClass() != obj.getClass()) {
-                return false;
-            }
-            final QueueEntry other = (QueueEntry) obj;
-            if (this.agencyId != other.agencyId) {
-                return false;
-            }
-            if (!Objects.equals(this.bibliographicRecordId, other.bibliographicRecordId)) {
-                return false;
-            }
-            return true;
-        }
-
-    }
+//    private static class QueueEntry {
+//
+//        private final int agencyId;
+//        private final String bibliographicRecordId;
+//
+//        public QueueEntry(int agencyId, String bibliographicRecordId) {
+//            this.agencyId = agencyId;
+//            this.bibliographicRecordId = bibliographicRecordId;
+//        }
+//
+//        public int getAgencyId() {
+//            return agencyId;
+//        }
+//
+//        public String getBibliographicRecordId() {
+//            return bibliographicRecordId;
+//        }
+//
+//        @Override
+//        public int hashCode() {
+//            int hash = 5;
+//            hash = 37 * hash + this.agencyId;
+//            hash = 37 * hash + Objects.hashCode(this.bibliographicRecordId);
+//            return hash;
+//        }
+//
+//        @Override
+//        public boolean equals(Object obj) {
+//            if (this == obj) {
+//                return true;
+//            }
+//            if (obj == null) {
+//                return false;
+//            }
+//            if (getClass() != obj.getClass()) {
+//                return false;
+//            }
+//            final QueueEntry other = (QueueEntry) obj;
+//            if (this.agencyId != other.agencyId) {
+//                return false;
+//            }
+//            if (!Objects.equals(this.bibliographicRecordId, other.bibliographicRecordId)) {
+//                return false;
+//            }
+//            return true;
+//        }
+//
+//    }
 }
