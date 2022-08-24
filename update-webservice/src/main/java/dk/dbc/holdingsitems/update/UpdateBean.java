@@ -232,7 +232,7 @@ public class UpdateBean {
                                             .forEachOrdered(holding -> processHolding(modified, bibItem, holding, null));
                                     log.debug("bibItem = {}", bibItem);
                                     bibItem.save();
-                                    addQueueJob(bibliographicRecordId, getAgencyId());
+                                    touchedBibliographicRecordId(bibliographicRecordId);
                                 }
                             });
                 }
@@ -328,7 +328,7 @@ public class UpdateBean {
                             });
                         });
                         bibItem.save();
-                        addQueueJob(bibliographicRecordId, getAgencyId());
+                        touchedBibliographicRecordId(bibliographicRecordId);
                     }
                 }
             });
@@ -420,7 +420,7 @@ public class UpdateBean {
                             rec.setAccessionDate(LocalDate.now());
                         }
                         rec.setTrackingId(getTrakingId());
-                        addQueueJob(bibliographicRecordId, getAgencyId());
+                        touchedBibliographicRecordId(bibliographicRecordId);
                         saveCollection(collection, modified);
                     } catch (HoldingsItemsException ex) {
                         throw new WrapperException(ex);

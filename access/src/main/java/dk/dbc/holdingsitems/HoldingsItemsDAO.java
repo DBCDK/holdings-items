@@ -22,14 +22,9 @@ import dk.dbc.holdingsitems.jpa.BibliographicItemEntity;
 import dk.dbc.holdingsitems.jpa.IssueEntity;
 import dk.dbc.holdingsitems.jpa.ItemEntity;
 import dk.dbc.holdingsitems.jpa.Status;
-import dk.dbc.pgqueue.supplier.PreparedQueueSupplier;
-import dk.dbc.pgqueue.supplier.QueueSupplier;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.persistence.EntityManager;
 import java.sql.Connection;
-import java.sql.SQLException;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -45,48 +40,8 @@ import java.util.stream.Collectors;
  */
 public class HoldingsItemsDAO {
 
-    private static final Logger log = LoggerFactory.getLogger(HoldingsItemsDAO.class);
-
-    private static final QueueSupplier QUEUE_SUPPLIER = new QueueSupplier(QueueJob.STORAGE_ABSTRACTION);
-
     private final EntityManager em;
-    private final LazyObject<Connection> connection;
     private final String trackingId;
-
-    private final LazyObject<PreparedQueueSupplier> queueSupplier;
-
-    @FunctionalInterface
-    public interface HoldingItemsSupplier<T> {
-
-        T get() throws HoldingsItemsException;
-    }
-
-    private static class LazyObject<T> {
-
-        private final HoldingItemsSupplier<T> supplier;
-        private T value;
-
-        public LazyObject(HoldingItemsSupplier<T> supplier) {
-            this.supplier = supplier;
-        }
-
-        public synchronized T get() throws HoldingsItemsException {
-            if (value == null) {
-                value = supplier.get();
-                if (value == null)
-                    throw new IllegalStateException("Got null value from supplier");
-            }
-            return value;
-        }
-    }
-
-    private Connection supplyConnection() {
-        return em.unwrap(Connection.class);
-    }
-
-    private PreparedQueueSupplier supplyQueueSupplier() throws HoldingsItemsException {
-        return QUEUE_SUPPLIER.preparedSupplier(connection.get());
-    }
 
     /**
      * Constructor
@@ -96,8 +51,6 @@ public class HoldingsItemsDAO {
      */
     HoldingsItemsDAO(EntityManager em, String trackingId) {
         this.em = em;
-        this.connection = new LazyObject<>(this::supplyConnection);
-        this.queueSupplier = new LazyObject<>(this::supplyQueueSupplier);
         this.trackingId = trackingId;
     }
 
@@ -446,6 +399,6 @@ public class HoldingsItemsDAO {
      * @throws HoldingsItemsException In case of a database error
      */
     public EnqueueService enqueueService() throws HoldingsItemsException {
-        return new EnqueueService(supplyConnection(), trackingId);
+        return new EnqueueService(em.unwrap(Connection.class), trackingId);
     }
 }

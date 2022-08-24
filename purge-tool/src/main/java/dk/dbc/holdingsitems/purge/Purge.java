@@ -27,7 +27,6 @@ import dk.dbc.holdingsitems.jpa.ItemEntity;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.List;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;

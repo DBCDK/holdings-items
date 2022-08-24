@@ -48,7 +48,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -96,7 +95,6 @@ public abstract class UpdateRequest {
      *
      * @return comma separated list of queues for this endpoint
      */
-//    public abstract String getQueueList();
     public abstract String getQueueSupplierName();
 
     /**
@@ -105,7 +103,6 @@ public abstract class UpdateRequest {
     public abstract void processBibliograhicItems();
 
     private final UpdateBean updateWebService;
-//    private final HashSet<QueueEntry> queueEntries;
     private final HashSet<String> touchedBibliographicRecordIds;
     protected final HashMap<String, Map<String, StateChangeMetadata>> oldItemStatus; // Bibl -> item -> status
     protected HoldingsItemsDAO dao;
@@ -117,7 +114,6 @@ public abstract class UpdateRequest {
      */
     public UpdateRequest(UpdateBean updateBean) {
         this.updateWebService = updateBean;
-//        this.queueEntries = new HashSet<>();
         this.touchedBibliographicRecordIds = new HashSet<>();
         this.oldItemStatus = new HashMap<>();
     }
@@ -141,16 +137,17 @@ public abstract class UpdateRequest {
      * Collect queue jobs
      *
      * @param bibliographicRecordId jobId
-     * @param agencyId              jobId
      */
-    public void addQueueJob(String bibliographicRecordId, int agencyId) {
+    public void touchedBibliographicRecordId(String bibliographicRecordId) {
         touchedBibliographicRecordIds.add(bibliographicRecordId);
     }
 
     /**
      * Send all cached queue jobs to the queue
+     *
+     * @throws HoldingsItemsException in case of a queue error
      */
-    protected final void queue() throws HoldingsItemsException {
+    public final void queue() throws HoldingsItemsException {
         String supplier = getQueueSupplierName();
         if (supplier == null || supplier.isEmpty())
             return;
@@ -410,55 +407,4 @@ public abstract class UpdateRequest {
             (OnlineBibliographicItem l, OnlineBibliographicItem r) ->
             l.getBibliographicRecordId().compareTo(r.getBibliographicRecordId());
 
-    /**
-     * Simple queue entry wrapper, only data structure, no logic
-     */
-//    private static class QueueEntry {
-//
-//        private final int agencyId;
-//        private final String bibliographicRecordId;
-//
-//        public QueueEntry(int agencyId, String bibliographicRecordId) {
-//            this.agencyId = agencyId;
-//            this.bibliographicRecordId = bibliographicRecordId;
-//        }
-//
-//        public int getAgencyId() {
-//            return agencyId;
-//        }
-//
-//        public String getBibliographicRecordId() {
-//            return bibliographicRecordId;
-//        }
-//
-//        @Override
-//        public int hashCode() {
-//            int hash = 5;
-//            hash = 37 * hash + this.agencyId;
-//            hash = 37 * hash + Objects.hashCode(this.bibliographicRecordId);
-//            return hash;
-//        }
-//
-//        @Override
-//        public boolean equals(Object obj) {
-//            if (this == obj) {
-//                return true;
-//            }
-//            if (obj == null) {
-//                return false;
-//            }
-//            if (getClass() != obj.getClass()) {
-//                return false;
-//            }
-//            final QueueEntry other = (QueueEntry) obj;
-//            if (this.agencyId != other.agencyId) {
-//                return false;
-//            }
-//            if (!Objects.equals(this.bibliographicRecordId, other.bibliographicRecordId)) {
-//                return false;
-//            }
-//            return true;
-//        }
-//
-//    }
 }

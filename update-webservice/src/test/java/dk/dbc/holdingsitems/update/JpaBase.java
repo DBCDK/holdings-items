@@ -124,6 +124,7 @@ public class JpaBase {
             stmt.execute("TRUNCATE bibliographicItem CASCADE");
             stmt.execute("TRUNCATE queue CASCADE");
             stmt.execute("TRUNCATE queue_error CASCADE");
+            stmt.execute("TRUNCATE queue_rules CASCADE");
             stmt.execute("INSERT INTO queue_rules(supplier, consumer) VALUES('UPDATE', 'update')");
             stmt.execute("INSERT INTO queue_rules(supplier, consumer) VALUES('COMPLETE', 'complete')");
             stmt.execute("INSERT INTO queue_rules(supplier, consumer) VALUES('ONLINE', 'online')");

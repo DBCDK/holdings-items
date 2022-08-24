@@ -93,7 +93,7 @@ public class QueueJob implements Serializable {
 
     @Override
     public int hashCode() {
-        return Objects.hash(bibliographicRecordId, agencyId, stateChange, trackingId, trackingIds);
+        return Objects.hash(bibliographicRecordId, agencyId, stateChange, getTrackingId());
     }
 
     @Override
@@ -106,8 +106,7 @@ public class QueueJob implements Serializable {
         return this.agencyId == other.agencyId &&
                Objects.equals(this.bibliographicRecordId, other.bibliographicRecordId) &&
                Objects.equals(this.stateChange, other.stateChange) &&
-               Objects.equals(this.trackingId, other.trackingId) &&
-               Objects.equals(this.trackingIds, other.trackingIds);
+               Objects.equals(this.getTrackingId(), other.getTrackingId());
     }
 
     @Override
