@@ -65,14 +65,11 @@ public class PurgeMain {
             String db = commandLine.getDatabase();
             log.info("DB: {}", db);
 
-            List<String> queues = Arrays.asList(commandLine.getQueues().split(","))
-                    .stream()
-                    .filter(s -> !s.isEmpty())
-                    .collect(toList());
-            if(queues.isEmpty()) {
-                throw new IllegalArgumentException("No queues are defined");
+            String supplier = commandLine.getSupplier();
+            if(supplier == null || supplier.isEmpty()) {
+                throw new IllegalArgumentException("No queue-supplier is defined");
             }
-            log.info("Queues: {}", queues);
+            log.info("QueueSupplier: {}", supplier);
 
             boolean removeFirstAcquisitionDate = commandLine.hasRemoveFirstAcquisitionDate();
             if (removeFirstAcquisitionDate) {
@@ -101,7 +98,7 @@ public class PurgeMain {
 
                 jpa.run(em -> {
                     HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, trackingId);
-                    Purge purge = new Purge(em, dao, queues, agencyName, agencyId, removeFirstAcquisitionDate, dryRun);
+                    Purge purge = new Purge(em, dao, supplier, agencyName, agencyId, removeFirstAcquisitionDate, dryRun);
                     purge.process();
                 });
 

@@ -63,13 +63,13 @@ public final class Arguments {
                     .argName("DB")
                     .desc("Connectstring for database. E.g user:password@host:port/database")
                     .build();
-    private final Option queues =
+    private final Option supplier =
             Option.builder("q")
-                    .longOpt("queue")
+                    .longOpt("queue-supplier")
                     .hasArg()
                     .required()
-                    .argName("QUEUE")
-                    .desc("Names of queue that should process deletes - comma seperated list")
+                    .argName("SUPPLIER")
+                    .desc("Names of the supplier that should enqueues for deletes")
                     .build();
     private final Option verbose =
             Option.builder("v")
@@ -96,7 +96,7 @@ public final class Arguments {
             .addOption(vipCoreUrl)
             .addOption(database)
             .addOption(removeFirstAcquisitionDate)
-            .addOption(queues)
+            .addOption(supplier)
             .addOption(verbose)
             .addOption(dryRun)
             .addOption(help);
@@ -200,8 +200,8 @@ public final class Arguments {
         return commandLine.getOptionValue(vipCoreUrl.getOpt());
     }
 
-    public String getQueues() {
-        return commandLine.getOptionValue(queues.getOpt());
+    public String getSupplier() {
+        return commandLine.getOptionValue(supplier.getOpt());
     }
 
 }

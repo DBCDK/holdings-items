@@ -18,6 +18,7 @@ along with opensearch.  If not, see <http://www.gnu.org/licenses/>.
  */
 package dk.dbc.holdingsitems.purge;
 
+import dk.dbc.holdingsitems.EnqueueService;
 import dk.dbc.holdingsitems.HoldingsItemsDAO;
 import dk.dbc.holdingsitems.HoldingsItemsException;
 import dk.dbc.holdingsitems.jpa.BibliographicItemEntity;
@@ -42,7 +43,7 @@ import static java.util.stream.Collectors.toList;
 public class Purge {
 
     private static final Logger log = LoggerFactory.getLogger(Purge.class);
-    private final List<String> queues;
+    private final String supplier;
     private final String agencyName;
     private final int agencyId;
 
@@ -57,7 +58,7 @@ public class Purge {
      *
      * @param em                         Entity manager that is base of the dao
      * @param dao                        data access object for database
-     * @param queues                     Name(s) of worker to put in queue
+     * @param supplier                   Name(s) of worker that put in queue
      * @param agencyName                 The name of the agency to verify
      *                                   against
      * @param agencyId                   The agency ID to be processed
@@ -66,11 +67,11 @@ public class Purge {
      * @param dryRun                     Optionally check but does not commit
      *                                   anything
      */
-    public Purge(EntityManager em, HoldingsItemsDAO dao, List<String> queues, String agencyName, int agencyId, boolean removeFirstAcquisitionDate, boolean dryRun) {
-        log.debug("Purge for agency ID {} with Queue: '{}'", agencyId, queues);
+    public Purge(EntityManager em, HoldingsItemsDAO dao, String supplier, String agencyName, int agencyId, boolean removeFirstAcquisitionDate, boolean dryRun) {
+        log.debug("Purge for agency ID {} with Queue: '{}'", agencyId, supplier);
         this.em = em;
         this.dao = dao;
-        this.queues = queues;
+        this.supplier = supplier;
         this.agencyName = agencyName;
         this.agencyId = agencyId;
         this.dryRun = dryRun;
@@ -102,8 +103,8 @@ public class Purge {
             return;
         }
 
-        log.debug("Purging {}: '{}' with queue worker(s): '{}'", agencyId, agencyName, queues);
-        System.out.printf("Purging %s: '%s' with queue worker(s): '%s'%n", agencyId, agencyName, queues);
+        log.debug("Purging {}: '{}' with queue supplier: '{}'", agencyId, agencyName, supplier);
+        System.out.printf("Purging %s: '%s' with queue supplier: '%s'%n", agencyId, agencyName, supplier);
 
         purgeCount = purge(bibliographicIds);
 
@@ -143,21 +144,21 @@ public class Purge {
     private int purge(Set<String> bibliographicIds) throws HoldingsItemsException, SQLException {
         log.trace("Purging {} records", bibliographicIds.size());
         AtomicInteger records = new AtomicInteger(0);
-        for (String bibliographicId : bibliographicIds) {
-            log.trace("Bibliographic Id '{}'", bibliographicId);
-            BibliographicItemEntity bibItem = dao.getRecordCollection(bibliographicId, agencyId, null);
-            if (!dryRun) {
-                bibItem.stream()
-                        .flatMap(IssueEntity::stream)
-                        .collect(toList()).stream() // ConcurrentModificationException hack
-                        .forEach(ItemEntity::remove);
-                if (removeFirstAcquisitionDate) {
-                    em.remove(bibItem);
-                } else {
-                    bibItem.save(); // This removes issues too
-                }
-                for (String queue : queues) {
-                    dao.enqueue(bibliographicId, agencyId, "{}", queue);
+        try (EnqueueService enqueueService = dao.enqueueService()) {
+            for (String bibliographicId : bibliographicIds) {
+                log.trace("Bibliographic Id '{}'", bibliographicId);
+                BibliographicItemEntity bibItem = dao.getRecordCollection(bibliographicId, agencyId, null);
+                if (!dryRun) {
+                    bibItem.stream()
+                            .flatMap(IssueEntity::stream)
+                            .collect(toList()).stream() // ConcurrentModificationException hack
+                            .forEach(ItemEntity::remove);
+                    if (removeFirstAcquisitionDate) {
+                        em.remove(bibItem);
+                    } else {
+                        bibItem.save(); // This removes issues too
+                    }
+                    enqueueService.enqueue(supplier, agencyId, bibliographicId);
                 }
             }
         }
