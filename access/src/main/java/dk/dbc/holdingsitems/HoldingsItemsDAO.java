@@ -22,14 +22,9 @@ import dk.dbc.holdingsitems.jpa.BibliographicItemEntity;
 import dk.dbc.holdingsitems.jpa.IssueEntity;
 import dk.dbc.holdingsitems.jpa.ItemEntity;
 import dk.dbc.holdingsitems.jpa.Status;
-import dk.dbc.pgqueue.supplier.PreparedQueueSupplier;
-import dk.dbc.pgqueue.supplier.QueueSupplier;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.persistence.EntityManager;
 import java.sql.Connection;
-import java.sql.SQLException;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -37,7 +32,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -46,44 +40,8 @@ import java.util.stream.Collectors;
  */
 public class HoldingsItemsDAO {
 
-    private static final Logger log = LoggerFactory.getLogger(HoldingsItemsDAO.class);
-
-    private static final QueueSupplier QUEUE_SUPPLIER = new QueueSupplier(QueueJob.STORAGE_ABSTRACTION);
-
-    private static final String DATABASE_ERROR = "Database error";
-
     private final EntityManager em;
-    private final LazyObject<Connection> connection;
     private final String trackingId;
-
-    private final LazyObject<PreparedQueueSupplier> queueSupplier;
-
-    private static class LazyObject<T> {
-
-        private final Supplier<T> supplier;
-        private T value;
-
-        public LazyObject(Supplier<T> supplier) {
-            this.supplier = supplier;
-        }
-
-        public synchronized T get() {
-            if (value == null) {
-                value = supplier.get();
-                if (value == null)
-                    throw new IllegalStateException("Got null value from supplier");
-            }
-            return value;
-        }
-    }
-
-    private Connection supplyConnection() {
-        return em.unwrap(Connection.class);
-    }
-
-    private PreparedQueueSupplier supplyQueueSupplier() {
-        return QUEUE_SUPPLIER.preparedSupplier(connection.get());
-    }
 
     /**
      * Constructor
@@ -93,8 +51,6 @@ public class HoldingsItemsDAO {
      */
     HoldingsItemsDAO(EntityManager em, String trackingId) {
         this.em = em;
-        this.connection = new LazyObject<>(this::supplyConnection);
-        this.queueSupplier = new LazyObject<>(this::supplyQueueSupplier);
         this.trackingId = trackingId;
     }
 
@@ -437,43 +393,12 @@ public class HoldingsItemsDAO {
     }
 
     /**
-     * Put an element into the queue
+     * Service to enqueue from a supplier
      *
-     * @param bibliographicRecordId part of job id
-     * @param agencyId              part of job id
-     * @param stateChange           part of a job
-     * @param worker                Who's get the job
-     * @throws HoldingsItemsException in case of a database error
+     * @return enqueue class
+     * @throws HoldingsItemsException In case of a database error
      */
-    public void enqueue(String bibliographicRecordId, int agencyId, String stateChange, String worker) throws HoldingsItemsException {
-        PreparedQueueSupplier supplier = queueSupplier.get();
-        try {
-            supplier.enqueue(worker, new QueueJob(agencyId, bibliographicRecordId, stateChange, trackingId));
-        } catch (SQLException ex) {
-            log.error(DATABASE_ERROR, ex);
-            throw new HoldingsItemsException(DATABASE_ERROR, ex);
-        }
+    public EnqueueService enqueueService() throws HoldingsItemsException {
+        return new EnqueueService(em.unwrap(Connection.class), trackingId);
     }
-
-    /**
-     * Put an element into the queue
-     *
-     * @param bibliographicRecordId part of job id
-     * @param agencyId              part of job id
-     * @param stateChange           part of a job
-     * @param worker                Who's get the job
-     * @param milliSeconds          How many milliseconds from now it should be
-     *                              dequeued at the earliest
-     * @throws HoldingsItemsException in case of a database error
-     */
-    public void enqueue(String bibliographicRecordId, int agencyId, String stateChange, String worker, long milliSeconds) throws HoldingsItemsException {
-        PreparedQueueSupplier supplier = queueSupplier.get();
-        try {
-            supplier.enqueue(worker, new QueueJob(agencyId, bibliographicRecordId, stateChange, trackingId), milliSeconds);
-        } catch (SQLException ex) {
-            log.error(DATABASE_ERROR, ex);
-            throw new HoldingsItemsException(DATABASE_ERROR, ex);
-        }
-    }
-
 }

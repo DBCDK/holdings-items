@@ -18,6 +18,7 @@
  */
 package dk.dbc.holdingsitems.jpa;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.Serializable;
 import java.sql.Timestamp;
 import java.sql.Date;
@@ -62,6 +63,7 @@ import javax.persistence.Version;
                         "  AND h.bibliographicRecordId = :bibliographicRecordId")
 })
 @SuppressWarnings("PMD.UnusedPrivateField")
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public class IssueEntity implements Serializable {
 
     private static final long serialVersionUID = 1089023457634768914L;
