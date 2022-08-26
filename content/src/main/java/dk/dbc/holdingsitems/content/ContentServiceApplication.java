@@ -21,6 +21,7 @@ public class ContentServiceApplication extends Application {
         return Stream.of(// api/v1
                 ContentResource.class,
                 Status.class,
+                Supersedes.class,
                 // common
                 JacksonFeature.class,
                 JacksonObjectMapperProvider.class)
