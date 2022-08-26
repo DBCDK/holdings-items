@@ -33,5 +33,5 @@ public class EntityManagerInject {
 
     @Produces
     @PersistenceContext(unitName = "holdingsItems_PU")
-    private EntityManager em;
+    EntityManager em;
 }

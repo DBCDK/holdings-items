@@ -1,6 +1,5 @@
 package dk.dbc.holdingsitems.content;
 
-import ch.qos.logback.classic.Level;
 import dk.dbc.commons.mdc.GenerateTrackingId;
 import dk.dbc.commons.mdc.LogAs;
 import dk.dbc.holdingsitems.EnqueueService;
@@ -27,8 +26,6 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -37,8 +34,6 @@ import org.slf4j.LoggerFactory;
 @Stateless
 @Path("v1/supersedes")
 public class Supersedes {
-
-    private static final Logger log = LoggerFactory.getLogger(Supersedes.class);
 
     @Inject
     EntityManager em;
