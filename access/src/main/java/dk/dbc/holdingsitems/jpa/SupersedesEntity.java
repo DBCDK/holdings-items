@@ -28,11 +28,11 @@ public class SupersedesEntity implements Serializable {
     public static final String BY_OWNER = "SupersedesEntity.byOwner";
 
     @Id
-    @Column(name = "overtaken", updatable = false)
-    private String overtaken;
+    @Column(name = "superseded", updatable = false)
+    private String superseded;
 
-    @Column(name = "owner", updatable = true)
-    private String owner;
+    @Column(name = "superseding", updatable = true)
+    private String superseding;
 
     public static List<SupersedesEntity> byOwner(EntityManager em, String owner) {
         return em.createNamedQuery(BY_OWNER, SupersedesEntity.class)
@@ -44,30 +44,30 @@ public class SupersedesEntity implements Serializable {
     public SupersedesEntity() {
     }
 
-    public SupersedesEntity(String overtaken, String owner) {
-        this.overtaken = overtaken;
-        this.owner = owner;
+    public SupersedesEntity(String superseded, String superseding) {
+        this.superseded = superseded;
+        this.superseding = superseding;
     }
 
-    public String getOvertaken() {
-        return overtaken;
+    public String getSuperseded() {
+        return superseded;
     }
 
-    public void setOvertaken(String overtaken) {
-        this.overtaken = overtaken;
+    public void setSuperseded(String superseded) {
+        this.superseded = superseded;
     }
 
-    public String getOwner() {
-        return owner;
+    public String getSuperseding() {
+        return superseding;
     }
 
-    public void setOwner(String owner) {
-        this.owner = owner;
+    public void setSuperseding(String superseding) {
+        this.superseding = superseding;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(overtaken, owner);
+        return Objects.hash(superseded, superseding);
     }
 
     @Override
@@ -77,12 +77,12 @@ public class SupersedesEntity implements Serializable {
         if (obj == null || getClass() != obj.getClass())
             return false;
         final SupersedesEntity other = (SupersedesEntity) obj;
-        return Objects.equals(this.overtaken, other.overtaken) &&
-               Objects.equals(this.owner, other.owner);
+        return Objects.equals(this.superseded, other.superseded) &&
+               Objects.equals(this.superseding, other.superseding);
     }
 
     @Override
     public String toString() {
-        return "SupersedesEntity{" + "overtaken=" + overtaken + ", owner=" + owner + '}';
+        return "SupersedesEntity{" + "superseded=" + superseded + ", superseding=" + superseding + '}';
     }
 }

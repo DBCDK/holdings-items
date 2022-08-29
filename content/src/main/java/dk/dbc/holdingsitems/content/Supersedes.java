@@ -52,7 +52,7 @@ public class Supersedes {
             return StatusResponse.notFound(trackingId, "No such record");
         }
         SupersedesRequest response = new SupersedesRequest();
-        response.supersedes = owned.stream().map(SupersedesEntity::getOvertaken).collect(Collectors.toList());
+        response.supersedes = owned.stream().map(SupersedesEntity::getSuperseded).collect(Collectors.toList());
         return Response.ok(response).build();
     }
 
@@ -66,7 +66,7 @@ public class Supersedes {
         try {
             HashSet<String> fausts = new HashSet<>();
             fausts.add(faust);
-            owned.forEach(e -> fausts.add(e.getOvertaken()));
+            owned.forEach(e -> fausts.add(e.getSuperseded()));
             enqueue(fausts, trackingId);
         } catch (HoldingsItemsException ex) {
             return StatusResponse.error(trackingId, Response.Status.INTERNAL_SERVER_ERROR, "Error queuing: " + ex.getMessage());
@@ -90,7 +90,7 @@ public class Supersedes {
             request.supersedes.forEach(overtaken -> {
                 SupersedesEntity entity = em.find(SupersedesEntity.class, overtaken);
                 if (entity != null) {
-                    entity.setOwner(faust);
+                    entity.setSuperseding(faust);
                     em.merge(entity);
                 } else {
                     entity = new SupersedesEntity(overtaken, faust);
