@@ -77,8 +77,11 @@ public class JpaBase {
             stmt.execute("TRUNCATE item CASCADE");
             stmt.execute("TRUNCATE issue CASCADE");
             stmt.execute("TRUNCATE bibliographicItem CASCADE");
+            stmt.execute("TRUNCATE supersedes CASCADE");
             stmt.execute("TRUNCATE queue CASCADE");
             stmt.execute("TRUNCATE queue_error CASCADE");
+            stmt.execute("TRUNCATE queue_rules CASCADE");
+            stmt.execute("INSERT INTO queue_rules(supplier, consumer) VALUES('SUPERSEDE', 'cons')");
         }
         env().getEntityManagerFactory().getCache().evictAll();
     }

@@ -21,6 +21,7 @@ import org.eclipse.microprofile.metrics.annotation.Timed;
 @Stateless
 @Path("status")
 public class Status {
+
     private static final Logger log = LoggerFactory.getLogger(Status.class);
 
     @Resource(lookup = "jdbc/holdings-items")
@@ -31,8 +32,8 @@ public class Status {
     @Timed
     public Response getStatus() {
         log.info("Status endpoint called.");
-        try (Connection connection = dataSource.getConnection();
-             Statement stmt = connection.createStatement();
+        try (Connection connection = dataSource.getConnection() ;
+             Statement stmt = connection.createStatement() ;
              ResultSet resultSet = stmt.executeQuery("SELECT 1")) {
             if (!resultSet.next())
                 throw new SQLException("No rows returned in `SELECT 1'");
@@ -45,6 +46,7 @@ public class Status {
 
     @SuppressFBWarnings("URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD")
     public static class ResponseWrapper {
+
         public boolean ok;
         public String text;
 
