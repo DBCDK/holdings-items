@@ -47,7 +47,7 @@ public class Supersedes {
     @Produces(MediaType.APPLICATION_JSON)
     public Response get(@PathParam("faust") @LogAs("faust") String faust,
                         @QueryParam("trackingId") @LogAs("TrackingId") @GenerateTrackingId String trackingId) {
-        List<SupersedesEntity> owned = SupersedesEntity.byOwner(em, faust);
+        List<SupersedesEntity> owned = SupersedesEntity.bySuperseding(em, faust);
         if (owned.isEmpty()) {
             return StatusResponse.notFound(trackingId, "No such record");
         }
@@ -61,7 +61,7 @@ public class Supersedes {
     @Produces(MediaType.APPLICATION_JSON)
     public Response delete(@PathParam("faust") @LogAs("faust") String faust,
                            @QueryParam("trackingId") @LogAs("TrackingId") @GenerateTrackingId String trackingId) {
-        List<SupersedesEntity> owned = SupersedesEntity.byOwner(em, faust);
+        List<SupersedesEntity> owned = SupersedesEntity.bySuperseding(em, faust);
         owned.forEach(em::remove);
         try {
             HashSet<String> fausts = new HashSet<>();

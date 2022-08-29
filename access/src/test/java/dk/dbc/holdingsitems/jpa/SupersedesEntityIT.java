@@ -19,7 +19,7 @@ public class SupersedesEntityIT extends JpaBase {
         });
 
         jpa(em -> {
-            List<SupersedesEntity> entities = SupersedesEntity.byOwner(em, "new");
+            List<SupersedesEntity> entities = SupersedesEntity.bySuperseding(em, "new");
             assertThat(entities.size(), is(1));
             SupersedesEntity entity = entities.get(0);
             assertThat(entity.getSuperseded(), is("old"));

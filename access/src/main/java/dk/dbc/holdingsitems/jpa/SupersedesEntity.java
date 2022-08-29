@@ -19,13 +19,13 @@ import javax.persistence.Table;
 @Entity
 @Table(name = "supersedes")
 @NamedQueries({
-    @NamedQuery(name = SupersedesEntity.BY_OWNER, query = "SELECT s FROM SupersedesEntity s WHERE s.owner = :owner")
+    @NamedQuery(name = SupersedesEntity.BY_SUPERSEDING, query = "SELECT s FROM SupersedesEntity s WHERE s.superseding = :superseding")
 })
 public class SupersedesEntity implements Serializable {
 
     private static final long serialVersionUID = 0x2B5BB72BD9F1ED0EL;
 
-    public static final String BY_OWNER = "SupersedesEntity.byOwner";
+    public static final String BY_SUPERSEDING = "SupersedesEntity.bySuperseding";
 
     @Id
     @Column(name = "superseded", updatable = false)
@@ -34,9 +34,9 @@ public class SupersedesEntity implements Serializable {
     @Column(name = "superseding", updatable = true)
     private String superseding;
 
-    public static List<SupersedesEntity> byOwner(EntityManager em, String owner) {
-        return em.createNamedQuery(BY_OWNER, SupersedesEntity.class)
-                .setParameter("owner", owner)
+    public static List<SupersedesEntity> bySuperseding(EntityManager em, String superseding) {
+        return em.createNamedQuery(BY_SUPERSEDING, SupersedesEntity.class)
+                .setParameter("superseding", superseding)
                 .setLockMode(LockModeType.PESSIMISTIC_WRITE)
                 .getResultList();
     }
