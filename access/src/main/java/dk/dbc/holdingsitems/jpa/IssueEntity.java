@@ -75,41 +75,41 @@ public class IssueEntity implements Serializable {
     // Needed for EntityManager.createQuery to access these fields
     // Primary Key
     @Column(updatable = false, nullable = false)
-    private int agencyId;
+    protected int agencyId;
 
     @Column(updatable = false, nullable = false)
-    private String bibliographicRecordId;
+    protected String bibliographicRecordId;
 
     @Column(updatable = false, nullable = false)
-    private String issueId;
+    protected String issueId;
 
     // Data fields
     @Column(nullable = false)
-    private String issueText;
+    protected String issueText;
 
     @Column
-    private Date expectedDelivery;
+    protected Date expectedDelivery;
 
     @Column(nullable = false)
-    private int readyForLoan;
+    protected int readyForLoan;
 
     @Column(nullable = false)
-    private Timestamp complete;
+    protected Timestamp complete;
 
     @Column(nullable = false)
-    private Timestamp modified;
+    protected Timestamp modified;
 
     @Column(nullable = false)
-    private Timestamp created;
+    protected Timestamp created;
 
     @Column(nullable = false)
-    private Timestamp updated;
+    protected Timestamp updated;
 
     @Column(nullable = false)
-    private String trackingId;
+    protected String trackingId;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "owner", orphanRemoval = true, cascade = {CascadeType.MERGE, CascadeType.PERSIST})
-    private Set<ItemEntity> items;
+    protected Set<ItemEntity> items;
 
     @MapsId("collection") // Refers to pk(IssueKey).collection
     // Columns needs to be insertable=false, updatable=false to not collide with mirrored fields
@@ -127,7 +127,7 @@ public class IssueEntity implements Serializable {
     }
 
     @Version
-    int version;
+    private int version;
 
     @Transient
     transient boolean persist;
@@ -363,7 +363,6 @@ public class IssueEntity implements Serializable {
 
     @Override
     public String toString() {
-        return "IssueEntity{" + "agencyId=" + agencyId + ", bibliographicRecordId=" + bibliographicRecordId + ", issueId=" + issueId + ", issueText=" + issueText + ", expectedDelivery=" + expectedDelivery + ", readyForLoan=" + readyForLoan + ", complete=" + complete + ", modified=" + modified + ", created=" + created + ", updated=" + updated + ", trackingId=" + trackingId + ", items=" + items + '}';
+        return getClass().getSimpleName() + "{" + "agencyId=" + agencyId + ", bibliographicRecordId=" + bibliographicRecordId + ", issueId=" + issueId + ", issueText=" + issueText + ", expectedDelivery=" + expectedDelivery + ", readyForLoan=" + readyForLoan + ", complete=" + complete + ", modified=" + modified + ", created=" + created + ", updated=" + updated + ", trackingId=" + trackingId + ", items=" + items + '}';
     }
-
 }
