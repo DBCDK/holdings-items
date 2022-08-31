@@ -19,7 +19,6 @@
 package dk.dbc.holdingsitems.content.response;
 
 import dk.dbc.holdingsitems.jpa.IssueDetached;
-import dk.dbc.holdingsitems.jpa.IssueEntity;
 import dk.dbc.holdingsitems.jpa.ItemEntity;
 import dk.dbc.holdingsitems.jpa.VersionSort;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
@@ -29,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static java.util.stream.Collectors.toList;
 
 /**
  *
@@ -55,7 +53,7 @@ public class CompleteIssue {
         this.items = issue.stream()
                 .sorted(Comparator.comparing(ItemEntity::getItemId, new VersionSort()))
                 .map(CompleteItem::new)
-                .collect(toList());
+                .collect(Collectors.toList());
     }
 
     public void merge(CompleteIssue other) {

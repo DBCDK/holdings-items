@@ -198,6 +198,7 @@ public class ContentResource {
 
     @GET
     @Path("complete/{agencyId:\\d+}/{bibliographicRecordId}")
+    @Produces({MediaType.APPLICATION_JSON})
     @Timed
     public Response getComplete(@PathParam("agencyId") int agencyId,
                                 @PathParam("bibliographicRecordId") String bibliographicRecordId,
