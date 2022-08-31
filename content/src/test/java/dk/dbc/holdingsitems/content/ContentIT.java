@@ -1,6 +1,7 @@
 package dk.dbc.holdingsitems.content;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import dk.dbc.holdingsitems.content.response.AgenciesWithHoldingsResponse;
 import dk.dbc.holdingsitems.content.response.CompleteBibliographic;
 import dk.dbc.holdingsitems.content.response.ContentServiceBranchResponse;
 import dk.dbc.holdingsitems.content.response.ContentServiceItemResponse;
@@ -422,6 +423,53 @@ public class ContentIT extends JpaBase {
         assertEquals(entity.issues.get(0).items.size(), 2);
         assertEquals(entity.issues.get(0).items.get(0).itemId, "1234");
         assertEquals(entity.issues.get(0).items.get(1).itemId, "2345");
+    }
+
+    @Test(timeout = 2_000L)
+    public void testAgenciesWithHoldings() throws Exception {
+        System.out.println("testAgenciesWithHoldings");
+
+        int agencyId1 = 100000;
+        int agencyId2 = 200000;
+        String bibId = "10000000";
+
+        jpa(em -> {
+            System.out.println(" `- load record 1");
+            BibliographicItemEntity bibliographicItemEntity = BibliographicItemEntity.from(em, agencyId1, bibId, Instant.now(), LocalDate.now());
+            bibliographicItemEntity.setTrackingId("track");
+            bibliographicItemEntity.setFirstAccessionDate(LocalDate.of(2001, 2, 24));
+            bibliographicItemEntity.setNote("NOTE TEXT");
+            IssueEntity issueEntity = bibliographicItemEntity.issue("issue1", Instant.now());
+            issueEntity.setTrackingId("track");
+            issueEntity.setIssueText("#1");
+            issueEntity.setReadyForLoan(1);
+            itemEntity(issueEntity, "1", Status.ON_SHELF);
+            bibliographicItemEntity.save();
+        });
+        jpa(em -> {
+            System.out.println(" `- load record 2");
+            BibliographicItemEntity bibliographicItemEntity = BibliographicItemEntity.from(em, agencyId2, bibId, Instant.now(), LocalDate.now());
+            bibliographicItemEntity.setTrackingId("track");
+            bibliographicItemEntity.setFirstAccessionDate(LocalDate.of(2012, 11, 7));
+            bibliographicItemEntity.setNote("NOTE TEXT");
+            IssueEntity issueEntity = bibliographicItemEntity.issue("none", Instant.now());
+            issueEntity.setTrackingId("track");
+            issueEntity.setIssueText("#1");
+            issueEntity.setReadyForLoan(1);
+            itemEntity(issueEntity, "2", Status.ON_SHELF);
+            bibliographicItemEntity.save();
+        });
+
+        jpa(em -> {
+            System.out.println(" `- test record 1 - 404");
+            ContentResource bean = new ContentResource();
+            bean.em = em;
+            Response resp = bean.agenciesWithHoldings(bibId, "x");
+            assertThat(resp.getStatus(), is(200));
+            AgenciesWithHoldingsResponse entity = (AgenciesWithHoldingsResponse) resp.getEntity();
+            System.out.println(O.writeValueAsString(entity));
+            assertThat(entity, field("agencies", containsInAnyOrder(agencyId1, agencyId2)));
+        });
     }
 
     @Test(timeout = 2_000L)

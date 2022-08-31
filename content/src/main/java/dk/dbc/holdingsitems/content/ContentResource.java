@@ -7,6 +7,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import dk.dbc.commons.mdc.GenerateTrackingId;
 import dk.dbc.commons.mdc.LogAs;
 import dk.dbc.holdingsitems.HoldingsItemsDAO;
+import dk.dbc.holdingsitems.HoldingsItemsException;
+import dk.dbc.holdingsitems.content.response.AgenciesWithHoldingsResponse;
 import dk.dbc.holdingsitems.content.response.CompleteBibliographic;
 import dk.dbc.holdingsitems.content.response.CompleteItemFull;
 import dk.dbc.holdingsitems.content.response.ContentServiceBranchResponse;
@@ -61,6 +63,28 @@ public class ContentResource {
     private static final ObjectMapper O = new ObjectMapper()
             .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
             .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+
+    @GET
+    @Path("agencies-with-holdings/{bibliographicRecordId}")
+    @Produces({MediaType.APPLICATION_JSON})
+    @Timed
+    public Response agenciesWithHoldings(@PathParam("bibliographicRecordId") String bibliographicRecordId,
+                                         @QueryParam("trackingId") @LogAs("trackingId") @GenerateTrackingId String trackingId) {
+        try (LogWith l = LogWith.track(trackingId)) {
+            l.bibliographicRecordId(bibliographicRecordId);
+
+            HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, trackingId);
+            try {
+                Set<Integer> agencies = dao.getAgenciesThatHasHoldingsFor(bibliographicRecordId);
+                AgenciesWithHoldingsResponse resp = new AgenciesWithHoldingsResponse(agencies, trackingId);
+                return Response.ok(resp).build();
+            } catch (HoldingsItemsException e) {
+                log.error("Exception requesting for bibliographicRecordId: {}: {}", bibliographicRecordId, e.getMessage());
+                log.debug("Exception requesting for bibliographicRecordId: {}: ", bibliographicRecordId, e);
+                return Response.serverError().build();
+            }
+        }
+    }
 
     @GET
     @Path("holdings-by-item-id")

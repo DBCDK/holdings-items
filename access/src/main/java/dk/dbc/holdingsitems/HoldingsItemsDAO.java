@@ -247,14 +247,14 @@ public class HoldingsItemsDAO {
      * @throws HoldingsItemsException When database communication fails
      */
     public Set<Integer> getAgenciesThatHasHoldingsFor(String bibliographicRecordId) throws HoldingsItemsException {
-        List<Integer> list = em.createQuery(
+        return em.createQuery(
                 "SELECT h.agencyId FROM ItemEntity h" +
                 " WHERE h.bibliographicRecordId = :bibId" +
                 " GROUP BY h.agencyId",
                 Integer.class)
                 .setParameter("bibId", bibliographicRecordId)
-                .getResultList();
-        return new HashSet<>(list);
+                .getResultStream()
+                .collect(Collectors.toSet());
     }
 
     /**
