@@ -22,17 +22,21 @@ import dk.dbc.holdingsitems.jpa.BibliographicItemEntity;
 import dk.dbc.holdingsitems.jpa.IssueEntity;
 import dk.dbc.holdingsitems.jpa.ItemEntity;
 import dk.dbc.holdingsitems.jpa.Status;
+import dk.dbc.holdingsitems.jpa.VersionSort;
 
 import javax.persistence.EntityManager;
 import java.sql.Connection;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  *
@@ -141,22 +145,18 @@ public class HoldingsItemsDAO {
     /**
      * Find all issueids for a given bibliographic record
      *
-     * @param bibliographicId the bibliographic record
-     * @param agencyId        the agency in question
+     * @param bibliographicRecordId the bibliographic record
+     * @param agencyId              the agency in question
      * @return a collection of all the issueids for the record
      * @throws HoldingsItemsException When database communication fails
      */
-    public Set<String> getIssueIds(String bibliographicId, int agencyId) throws HoldingsItemsException {
-        List<String> list = em.createQuery(
-                "SELECT h.issueId" +
-                " FROM IssueEntity h" +
-                " WHERE h.agencyId = :agencyId" +
-                "  AND h.bibliographicRecordId = :bibliographicRecordId",
-                String.class)
-                .setParameter("agencyId", agencyId)
-                .setParameter("bibliographicRecordId", bibliographicId)
-                .getResultList();
-        return new HashSet<>(list);
+    public Set<String> getIssueIds(String bibliographicRecordId, int agencyId) throws HoldingsItemsException {
+        BibliographicItemEntity entity = BibliographicItemEntity.fromUnLocked(em, agencyId, bibliographicRecordId);
+        if (entity == null) {
+            return Collections.emptySet();
+        } else {
+            return entity.stream().map(IssueEntity::getIssueId).collect(Collectors.toSet());
+        }
     }
 
     /**
@@ -191,61 +191,9 @@ public class HoldingsItemsDAO {
      * @return a collection of ItemEntity objects that match the parameters.
      */
     public Set<ItemEntity> getItemsFromBranchIdAndBibliographicRecordId(int agencyId, String branchId, String bibliographicRecordId) {
-        List<ItemEntity> itemList =
-                em.createQuery("SELECT h" +
-                               " FROM ItemEntity h" +
-                               " WHERE h.agencyId = :agencyId" +
-                               "  AND h.branchId = :branchId" +
-                               "  AND h.bibliographicRecordId = :bibliographicRecordId",
-                               ItemEntity.class)
-                        .setParameter("agencyId", agencyId)
-                        .setParameter("branchId", branchId)
-                        .setParameter("bibliographicRecordId", bibliographicRecordId)
-                        .getResultList();
-        return new HashSet<>(itemList);
-    }
-
-    /**
-     * Find all issue entities that match the given agencyId and item id.
-     *
-     * @param agencyId              id of agency in question
-     * @param bibliographicRecordId
-     * @return the issue entities that match the provided arguments.
-     */
-    private Set<IssueEntity> getIssuesFromAgencyAndBibliographicRecordId(int agencyId, String bibliographicRecordId) {
-        List<IssueEntity> issueList =
-                em.createQuery("SELECT h" +
-                               " FROM IssueEntity h" +
-                               " WHERE h.agencyId = :agencyId" +
-                               "  AND h.bibliographicRecordId = :bibliographicRecordId",
-                               IssueEntity.class)
-                        .setParameter("agencyId", agencyId)
-                        .setParameter("bibliographicRecordId", bibliographicRecordId)
-                        .getResultList();
-        return new HashSet<>(issueList);
-    }
-
-    /**
-     * Get all holding items that match a given combination of agencyId,
-     * bibliographicRecordId, and issueId
-     *
-     * @param agencyId              id of a library (int)
-     * @param bibliographicRecordId bibliographic record id (string)
-     * @param issueId               issue id (string)
-     * @return the set of holding item entities that match the arguments.
-     */
-    private Set<ItemEntity> getItemsFromAgencyAndBibiliographicRecordIdAndIssueId(int agencyId, String bibliographicRecordId, String issueId) {
-        List<ItemEntity> itemList =
-                em.createQuery("SELECT h FROM ItemEntity h" +
-                               " WHERE h.agencyId = :agencyId" +
-                               "  AND h.bibliographicRecordId = :bibliographicRecordId" +
-                               "  AND h.issueId = :issueId",
-                               ItemEntity.class)
-                        .setParameter("agencyId", agencyId)
-                        .setParameter("bibliographicRecordId", bibliographicRecordId)
-                        .setParameter("issueId", issueId)
-                        .getResultList();
-        return new HashSet<>(itemList);
+        return streamItemsFromAgencyAndBibliographicRecordId(agencyId, bibliographicRecordId)
+                .filter(item -> branchId.equals(item.getBranchId()))
+                .collect(Collectors.toSet());
     }
 
     /**
@@ -257,10 +205,8 @@ public class HoldingsItemsDAO {
      * @return the set of holdings items that match the arguments.
      */
     public Set<ItemEntity> getItemsFromAgencyAndBibliographicRecordId(int agencyId, String bibliographicRecordId) {
-        Set<ItemEntity> res = new HashSet<>();
-        Set<IssueEntity> issues = getIssuesFromAgencyAndBibliographicRecordId(agencyId, bibliographicRecordId);
-        issues.forEach(i -> res.addAll(getItemsFromAgencyAndBibiliographicRecordIdAndIssueId(agencyId, bibliographicRecordId, i.getIssueId())));
-        return res;
+        return streamItemsFromAgencyAndBibliographicRecordId(agencyId, bibliographicRecordId)
+                .collect(Collectors.toSet());
     }
 
     /**
@@ -337,42 +283,12 @@ public class HoldingsItemsDAO {
      * @throws HoldingsItemsException in case of a database error
      */
     public Map<Status, Long> getStatusFor(String bibliographicRecordId, int agencyId) throws HoldingsItemsException {
-        return (Map<Status, Long>) em.createQuery(
-                "SELECT new " + StatusDTO.class.getCanonicalName() + "(h.status, COUNT(h.status))" +
-                " FROM ItemEntity h" +
-                " WHERE h.agencyId = :agencyId" +
-                "  AND h.bibliographicRecordId = :bibliographicRecordId" +
-                " GROUP BY h.status",
-                StatusDTO.class)
-                .setParameter("agencyId", agencyId)
-                .setParameter("bibliographicRecordId", bibliographicRecordId)
-                .getResultStream()
-                .collect(Collectors.toMap(StatusDTO::getStatus,
-                                          StatusDTO::getCount));
-    }
-
-    private static class StatusDTO {
-
-        private final Status status;
-        private final long count;
-
-        public StatusDTO(Status status, long count) {
-            this.status = status;
-            this.count = count;
-        }
-
-        public Status getStatus() {
-            return status;
-        }
-
-        public long getCount() {
-            return count;
-        }
-
+        return streamItemsFromAgencyAndBibliographicRecordId(agencyId, bibliographicRecordId)
+                .collect(Collectors.groupingBy(ItemEntity::getStatus, Collectors.counting()));
     }
 
     /**
-     * Has a holding that is not decommissioned
+     * Has a holding that is not decommissioned (ignore supersedes)
      *
      * @param bibliographicRecordId key
      * @param agencyId              key
@@ -380,16 +296,25 @@ public class HoldingsItemsDAO {
      * @throws HoldingsItemsException in case of a database error
      */
     public boolean hasLiveHoldings(String bibliographicRecordId, int agencyId) throws HoldingsItemsException {
-        return !em.createQuery(
-                "SELECT h.status" +
-                " FROM ItemEntity h" +
-                " WHERE h.agencyId = :agencyId" +
-                "  AND h.bibliographicRecordId = :bibliographicRecordId")
-                .setParameter("agencyId", agencyId)
-                .setParameter("bibliographicRecordId", bibliographicRecordId)
-                .setMaxResults(1)
-                .getResultList()
-                .isEmpty();
+        return streamItemsFromBibliographicEntity(BibliographicItemEntity.fromUnLocked(em, agencyId, bibliographicRecordId))
+                .findAny()
+                .isPresent();
+    }
+
+    private Stream<ItemEntity> streamItemsFromAgencyAndBibliographicRecordId(int agencyId, String bibliographicRecordId) {
+        return streamItemsFromBibliographicEntity(BibliographicItemEntity.detachedWithSuperseded(em, agencyId, bibliographicRecordId));
+    }
+
+    private Stream<ItemEntity> streamItemsFromBibliographicEntity(BibliographicItemEntity entity) {
+        if (entity == null) {
+            return Stream.empty();
+        } else {
+            VersionSort versionSort = new VersionSort();
+            return entity.stream()
+                    .sorted(Comparator.comparing(IssueEntity::getIssueId, versionSort))
+                    .flatMap(IssueEntity::stream)
+                    .sorted(Comparator.comparing(ItemEntity::getItemId, versionSort));
+        }
     }
 
     /**
