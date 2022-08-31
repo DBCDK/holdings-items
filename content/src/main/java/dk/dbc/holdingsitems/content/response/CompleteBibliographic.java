@@ -18,8 +18,11 @@
  */
 package dk.dbc.holdingsitems.content.response;
 
-import dk.dbc.holdingsitems.jpa.BibliographicItemEntity;
+import dk.dbc.holdingsitems.jpa.BibliographicItemDetached;
+import dk.dbc.holdingsitems.jpa.IssueDetached;
+import dk.dbc.holdingsitems.jpa.VersionSort;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import java.util.Comparator;
 import java.util.List;
 
 import static java.util.stream.Collectors.toList;
@@ -41,13 +44,13 @@ public class CompleteBibliographic {
     public CompleteBibliographic() {
     }
 
-    public CompleteBibliographic(BibliographicItemEntity rec, String trackingId) {
+    public CompleteBibliographic(BibliographicItemDetached rec, String trackingId) {
         this.agencyId = rec.getAgencyId();
         this.bibliographicRecordId = rec.getBibliographicRecordId();
         this.note = rec.getNote();
         this.firstAccessionDate = rec.getFirstAccessionDate().toString();
-        this.issues = rec.stream()
-                .sorted((l,r) -> l.getIssueId().compareTo(r.getIssueId()))
+        this.issues = rec.getIssues().stream()
+                .sorted(Comparator.comparing(IssueDetached::getIssueId, new VersionSort()))
                 .map(CompleteIssue::new)
                 .collect(toList());
         this.trackingId = trackingId;
@@ -57,5 +60,4 @@ public class CompleteBibliographic {
     public String toString() {
         return "CompleteBibliographic{" + "agencyId=" + agencyId + ", bibliographicRecordId=" + bibliographicRecordId + ", note=" + note + ", firstAccessionDate=" + firstAccessionDate + ", issues=" + issues + '}';
     }
-
 }
