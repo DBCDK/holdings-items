@@ -118,6 +118,19 @@ public class BibliographicItemEntity implements Serializable {
         return entity;
     }
 
+    public static BibliographicItemDetached detachedWithSuperseded(EntityManager em, int agencyId, String bibliographicRecordId) {
+        SupersedesEntity superseded = em.find(SupersedesEntity.class, bibliographicRecordId);
+        if (superseded != null) {
+            return null;
+        }
+        BibliographicItemEntity entity = fromUnLocked(em, agencyId, bibliographicRecordId);
+        if (entity != null) {
+            return BibliographicItemDetached.detached(em, entity);
+        } else {
+            return BibliographicItemDetached.detached(em, agencyId, bibliographicRecordId);
+        }
+    }
+
     private static BibliographicItemEntity from(EntityManager em, BibliographicItemKey key, Instant modified, LocalDate firstAccessionDate, LockModeType lock) {
         BibliographicItemEntity entity = em.find(BibliographicItemEntity.class, key, lock);
         if (entity == null) {

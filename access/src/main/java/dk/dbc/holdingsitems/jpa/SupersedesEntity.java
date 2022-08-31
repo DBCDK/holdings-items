@@ -3,6 +3,7 @@ package dk.dbc.holdingsitems.jpa;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Stream;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EntityManager;
@@ -39,6 +40,13 @@ public class SupersedesEntity implements Serializable {
                 .setParameter("superseding", superseding)
                 .setLockMode(LockModeType.PESSIMISTIC_WRITE)
                 .getResultList();
+    }
+
+    public static Stream<SupersedesEntity> bySupersedingNoLock(EntityManager em, String superseding) {
+        return em.createNamedQuery(BY_SUPERSEDING, SupersedesEntity.class)
+                .setParameter("superseding", superseding)
+                .setLockMode(LockModeType.NONE)
+                .getResultStream();
     }
 
     public SupersedesEntity() {
