@@ -31,7 +31,6 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 public class CompleteItemFull extends CompleteItem {
 
     public Integer agencyId;
-    public String bibliographicRecordId;
     public String note;
     public String issueId;
     public String issueText;
@@ -45,17 +44,14 @@ public class CompleteItemFull extends CompleteItem {
         IssueEntity issue = item.getOwner();
         BibliographicItemEntity bibl = issue.getOwner();
         this.agencyId = bibl.getAgencyId();
-        this.bibliographicRecordId = bibl.getBibliographicRecordId();
         this.note = bibl.getNote();
         this.issueId = issue.getIssueId();
         this.issueText = issue.getIssueText();
         this.readyForLoan = issue.getReadyForLoan();
-
     }
 
     @Override
     public String toString() {
         return "CompleteItemFull{" + "agencyId=" + agencyId + ", bibliographicRecordId=" + bibliographicRecordId + ", note=" + note + ", issueId=" + issueId + ", issueText=" + issueText + ", readyForLoan=" + readyForLoan + "itemId=" + itemId + ", branchId=" + branchId + ", branch=" + branch + ", department=" + department + ", location=" + location + ", subLocation=" + subLocation + ", circulationRule=" + circulationRule + ", loanRestriction=" + loanRestriction + ", accessionDate=" + accessionDate + ", status=" + status + '}';
     }
-
 }

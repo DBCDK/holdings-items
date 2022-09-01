@@ -38,6 +38,7 @@ public class CompleteItem {
     public String loanRestriction;
     public String accessionDate;
     public String status;
+    public String bibliographicRecordId;
 
     public CompleteItem() {
     }
@@ -54,11 +55,12 @@ public class CompleteItem {
         this.loanRestriction = item.getLoanRestriction().toString();
         this.accessionDate = item.getAccessionDate().toString();
         this.status = item.getStatus().toString();
+        this.bibliographicRecordId = item.getBibliographicRecordId();
     }
 
     @Override
     public String toString() {
-        return "CompleteItem{" + "itemId=" + itemId + ", branchId=" + branchId + ", branch=" + branch + ", department=" + department + ", location=" + location + ", subLocation=" + subLocation + ", circulationRule=" + circulationRule + ", loanRestriction=" + loanRestriction + ", accessionDate=" + accessionDate + ", status=" + status + '}';
+        return "CompleteItem{" + "itemId=" + itemId + ", branchId=" + branchId + ", branch=" + branch + ", department=" + department + ", location=" + location + ", subLocation=" + subLocation + ", circulationRule=" + circulationRule + ", loanRestriction=" + loanRestriction + ", accessionDate=" + accessionDate + ", status=" + status + ", bibliographicRecordId=" + bibliographicRecordId + '}';
     }
 
 }

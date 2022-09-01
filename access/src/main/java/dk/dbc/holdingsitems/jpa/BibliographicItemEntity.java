@@ -65,37 +65,37 @@ public class BibliographicItemEntity implements Serializable {
     // Needed for EntityManager.createQuery to access these fields
     // Primary Key
     @Column(updatable = false, nullable = false)
-    private int agencyId;
+    protected int agencyId;
 
     @Column(updatable = false, nullable = false)
-    private String bibliographicRecordId;
+    protected String bibliographicRecordId;
 
     @Column(nullable = false)
-    private String note;
+    protected String note;
 
     @Column(nullable = false)
-    private Date firstAccessionDate;
+    protected Date firstAccessionDate;
 
     @Column(nullable = false)
-    private Timestamp modified;
+    protected Timestamp modified;
 
     @Column(nullable = false)
-    private String trackingId;
+    protected String trackingId;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "owner", orphanRemoval = true, cascade = {CascadeType.MERGE, CascadeType.PERSIST})
-    private Set<IssueEntity> issues;
+    protected Set<IssueEntity> issues;
 
     @Transient
-    transient boolean persist;
+    private transient boolean persist;
 
     @Version
-    int version;
+    private int version;
 
     @Transient
-    transient EntityManager em;
+    private transient EntityManager em;
 
     @Transient
-    transient boolean pessimisticForceIncrement; // If entities fetched by this entity should be pessimistic_force_increment locked
+    private transient boolean pessimisticForceIncrement; // If entities fetched by this entity should be pessimistic_force_increment locked
 
     public static BibliographicItemEntity from(EntityManager em, int agencyId, String bibliographicRecordId, Instant modified, LocalDate firstAccessionDate) {
         return from(em, new BibliographicItemKey(agencyId, bibliographicRecordId), modified, firstAccessionDate, LockModeType.PESSIMISTIC_FORCE_INCREMENT);
@@ -116,6 +116,19 @@ public class BibliographicItemEntity implements Serializable {
             entity.pessimisticForceIncrement = false;
         }
         return entity;
+    }
+
+    public static BibliographicItemDetached detachedWithSuperseded(EntityManager em, int agencyId, String bibliographicRecordId) {
+        SupersedesEntity superseded = em.find(SupersedesEntity.class, bibliographicRecordId);
+        if (superseded != null) {
+            return null;
+        }
+        BibliographicItemEntity entity = fromUnLocked(em, agencyId, bibliographicRecordId);
+        if (entity != null) {
+            return BibliographicItemDetached.detached(em, entity);
+        } else {
+            return BibliographicItemDetached.detached(em, agencyId, bibliographicRecordId);
+        }
     }
 
     private static BibliographicItemEntity from(EntityManager em, BibliographicItemKey key, Instant modified, LocalDate firstAccessionDate, LockModeType lock) {
@@ -213,6 +226,16 @@ public class BibliographicItemEntity implements Serializable {
         issues.remove(issue);
     }
 
+    public boolean isEmpty() {
+        if (!issues.isEmpty()) {
+            for (IssueEntity issue : issues) {
+                if (!issue.isEmpty())
+                    return false;
+            }
+        }
+        return true;
+    }
+
     public boolean isNew() {
         return this.persist;
     }
@@ -297,7 +320,6 @@ public class BibliographicItemEntity implements Serializable {
 
     @Override
     public String toString() {
-        return "BibliographicItemEntity{" + "agencyId=" + agencyId + ", bibliographicRecordId=" + bibliographicRecordId + ", note=" + note + ", firstAccessionDate=" + firstAccessionDate + ", modified=" + modified + ", trackingId=" + trackingId + ", issues=" + issues + '}';
+        return getClass().getSimpleName() + "{" + "agencyId=" + agencyId + ", bibliographicRecordId=" + bibliographicRecordId + ", note=" + note + ", firstAccessionDate=" + firstAccessionDate + ", modified=" + modified + ", trackingId=" + trackingId + ", issues=" + issues + '}';
     }
-
 }

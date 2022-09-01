@@ -18,11 +18,16 @@
  */
 package dk.dbc.holdingsitems.content.response;
 
-import dk.dbc.holdingsitems.jpa.IssueEntity;
+import dk.dbc.holdingsitems.jpa.IssueDetached;
+import dk.dbc.holdingsitems.jpa.ItemEntity;
+import dk.dbc.holdingsitems.jpa.VersionSort;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
-import static java.util.stream.Collectors.toList;
 
 /**
  *
@@ -40,15 +45,32 @@ public class CompleteIssue {
     public CompleteIssue() {
     }
 
-    public CompleteIssue(IssueEntity issue) {
+    public CompleteIssue(IssueDetached issue) {
         this.issueId = issue.getIssueId();
         this.issueText = issue.getIssueText();
         this.expectedDelivery = issue.getExpectedDelivery() != null ? issue.getExpectedDelivery().toString() : null;
         this.readyForLoan = issue.getReadyForLoan();
         this.items = issue.stream()
-                .sorted((l, r) -> l.getItemId().compareTo(r.getItemId()))
+                .sorted(Comparator.comparing(ItemEntity::getItemId, new VersionSort()))
                 .map(CompleteItem::new)
-                .collect(toList());
+                .collect(Collectors.toList());
+    }
+
+    public void merge(CompleteIssue other) {
+        if (expectedDelivery == null) {
+            expectedDelivery = other.expectedDelivery;
+        }
+        readyForLoan += other.readyForLoan;
+        HashMap<String, CompleteItem> m = items.stream()
+                .collect(Collectors.toMap(c -> c.itemId, c -> c, (a, b) -> a, () -> new HashMap<String, CompleteItem>()));
+
+        other.items.forEach(item -> {
+            m.putIfAbsent(item.itemId, item);
+        });
+        items = m.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .map(Map.Entry::getValue)
+                .collect(Collectors.toList());
     }
 
     @Override

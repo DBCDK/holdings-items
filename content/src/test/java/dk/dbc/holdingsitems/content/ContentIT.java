@@ -1,6 +1,7 @@
 package dk.dbc.holdingsitems.content;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import dk.dbc.holdingsitems.content.response.AgenciesWithHoldingsResponse;
 import dk.dbc.holdingsitems.content.response.CompleteBibliographic;
 import dk.dbc.holdingsitems.content.response.ContentServiceBranchResponse;
 import dk.dbc.holdingsitems.content.response.ContentServiceItemResponse;
@@ -12,6 +13,10 @@ import dk.dbc.holdingsitems.jpa.BibliographicItemEntity;
 import dk.dbc.holdingsitems.jpa.IssueEntity;
 import dk.dbc.holdingsitems.jpa.ItemEntity;
 import dk.dbc.holdingsitems.jpa.Status;
+import dk.dbc.holdingsitems.jpa.SupersedesEntity;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import org.junit.Test;
 
 import javax.persistence.EntityManager;
@@ -25,8 +30,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
+import org.hamcrest.BaseMatcher;
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
 
-import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.Matchers.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -417,6 +425,195 @@ public class ContentIT extends JpaBase {
         assertEquals(entity.issues.get(0).items.get(1).itemId, "2345");
     }
 
+    @Test(timeout = 2_000L)
+    public void testAgenciesWithHoldings() throws Exception {
+        System.out.println("testAgenciesWithHoldings");
+
+        int agencyId1 = 100000;
+        int agencyId2 = 200000;
+        String bibId = "10000000";
+
+        jpa(em -> {
+            System.out.println(" `- load record 1");
+            BibliographicItemEntity bibliographicItemEntity = BibliographicItemEntity.from(em, agencyId1, bibId, Instant.now(), LocalDate.now());
+            bibliographicItemEntity.setTrackingId("track");
+            bibliographicItemEntity.setFirstAccessionDate(LocalDate.of(2001, 2, 24));
+            bibliographicItemEntity.setNote("NOTE TEXT");
+            IssueEntity issueEntity = bibliographicItemEntity.issue("issue1", Instant.now());
+            issueEntity.setTrackingId("track");
+            issueEntity.setIssueText("#1");
+            issueEntity.setReadyForLoan(1);
+            itemEntity(issueEntity, "1", Status.ON_SHELF);
+            bibliographicItemEntity.save();
+        });
+        jpa(em -> {
+            System.out.println(" `- load record 2");
+            BibliographicItemEntity bibliographicItemEntity = BibliographicItemEntity.from(em, agencyId2, bibId, Instant.now(), LocalDate.now());
+            bibliographicItemEntity.setTrackingId("track");
+            bibliographicItemEntity.setFirstAccessionDate(LocalDate.of(2012, 11, 7));
+            bibliographicItemEntity.setNote("NOTE TEXT");
+            IssueEntity issueEntity = bibliographicItemEntity.issue("none", Instant.now());
+            issueEntity.setTrackingId("track");
+            issueEntity.setIssueText("#1");
+            issueEntity.setReadyForLoan(1);
+            itemEntity(issueEntity, "2", Status.ON_SHELF);
+            bibliographicItemEntity.save();
+        });
+
+        jpa(em -> {
+            System.out.println(" `- test record 1 - 404");
+            ContentResource bean = new ContentResource();
+            bean.em = em;
+            Response resp = bean.agenciesWithHoldings(bibId, "x");
+            assertThat(resp.getStatus(), is(200));
+            AgenciesWithHoldingsResponse entity = (AgenciesWithHoldingsResponse) resp.getEntity();
+            System.out.println(O.writeValueAsString(entity));
+            assertThat(entity, field("agencies", containsInAnyOrder(agencyId1, agencyId2)));
+        });
+    }
+
+    @Test(timeout = 2_000L)
+    public void testCompleteSuperseded() throws Exception {
+        System.out.println("testCompleteSuperseded");
+        int agencyId = 100000;
+        String bibId1 = "10000000";
+        String bibId2 = "10000001";
+
+        jpa(em -> {
+            System.out.println(" `- load record 1");
+            BibliographicItemEntity bibliographicItemEntity = BibliographicItemEntity.from(em, agencyId, bibId1, Instant.now(), LocalDate.now());
+            bibliographicItemEntity.setTrackingId("track");
+            bibliographicItemEntity.setFirstAccessionDate(LocalDate.of(2001, 2, 24));
+            bibliographicItemEntity.setNote("NOTE TEXT");
+            IssueEntity issueEntity1 = bibliographicItemEntity.issue("issue1", Instant.now());
+            issueEntity1.setTrackingId("track");
+            issueEntity1.setIssueText("old#1");
+            issueEntity1.setReadyForLoan(1);
+            itemEntity(issueEntity1, "1", Status.ON_SHELF);
+            itemEntity(issueEntity1, "2", Status.ON_LOAN);
+            IssueEntity issueEntity2 = bibliographicItemEntity.issue("issue2", Instant.now());
+            issueEntity2.setTrackingId("track");
+            issueEntity2.setIssueText("old#2");
+            issueEntity2.setReadyForLoan(1);
+            itemEntity(issueEntity2, "5", Status.ON_SHELF);
+            itemEntity(issueEntity2, "6", Status.ON_LOAN);
+            bibliographicItemEntity.save();
+        });
+
+        jpa(em -> {
+            System.out.println(" `- test record 1");
+            ContentResource bean = new ContentResource();
+            bean.em = em;
+            Response resp = bean.getComplete(agencyId, bibId1, "x");
+            assertThat(resp.getStatus(), is(200));
+            CompleteBibliographic entity = (CompleteBibliographic) resp.getEntity();
+            System.out.println(O.writeValueAsString(entity));
+            assertThat(entity, notNullValue());
+            assertThat(entity.issues, containsInAnyOrder(allOf(field("issueId", is("issue1"))),
+                                                         allOf(field("issueId", is("issue2")))));
+        });
+
+        jpa(em -> {
+            System.out.println(" `- record 1 superseded by record 2");
+            SupersedesEntity supersedesEntity = new SupersedesEntity(bibId1, bibId2);
+            em.persist(supersedesEntity);
+        });
+
+        jpa(em -> {
+            System.out.println(" `- test record 1 - 404");
+            ContentResource bean = new ContentResource();
+            bean.em = em;
+            Response resp = bean.getComplete(agencyId, bibId1, "x");
+            assertThat(resp.getStatus(), is(404));
+        });
+
+        jpa(em -> {
+            System.out.println(" `- test record 2 - record 1 content");
+            ContentResource bean = new ContentResource();
+            bean.em = em;
+            Response resp = bean.getComplete(agencyId, bibId2, "x");
+            assertThat(resp.getStatus(), is(200));
+            CompleteBibliographic entity = (CompleteBibliographic) resp.getEntity();
+            System.out.println(O.writeValueAsString(entity));
+        });
+
+        jpa(em -> {
+            System.out.println(" `- load record 2");
+            BibliographicItemEntity bibliographicItemEntity = BibliographicItemEntity.from(em, agencyId, bibId2, Instant.now(), LocalDate.now());
+            bibliographicItemEntity.setTrackingId("track");
+            bibliographicItemEntity.setFirstAccessionDate(LocalDate.of(2012, 4, 12));
+            IssueEntity issueEntity1 = bibliographicItemEntity.issue("issue1", Instant.now());
+            issueEntity1.setTrackingId("track");
+            issueEntity1.setIssueText("new#1");
+            issueEntity1.setReadyForLoan(1);
+            itemEntity(issueEntity1, "3", Status.ON_SHELF);
+            itemEntity(issueEntity1, "4", Status.ON_LOAN);
+            bibliographicItemEntity.save();
+        });
+
+        jpa(em -> {
+            System.out.println(" `- test record 2 - record 2 and 1 content");
+            ContentResource bean = new ContentResource();
+            bean.em = em;
+            Response resp = bean.getComplete(agencyId, bibId2, "x");
+            assertThat(resp.getStatus(), is(200));
+            CompleteBibliographic entity = (CompleteBibliographic) resp.getEntity();
+            System.out.println(O.writeValueAsString(entity));
+            assertThat("Oldest of the 2", entity.firstAccessionDate, is("2001-02-24"));
+            assertThat(entity.note, is("NOTE TEXT"));
+            assertThat(entity.issues, containsInAnyOrder(
+                       allOf(field("issueId", is("issue1")),
+                             field("issueText", is("new#1")),
+                             field("items", containsInAnyOrder(
+                                   allOf(field("itemId", is("1")),
+                                         field("bibliographicRecordId", is(bibId1))),
+                                   allOf(field("itemId", is("2")),
+                                         field("bibliographicRecordId", is(bibId1))),
+                                   allOf(field("itemId", is("3")),
+                                         field("bibliographicRecordId", is(bibId2))),
+                                   allOf(field("itemId", is("4")),
+                                         field("bibliographicRecordId", is(bibId2)))
+                           ))),
+                       allOf(field("issueId", is("issue2")),
+                             field("issueText", is("old#2")),
+                             field("items", containsInAnyOrder(
+                                   allOf(field("itemId", is("5")),
+                                         field("bibliographicRecordId", is(bibId1))),
+                                   allOf(field("itemId", is("6")),
+                                         field("bibliographicRecordId", is(bibId1)))
+                           )))
+               ));
+        });
+
+        jpa(em -> {
+            System.out.println(" `- empty out record 1");
+            BibliographicItemEntity bibliographicItemEntity = BibliographicItemEntity.from(em, agencyId, bibId1, Instant.now(), LocalDate.now());
+            Arrays.asList(bibliographicItemEntity.stream().toArray(IssueEntity[]::new))
+                    .forEach(bibliographicItemEntity::removeIssue);
+            bibliographicItemEntity.save();
+        });
+
+        jpa(em -> {
+            System.out.println(" `- test record 2 - record 2 and 1(empty) content");
+            ContentResource bean = new ContentResource();
+            bean.em = em;
+            Response resp = bean.getComplete(agencyId, bibId2, "x");
+            assertThat(resp.getStatus(), is(200));
+            CompleteBibliographic entity = (CompleteBibliographic) resp.getEntity();
+            System.out.println(O.writeValueAsString(entity));
+            assertThat("Oldest of the 2", entity.firstAccessionDate, is("2001-02-24"));
+            assertThat(entity.note, is(""));
+            assertThat(entity.issues, contains(
+                       allOf(field("issueId", is("issue1")),
+                             field("items", containsInAnyOrder(
+                                   allOf(field("itemId", is("3")),
+                                         field("bibliographicRecordId", is(bibId2))),
+                                   allOf(field("itemId", is("4")),
+                                         field("bibliographicRecordId", is(bibId2)))
+                           )))));
+        });
+    }
+
     private ItemEntity itemEntity(IssueEntity issueEntity, String itemId, Status status) {
         ItemEntity itemEntity = issueEntity.item(itemId, Instant.now());
         itemEntity.setAccessionDate(localNow());
@@ -434,4 +631,51 @@ public class ContentIT extends JpaBase {
         return LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC).toLocalDate();
     }
 
+    private static <T, R> FieldMatcher field(String field, Matcher<R> matcher) {
+        return new FieldMatcher(field, matcher);
+    }
+
+    private static class FieldMatcher<T, R> extends BaseMatcher<T> {
+
+        private final String field;
+        private final Matcher<R> matcher;
+        private String error;
+
+        private FieldMatcher(String field, Matcher<R> matcher) {
+            this.field = field;
+            this.matcher = matcher;
+            this.error = null;
+        }
+
+        @Override
+        public boolean matches(Object item) {
+            if (item == null) {
+                error = "object needs to be defined";
+            } else {
+                try {
+                    Field f = item.getClass().getField(field);
+                    return matcher.matches(f.get(item));
+                } catch (IllegalAccessException | IllegalArgumentException | NoSuchFieldException | SecurityException ex) {
+                    error = "cannot access field: '" + field + "'";
+                }
+            }
+            return false;
+        }
+
+        @Override
+        public void describeMismatch(Object item, Description mismatchDescription) {
+            if (error == null) {
+                mismatchDescription.appendText("." + field + " ");
+                matcher.describeMismatch(item, mismatchDescription);
+            } else {
+                mismatchDescription.appendText(error);
+            }
+        }
+
+        @Override
+        public void describeTo(Description description) {
+            description.appendText("." + field + " ");
+            matcher.describeTo(description);
+        }
+    }
 }

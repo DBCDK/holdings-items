@@ -36,6 +36,14 @@
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <redirectTestOutputToFile>false</redirectTestOutputToFile>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-failsafe-plugin</artifactId>
                 <configuration>
                     <redirectTestOutputToFile>false</redirectTestOutputToFile>
@@ -92,7 +100,12 @@
             <groupId>dk.dbc</groupId>
             <artifactId>pg-queue-supplier</artifactId>
         </dependency>
-        
+
+        <dependency>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>hamcrest</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>dk.dbc</groupId>
             <artifactId>dbc-commons-testcontainers-postgres</artifactId>

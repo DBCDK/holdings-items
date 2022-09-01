@@ -18,11 +18,15 @@
  */
 package dk.dbc.holdingsitems;
 
+import dk.dbc.holdingsitems.jpa.BibliographicItemDetached;
 import dk.dbc.holdingsitems.jpa.BibliographicItemEntity;
 import dk.dbc.holdingsitems.jpa.IssueEntity;
 import dk.dbc.holdingsitems.jpa.ItemEntity;
 import dk.dbc.holdingsitems.jpa.ItemKey;
 import dk.dbc.holdingsitems.jpa.Status;
+import dk.dbc.holdingsitems.jpa.SupersedesEntity;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import org.junit.Test;
 
 import java.sql.Connection;
@@ -30,14 +34,20 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.HashSet;
 import java.util.List;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.persistence.EntityManager;
+import org.hamcrest.BaseMatcher;
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
 
-import static org.hamcrest.CoreMatchers.*;
+import static org.hamcrest.Matchers.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.*;
 
@@ -252,12 +262,150 @@ public class HoldingsItemsDAOIT extends JpaBase {
         assertThat(item, notNullValue());
     }
 
+    @Test(timeout = 2_000L)
+    public void testMergeSuperseded() throws Exception {
+        System.out.println("testMergeSuperseded");
+
+        int agencyId = 100000;
+        String bibId1 = "rec1";
+        String bibId2 = "rec2";
+
+        jpa(em -> {
+            System.out.println(" `- load record 1");
+            BibliographicItemEntity bibliographicItemEntity = BibliographicItemEntity.from(em, agencyId, bibId1, Instant.now(), LocalDate.now());
+            bibliographicItemEntity.setTrackingId("track");
+            bibliographicItemEntity.setFirstAccessionDate(LocalDate.of(2001, 2, 24));
+            bibliographicItemEntity.setNote("NOTE TEXT");
+            IssueEntity issueEntity1 = bibliographicItemEntity.issue("issue1", Instant.now());
+            issueEntity1.setTrackingId("track");
+            issueEntity1.setIssueText("old#1");
+            issueEntity1.setReadyForLoan(1);
+            itemEntity(issueEntity1, "1", Status.ON_SHELF);
+            itemEntity(issueEntity1, "2", Status.ON_LOAN);
+            IssueEntity issueEntity2 = bibliographicItemEntity.issue("issue2", Instant.now());
+            issueEntity2.setTrackingId("track");
+            issueEntity2.setIssueText("old#2");
+            issueEntity2.setReadyForLoan(1);
+            itemEntity(issueEntity2, "5", Status.ON_SHELF);
+            itemEntity(issueEntity2, "6", Status.ON_LOAN);
+            bibliographicItemEntity.save();
+        });
+        flushAndEvict();
+
+        jpa(em -> {
+            System.out.println(" `- test record 1");
+            BibliographicItemDetached entity = BibliographicItemEntity.detachedWithSuperseded(em, agencyId, bibId1);
+            assertThat(entity, notNullValue());
+        });
+
+        jpa(em -> {
+            System.out.println(" `- record 1 superseded by record 2");
+            SupersedesEntity supersedesEntity = new SupersedesEntity(bibId1, bibId2);
+            em.persist(supersedesEntity);
+        });
+
+        jpa(em -> {
+            System.out.println(" `- test record 1 superseded");
+            BibliographicItemDetached entity = BibliographicItemEntity.detachedWithSuperseded(em, agencyId, bibId1);
+            assertThat(entity, nullValue());
+        });
+
+        jpa(em -> {
+            System.out.println(" `- test record 2 with record 1 content");
+            BibliographicItemDetached entity = BibliographicItemEntity.detachedWithSuperseded(em, agencyId, bibId2);
+            assertThat(entity, notNullValue());
+            System.out.println("entity = " + entity);
+            entity.getIssues().forEach(is -> {
+                System.out.println("is = " + is);
+                is.getItems().forEach(it -> {
+                    System.out.println("it = " + it);
+                });
+            });
+            assertThat(entity.getNote(), is("NOTE TEXT"));
+            assertThat(entity.getFirstAccessionDate(), is(LocalDate.of(2001, 2, 24)));
+            assertThat(entity.getIssues(), containsInAnyOrder(
+                       allOf(method("getIssueId", is("issue1")),
+                             method("getItems", containsInAnyOrder(
+                                    allOf(method("getItemId", is("1"))),
+                                    allOf(method("getItemId", is("2")))))),
+                       allOf(method("getIssueId", is("issue2")),
+                             method("getItems", containsInAnyOrder(
+                                    allOf(method("getItemId", is("5"))),
+                                    allOf(method("getItemId", is("6"))))))
+               ));
+        });
+
+        jpa(em -> {
+            System.out.println(" `- load record 2");
+            BibliographicItemEntity bibliographicItemEntity = BibliographicItemEntity.from(em, agencyId, bibId2, Instant.now(), LocalDate.now());
+            bibliographicItemEntity.setTrackingId("track");
+            bibliographicItemEntity.setFirstAccessionDate(LocalDate.of(2012, 4, 12));
+            IssueEntity issueEntity1 = bibliographicItemEntity.issue("issue1", Instant.now());
+            issueEntity1.setTrackingId("track");
+            issueEntity1.setIssueText("new#1");
+            issueEntity1.setReadyForLoan(1);
+            itemEntity(issueEntity1, "2", Status.ON_SHELF).setBranch("THE NEW ONE");
+            itemEntity(issueEntity1, "3", Status.ON_SHELF);
+            itemEntity(issueEntity1, "4", Status.ON_LOAN);
+            bibliographicItemEntity.save();
+        });
+        flushAndEvict();
+
+        jpa(em -> {
+            System.out.println(" `- test record 2 with record 2+1 content");
+            BibliographicItemDetached entity = BibliographicItemEntity.detachedWithSuperseded(em, agencyId, bibId2);
+            assertThat(entity, notNullValue());
+            System.out.println("entity = " + entity);
+            assertThat(entity.getNote(), is("NOTE TEXT"));
+            assertThat(entity.getFirstAccessionDate(), is(LocalDate.of(2001, 2, 24)));
+            assertThat(entity.getIssues(), containsInAnyOrder(
+                       allOf(method("getIssueId", is("issue1")),
+                             method("getItems", containsInAnyOrder(
+                                    allOf(method("getItemId", is("1"))),
+                                    allOf(method("getItemId", is("2")),
+                                          method("getBranch", is("THE NEW ONE"))),
+                                    allOf(method("getItemId", is("3"))),
+                                    allOf(method("getItemId", is("4")))
+                            ))),
+                       allOf(method("getIssueId", is("issue2")),
+                             method("getItems", containsInAnyOrder(
+                                    allOf(method("getItemId", is("5"))),
+                                    allOf(method("getItemId", is("6")))
+                            )))));
+        });
+
+        jpa(em -> {
+            System.out.println(" `- clear record 1");
+            BibliographicItemEntity bibliographicItemEntity = BibliographicItemEntity.from(em, agencyId, bibId1, Instant.now(), LocalDate.now());
+            bibliographicItemEntity.removeIssue(bibliographicItemEntity.issue("issue1", Instant.now()));
+            bibliographicItemEntity.removeIssue(bibliographicItemEntity.issue("issue2", Instant.now()));
+            bibliographicItemEntity.save();
+        });
+        flushAndEvict();
+
+        jpa(em -> {
+            System.out.println(" `- test record 2 with record 2 content");
+            BibliographicItemDetached entity = BibliographicItemEntity.detachedWithSuperseded(em, agencyId, bibId2);
+            assertThat(entity, notNullValue());
+            System.out.println("entity = " + entity);
+            assertThat(entity.getNote(), is("")); // Note note from superseded
+            assertThat(entity.getFirstAccessionDate(), is(LocalDate.of(2001, 2, 24)));
+            assertThat(entity.getIssues(), containsInAnyOrder(
+                       allOf(method("getIssueId", is("issue1")),
+                             method("getItems", containsInAnyOrder(
+                                    allOf(method("getItemId", is("2"))),
+                                    allOf(method("getItemId", is("3"))),
+                                    allOf(method("getItemId", is("4")))
+                            )))));
+        });
+    }
 //  _   _      _                   _____                 _   _
 // | | | | ___| |_ __   ___ _ __  |  ___|   _ _ __   ___| |_(_) ___  _ __  ___
 // | |_| |/ _ \ | '_ \ / _ \ '__| | |_ | | | | '_ \ / __| __| |/ _ \| '_ \/ __|
 // |  _  |  __/ | |_) |  __/ |    |  _|| |_| | | | | (__| |_| | (_) | | | \__ \
 // |_| |_|\___|_| .__/ \___|_|    |_|   \__,_|_| |_|\___|\__|_|\___/|_| |_|___/
 //              |_|
+
     private void make4(EntityManager em) {
 
         BibliographicItemEntity b1 = BibliographicItemEntity.from(em, 870970, "25912233", Instant.MIN, LocalDate.now());
@@ -293,4 +441,72 @@ public class HoldingsItemsDAOIT extends JpaBase {
         b3.save();
     }
 
+    private ItemEntity itemEntity(IssueEntity issueEntity, String itemId, Status status) {
+        ItemEntity itemEntity = issueEntity.item(itemId, Instant.now());
+        itemEntity.setAccessionDate(LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC).toLocalDate());
+        itemEntity.setStatus(status);
+        itemEntity.setBranch("branch");
+        itemEntity.setBranchId("9876");
+        itemEntity.setDepartment("department");
+        itemEntity.setLocation("location");
+        itemEntity.setSubLocation("subLocation");
+        itemEntity.setCirculationRule("");
+        return itemEntity;
+    }
+
+    private static <T, R> MethodMatcher method(String method, Matcher<R> matcher) {
+        return new MethodMatcher(method, matcher);
+    }
+
+    private static class MethodMatcher<T, R> extends BaseMatcher<T> {
+
+        private final String method;
+        private final Matcher<R> matcher;
+        private String error;
+
+        private MethodMatcher(String method, Matcher<R> matcher) {
+            this.method = method;
+            this.matcher = matcher;
+            this.error = null;
+        }
+
+        @Override
+        public boolean matches(Object item) {
+            if (item == null) {
+                error = "object needs to be defined";
+            } else {
+                try {
+                    Method m = item.getClass().getMethod(method);
+                    return matcher.matches(m.invoke(item));
+                } catch (NoSuchMethodException ex) {
+                    error = "object hasn't got method: " + method + "()";
+                } catch (SecurityException ex) {
+                    error = "cannot access method: " + method + "()";
+                } catch (IllegalAccessException ex) {
+                    error = "cannot access method: " + method + "()";
+                } catch (IllegalArgumentException ex) {
+                    error = "cannot access method: " + method + "()";
+                } catch (InvocationTargetException ex) {
+                    error = "cannot access method: " + method + "()";
+                }
+            }
+            return false;
+        }
+
+        @Override
+        public void describeMismatch(Object item, Description mismatchDescription) {
+            if (error == null) {
+                mismatchDescription.appendText(method + "() ");
+                matcher.describeMismatch(item, mismatchDescription);
+            } else {
+                mismatchDescription.appendText(error);
+            }
+        }
+
+        @Override
+        public void describeTo(Description description) {
+            description.appendText(method + "() ");
+            matcher.describeTo(description);
+        }
+    }
 }

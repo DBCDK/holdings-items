@@ -7,6 +7,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import dk.dbc.commons.mdc.GenerateTrackingId;
 import dk.dbc.commons.mdc.LogAs;
 import dk.dbc.holdingsitems.HoldingsItemsDAO;
+import dk.dbc.holdingsitems.HoldingsItemsException;
+import dk.dbc.holdingsitems.content.response.AgenciesWithHoldingsResponse;
 import dk.dbc.holdingsitems.content.response.CompleteBibliographic;
 import dk.dbc.holdingsitems.content.response.CompleteItemFull;
 import dk.dbc.holdingsitems.content.response.ContentServiceBranchResponse;
@@ -15,6 +17,7 @@ import dk.dbc.holdingsitems.content.response.ContentServiceItemResponse;
 import dk.dbc.holdingsitems.content.response.ContentServicePidResponse;
 import dk.dbc.holdingsitems.content.response.IndexHtml;
 import dk.dbc.holdingsitems.content.response.LaesekompasHoldingsEntity;
+import dk.dbc.holdingsitems.jpa.BibliographicItemDetached;
 import dk.dbc.holdingsitems.jpa.BibliographicItemEntity;
 import dk.dbc.holdingsitems.jpa.ItemEntity;
 import dk.dbc.holdingsitems.jpa.Status;
@@ -40,6 +43,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.ws.rs.PathParam;
+import org.eclipse.microprofile.metrics.annotation.Timed;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
@@ -48,6 +52,8 @@ import static java.util.stream.Collectors.toSet;
 @Path("/")
 @Produces("application/json")
 public class ContentResource {
+
+    private static final Logger log = LoggerFactory.getLogger(ContentResource.class);
 
     @Inject
     public EntityManager em;
@@ -58,10 +64,32 @@ public class ContentResource {
             .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
             .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 
-    private static final Logger log = LoggerFactory.getLogger(ContentResource.class);
+    @GET
+    @Path("agencies-with-holdings/{bibliographicRecordId}")
+    @Produces({MediaType.APPLICATION_JSON})
+    @Timed
+    public Response agenciesWithHoldings(@PathParam("bibliographicRecordId") String bibliographicRecordId,
+                                         @QueryParam("trackingId") @LogAs("trackingId") @GenerateTrackingId String trackingId) {
+        try (LogWith l = LogWith.track(trackingId)) {
+            l.bibliographicRecordId(bibliographicRecordId);
+
+            HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, trackingId);
+            try {
+                Set<Integer> agencies = dao.getAgenciesThatHasHoldingsFor(bibliographicRecordId);
+                AgenciesWithHoldingsResponse resp = new AgenciesWithHoldingsResponse(agencies, trackingId);
+                return Response.ok(resp).build();
+            } catch (HoldingsItemsException e) {
+                log.error("Exception requesting for bibliographicRecordId: {}: {}", bibliographicRecordId, e.getMessage());
+                log.debug("Exception requesting for bibliographicRecordId: {}: ", bibliographicRecordId, e);
+                return Response.serverError().build();
+            }
+        }
+    }
 
     @GET
     @Path("holdings-by-item-id")
+    @Produces({MediaType.APPLICATION_JSON})
+    @Timed
     public Response getItemEntity(
             @QueryParam("agency") Integer agencyId,
             @QueryParam("itemId") String itemId,
@@ -86,6 +114,8 @@ public class ContentResource {
 
     @GET
     @Path("holdings-by-branch")
+    @Produces({MediaType.APPLICATION_JSON})
+    @Timed
     public Response getByBranch(@QueryParam("agencyId") Integer agencyId,
                                 @QueryParam("branchId") String branchId,
                                 @QueryParam("pid") List<String> pids,
@@ -124,6 +154,8 @@ public class ContentResource {
 
     @GET
     @Path("holdings-by-pid")
+    @Produces({MediaType.APPLICATION_JSON})
+    @Timed
     public Response getItemEntities(
             @QueryParam("agency") Integer agencyId,
             @QueryParam("pid") List<String> pids,
@@ -161,10 +193,10 @@ public class ContentResource {
     @Path("laesekompas-data-for-bibliographicrecordids")
     @Consumes({MediaType.APPLICATION_JSON})
     @Produces({MediaType.APPLICATION_JSON})
+    @Timed
     public Response getLaesekompasdataForBibliographicRecordIdsPost(
             String bibliographicRecordIds,
-            @QueryParam("trackingId") @LogAs("trackingId") @GenerateTrackingId String trackingId
-    ) {
+            @QueryParam("trackingId") @LogAs("trackingId") @GenerateTrackingId String trackingId) {
         List<String> bibRecordIdList = null;
         try {
             bibRecordIdList = O.readValue(bibliographicRecordIds, List.class);
@@ -190,20 +222,24 @@ public class ContentResource {
 
     @GET
     @Path("complete/{agencyId:\\d+}/{bibliographicRecordId}")
+    @Produces({MediaType.APPLICATION_JSON})
+    @Timed
     public Response getComplete(@PathParam("agencyId") int agencyId,
                                 @PathParam("bibliographicRecordId") String bibliographicRecordId,
                                 @QueryParam("trackingId") @LogAs("trackingId") @GenerateTrackingId String trackingId) {
         try (LogWith l = LogWith.track(trackingId)) {
             l.agencyId(agencyId).bibliographicRecordId(bibliographicRecordId);
 
-            HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, trackingId);
-            BibliographicItemEntity rec = dao.getRecordCollectionUnLocked(bibliographicRecordId, agencyId);
-            if (rec == null) {
+            BibliographicItemDetached detached = BibliographicItemEntity.detachedWithSuperseded(em, agencyId, bibliographicRecordId);
+
+            if (detached == null) {
                 log.info("Requested complete {}:{} Not found", agencyId, bibliographicRecordId);
-                return Response.status(Response.Status.NOT_FOUND).build();
+                return Response.status(Response.Status.NOT_FOUND).header("X-DBC-Status", "200 OK").build();
             }
+
             log.info("Requested complete {}:{}", agencyId, bibliographicRecordId);
-            return Response.ok(new CompleteBibliographic(rec, trackingId)).build();
+            CompleteBibliographic resp = new CompleteBibliographic(detached, trackingId);
+            return Response.ok(resp).build();
         }
     }
 
@@ -216,5 +252,4 @@ public class ContentResource {
                 .entity(indexHtml.getInputStream())
                 .build();
     }
-
 }
