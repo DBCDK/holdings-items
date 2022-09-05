@@ -18,8 +18,7 @@
  */
 package dk.dbc.holdingsitems.purge;
 
-import dk.dbc.commons.persistence.JpaTestEnvironment;
-import dk.dbc.commons.testcontainers.postgres.DBCPostgreSQLContainer;
+import dk.dbc.commons.testcontainers.postgres.AbstractJpaTestBase;
 import dk.dbc.holdingsitems.DatabaseMigrator;
 import dk.dbc.holdingsitems.HoldingsItemsDAO;
 import dk.dbc.holdingsitems.jpa.BibliographicItemEntity;
@@ -34,113 +33,37 @@ import java.sql.Statement;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.Collection;
 import java.util.HashSet;
-import java.util.Map;
-import java.util.stream.Stream;
-import javax.persistence.EntityManager;
-import javax.persistence.EntityTransaction;
+import java.util.List;
+import javax.sql.DataSource;
 import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import static org.eclipse.persistence.config.PersistenceUnitProperties.JDBC_DRIVER;
-import static org.eclipse.persistence.config.PersistenceUnitProperties.JDBC_PASSWORD;
-import static org.eclipse.persistence.config.PersistenceUnitProperties.JDBC_URL;
-import static org.eclipse.persistence.config.PersistenceUnitProperties.JDBC_USER;
 
 /**
  *
  * @author Morten Bøgeskov (mb@dbc.dk)
  */
-public class JpaBase {
+public class JpaBase extends AbstractJpaTestBase {
 
-    private static final Logger log = LoggerFactory.getLogger(JpaBase.class);
-
-    @ClassRule
-    public static DBCPostgreSQLContainer pg = new DBCPostgreSQLContainer();
-    private static Map<String, String> emProperties;
-
-    @BeforeClass
-    public static void migrateTestPg() {
-        DatabaseMigrator.migrate(pg.datasource());
-        emProperties = Map.of(JDBC_USER, pg.getUsername(),
-                JDBC_PASSWORD, pg.getPassword(),
-                JDBC_URL, pg.getJdbcUrl(),
-                JDBC_DRIVER, "org.postgresql.Driver",
-                "eclipselink.logging.level", "FINE");
+    @Override
+    public String persistenceUnitName() {
+        return "holdingsItemsManual_PU";
     }
 
-    @FunctionalInterface
-    public static interface DaoVoidExecution {
-
-        public void execute(EntityManager em, HoldingsItemsDAO dao) throws Exception;
+    @Override
+    public void migrate(DataSource dataSource) {
+        DatabaseMigrator.migrate(dataSource);
     }
 
-    @FunctionalInterface
-    public static interface DaoExecution<T extends Object> {
-
-        public T execute(EntityManager em, HoldingsItemsDAO dao) throws Exception;
-    }
-
-    public void exec(DaoVoidExecution exe) {
-        JpaTestEnvironment e = env();
-        e.reset();
-        EntityManager em = e.getEntityManager();
-        EntityTransaction transaction = em.getTransaction();
-        try {
-            transaction.begin();
-            exe.execute(em, HoldingsItemsDAO.newInstance(em));
-            transaction.commit();
-        } catch (Exception ex) {
-            transaction.rollback();
-            if (ex instanceof RuntimeException)
-                throw (RuntimeException) ex;
-            throw new RuntimeException(ex);
-        }
-    }
-
-    public <T> T exec(DaoExecution<T> exe) {
-        JpaTestEnvironment e = env();
-        e.reset();
-        EntityManager em = e.getEntityManager();
-        EntityTransaction transaction = em.getTransaction();
-        try {
-            transaction.begin();
-            return exe.execute(em, HoldingsItemsDAO.newInstance(em));
-        } catch (Exception ex) {
-            transaction.rollback();
-            if (ex instanceof RuntimeException)
-                throw (RuntimeException) ex;
-            throw new RuntimeException(ex);
-        } finally {
-            if (transaction.isActive())
-                transaction.commit();
-        }
-    }
-
-    public JpaTestEnvironment env() {
-        return new JpaTestEnvironment(pg.datasource(), "holdingsItemsManual_PU", emProperties);
-    }
-
-    @Before
-    public void cleanTables() throws Exception {
-        try (Connection connection = pg.createConnection() ;
-             Statement stmt = connection.createStatement()) {
-            stmt.execute("TRUNCATE item CASCADE");
-            stmt.execute("TRUNCATE issue CASCADE");
-            stmt.execute("TRUNCATE bibliographicItem CASCADE");
-            stmt.execute("TRUNCATE queue CASCADE");
-            stmt.execute("TRUNCATE queue_error CASCADE");
-        }
-        env().getEntityManagerFactory().getCache().evictAll();
+    @Override
+    public Collection<String> keepContentOfTables() {
+        return List.of("schema_version", "queue_version", "holdingsitems_status", "item_loanrestriction");
     }
 
     protected void insert(String... rows) {
         for (String s : rows) {
-            exec((em, dao) -> {
+            jpa(em -> {
+                HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em);
                 String[] parts = s.split("/");
                 if (parts.length != 5)
                     throw new IllegalArgumentException("requires agencyid/bibliographicrecordid/issueid/itemid/status");
@@ -166,7 +89,7 @@ public class JpaBase {
 
     protected void verify(String[]... sets) throws SQLException {
         HashSet<String> db = new HashSet<>();
-        try (Connection connection = pg.createConnection() ;
+        try (Connection connection = PG.createConnection() ;
              Statement stmt = connection.createStatement() ;
              ResultSet resultSet = stmt.executeQuery("SELECT agencyId, bibliographicRecordId, issueId, itemId, status FROM item")) {
             while (resultSet.next()) {
@@ -199,10 +122,5 @@ public class JpaBase {
 
     protected String[] list(String... a) {
         return a;
-    }
-
-    protected String[] concat(String[] a, String... b) {
-        return Stream.concat(Stream.of(a), Stream.of(b))
-                .toArray(String[]::new);
     }
 }

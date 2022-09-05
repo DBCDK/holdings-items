@@ -18,108 +18,48 @@
  */
 package dk.dbc.holdingsitems;
 
-import dk.dbc.commons.persistence.JpaTestEnvironment;
-import dk.dbc.commons.testcontainers.postgres.DBCPostgreSQLContainer;
+import dk.dbc.commons.testcontainers.postgres.AbstractJpaTestBase;
 import dk.dbc.holdingsitems.jpa.BibliographicItemEntity;
 import dk.dbc.holdingsitems.jpa.IssueEntity;
 import dk.dbc.holdingsitems.jpa.ItemEntity;
 import dk.dbc.holdingsitems.jpa.LoanRestriction;
 import dk.dbc.holdingsitems.jpa.Status;
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.util.Map;
-import javax.persistence.EntityManager;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import static org.eclipse.persistence.config.PersistenceUnitProperties.JDBC_DRIVER;
-import static org.eclipse.persistence.config.PersistenceUnitProperties.JDBC_PASSWORD;
-import static org.eclipse.persistence.config.PersistenceUnitProperties.JDBC_URL;
-import static org.eclipse.persistence.config.PersistenceUnitProperties.JDBC_USER;
+import java.util.Collection;
+import java.util.List;
+import javax.sql.DataSource;
 
 /**
  *
  * @author Morten Bøgeskov (mb@dbc.dk)
  */
-public class JpaBase {
+public class JpaBase extends AbstractJpaTestBase {
 
-    private static final Logger log = LoggerFactory.getLogger(JpaBase.class);
-
-    @ClassRule
-    public static DBCPostgreSQLContainer pg = new DBCPostgreSQLContainer();
-    private static Map<String, String> emProperties;
-
-    @BeforeClass
-    public static void migrateTestPg() {
-        DatabaseMigrator.migrate(pg.datasource());
-        emProperties = Map.of(JDBC_USER, pg.getUsername(),
-                              JDBC_PASSWORD, pg.getPassword(),
-                              JDBC_URL, pg.getJdbcUrl(),
-                              JDBC_DRIVER, "org.postgresql.Driver",
-                              "eclipselink.logging.level", "FINE");
+    @Override
+    public String persistenceUnitName() {
+        return "holdingsItemsManual_PU";
     }
 
-    @FunctionalInterface
-    public static interface JpaVoidExecution {
-
-        public void execute(EntityManager em) throws Exception;
+    @Override
+    public void migrate(DataSource dataSource) {
+        DatabaseMigrator.migrate(dataSource);
     }
 
-    @FunctionalInterface
-    public static interface JpaExecution<T extends Object> {
-
-        public T execute(EntityManager em) throws Exception;
-    }
-
-    public void jpa(JpaVoidExecution ex) {
-        JpaTestEnvironment e = env();
-        e.reset();
-        EntityManager em = e.getEntityManager();
-        e.getPersistenceContext().run(() -> {
-            ex.execute(em);
-        });
-    }
-
-    public <T> T jpa(JpaExecution<T> ex) {
-        JpaTestEnvironment e = env();
-        e.reset();
-        EntityManager em = e.getEntityManager();
-        return e.getPersistenceContext().run(() -> {
-            T t = ex.execute(em);
-            return t;
-        });
-    }
-
-    public void flushAndEvict() {
-        jpa(em -> {
-            em.flush();
-        });
-        env().getEntityManagerFactory().getCache().evictAll();
-    }
-
-    public JpaTestEnvironment env() {
-        return new JpaTestEnvironment(pg.datasource(), "holdingsItemsManual_PU", emProperties);
-    }
-
-    @Before
-    public void cleanTables() throws Exception {
-        try (Connection connection = pg.createConnection() ;
-             Statement stmt = connection.createStatement()) {
-            stmt.execute("TRUNCATE item CASCADE");
-            stmt.execute("TRUNCATE issue CASCADE");
-            stmt.execute("TRUNCATE bibliographicItem CASCADE");
-            stmt.execute("TRUNCATE queue CASCADE");
-            stmt.execute("TRUNCATE queue_error CASCADE");
-            stmt.execute("TRUNCATE queue_rules CASCADE");
+    @Override
+    public void populateDatabase(Connection connection) throws SQLException {
+        try (Statement stmt = connection.createStatement()) {
             stmt.execute("INSERT INTO queue_rules(supplier, consumer) VALUES('supa', 'consa')");
             stmt.execute("INSERT INTO queue_rules(supplier, consumer) VALUES('supb', 'consb')");
         }
-        env().getEntityManagerFactory().getCache().evictAll();
+    }
+
+    @Override
+    public Collection<String> keepContentOfTables() {
+        return List.of("schema_version", "queue_version", "holdingsitems_status", "item_loanrestriction");
     }
 
     protected BibliographicItemEntity fill(BibliographicItemEntity item) {
@@ -158,5 +98,4 @@ public class JpaBase {
                 .setCreated(Instant.now())
                 .setTrackingId("Some-Id");
     }
-
 }

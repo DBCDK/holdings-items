@@ -18,6 +18,7 @@
  */
 package dk.dbc.holdingsitems.purge;
 
+import dk.dbc.holdingsitems.HoldingsItemsDAO;
 import java.time.Instant;
 import org.junit.Test;
 
@@ -45,7 +46,8 @@ public class PurgeIT extends JpaBase {
 
         verify(removed, unchanged);
 
-        exec((em, dao) -> {
+        jpa(em -> {
+            HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em);
             Purge purge = new Purge(em, dao, "PURGE", "[void]", 700001, true, false) {
                 @Override
                 protected boolean userVerifyAgency() {
@@ -57,10 +59,11 @@ public class PurgeIT extends JpaBase {
 
         verify(unchanged);
 
-        boolean isNew = exec((em, dao) -> {
-            return dao.getRecordCollection("12345678", 700001, Instant.now()).isNew();
+        jpa(em -> {
+            HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em);
+            boolean isNew = dao.getRecordCollection("12345678", 700001, Instant.now()).isNew();
+            assertThat(isNew, is(true));
         });
-        assertThat(isNew, is(true));
     }
 
     @Test(timeout = 2_000L)
@@ -78,7 +81,8 @@ public class PurgeIT extends JpaBase {
 
         verify(removed, unchanged);
 
-        exec((em, dao) -> {
+        jpa(em -> {
+            HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em);
             Purge purge = new Purge(em, dao, "PURGE", "[void]", 700001, false, false) {
                 @Override
                 protected boolean userVerifyAgency() {
@@ -90,10 +94,11 @@ public class PurgeIT extends JpaBase {
 
         verify(unchanged);
 
-        boolean isNew = exec((em, dao) -> {
-            return dao.getRecordCollection("12345678", 700001, Instant.now()).isNew();
+        jpa(em -> {
+            HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em);
+            boolean isNew = dao.getRecordCollection("12345678", 700001, Instant.now()).isNew();
+            assertThat(isNew, is(false));
         });
-        assertThat(isNew, is(false));
     }
 
 }

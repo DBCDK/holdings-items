@@ -23,7 +23,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
  *
  * @author Morten Bøgeskov (mb@dbc.dk)
  */
-public class SupersedesIT extends JpaBase {
+public class SupersedesTest extends JpaBase {
 
     @Test(timeout = 2_000L)
     public void testSupersedesPutDelete() throws Exception {
@@ -152,7 +152,7 @@ public class SupersedesIT extends JpaBase {
 
     private HashSet<String> queued() throws SQLException {
         HashSet<String> queued = new HashSet<>();
-        try (Connection connection = pg.createConnection() ;
+        try (Connection connection = PG.createConnection() ;
              Statement stmt = connection.createStatement() ;
              ResultSet resultSet = stmt.executeQuery("DELETE FROM queue RETURNING agencyid, bibliographicrecordid")) {
             while (resultSet.next()) {
