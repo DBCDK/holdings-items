@@ -1,4 +1,5 @@
 def workerNode = 'devel10'
+def dockerRepository = 'https://docker-de.artifacts.dbccloud.dk'
 
 if (env.BRANCH_NAME == 'master') {
     properties([
@@ -88,9 +89,7 @@ pipeline {
         stage('Docker') {
             steps {
                 script {
-
                     def pom = readMavenPom()
-                    def artifactId = pom.artifactId
                     def version = pom.version.replace('-SNAPSHOT', '')
                     def label = imageLabel()
                     if (currentBuild.resultIsBetterOrEqualTo('SUCCESS')) {
