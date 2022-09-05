@@ -80,7 +80,7 @@ public class UpdateBeanIT extends JpaBase {
     String subLocation = "My SubLocation";
     String circulationRule = "2Weeks";
 
-    @Test
+    @Test(timeout = 10_000L)
     public void testHoldingsItemsUpdate() throws Exception {
         System.out.println("testHoldingsItemsUpdate");
         jpa(em -> {
@@ -100,7 +100,7 @@ public class UpdateBeanIT extends JpaBase {
         System.out.println("OK");
     }
 
-    @Test
+    @Test(timeout = 10_000L)
     public void testHoldingsItemsUpdateQueue() throws Exception {
         System.out.println("testHoldingsItemsUpdateQueue");
         jpa(em -> {
@@ -112,7 +112,7 @@ public class UpdateBeanIT extends JpaBase {
         System.out.println("OK");
     }
 
-    @Test
+    @Test(timeout = 10_000L)
     public void testOnlineHoldingsItemsUpdate() throws Exception {
         System.out.println("testOnlineHoldingsItemsUpdate");
         jpa(em -> {
@@ -140,7 +140,7 @@ public class UpdateBeanIT extends JpaBase {
         System.out.println("OK");
     }
 
-    @Test
+    @Test(timeout = 10_000L)
     public void testOnlineHoldingsItemsUpdateQueue() throws Exception {
         System.out.println("testOnlineHoldingsItemsUpdateQueue");
         jpa(em -> {
@@ -152,7 +152,7 @@ public class UpdateBeanIT extends JpaBase {
         System.out.println("OK");
     }
 
-    @Test
+    @Test(timeout = 10_000L)
     public void testCompleteHoldingsItemsUpdateQueue() throws Exception {
         System.out.println("testCompleteHoldingsItemsUpdateQueue");
         jpa(em -> {
@@ -164,7 +164,7 @@ public class UpdateBeanIT extends JpaBase {
         System.out.println("OK");
     }
 
-    @Test
+    @Test(timeout = 10_000L)
     public void testUpdateHoldingsItemsCreateAndUpdateQueue() throws Exception {
         System.out.println("testCompleteHoldingsItemsUpdateQueue");
         jpa(em -> {
@@ -196,7 +196,7 @@ public class UpdateBeanIT extends JpaBase {
         assertEquals("UNKNOWN", rec87654321.at("/it3-1/oldStatus").asText(""));
     }
 
-    @Test(timeout = 2_000L)
+    @Test(timeout = 10_000L)
     public void testUpdateHoldingsItemsFromKnownToDecommissioned() throws Exception {
         System.out.println("testUpdateHoldingsItemsFromKnownToDecommissioned");
         jpa(em -> {
@@ -232,7 +232,7 @@ public class UpdateBeanIT extends JpaBase {
         assertEquals("OnShelf", rec12345678.at("/i1/oldStatus").asText(""));
     }
 
-    @Test(timeout = 2_000L)
+    @Test(timeout = 10_000L)
     public void testUpdateHoldingsItemsFromUnknownToDecommissioned() throws Exception {
         System.out.println("testUpdateHoldingsItemsFromUnknownToDecommissioned");
         clearQueue();
@@ -257,7 +257,7 @@ public class UpdateBeanIT extends JpaBase {
         assertEquals(null, rec12345678.get("i1"));
     }
 
-    @Test
+    @Test(timeout = 10_000L)
     public void testCompleteHoldingsItemsCreateAndUpdateQueue() throws Exception {
         System.out.println("testCompleteHoldingsItemsUpdateQueue");
         jpa(em -> {
@@ -286,7 +286,7 @@ public class UpdateBeanIT extends JpaBase {
         System.out.println("OK");
     }
 
-    @Test
+    @Test(timeout = 10_000L)
     public void testCompleteHoldingsItemsCreateEmptyJson() throws Exception {
         System.out.println("testCompleteHoldingsItemsCreateEmptyJson");
         jpa(em -> {
@@ -318,7 +318,7 @@ public class UpdateBeanIT extends JpaBase {
      *
      * @throws Exception
      */
-    @Test
+    @Test(timeout = 10_000L)
     public void testCompleteDecommissions() throws Exception {
         System.out.println("testCompleteDecommissions");
 
@@ -345,7 +345,7 @@ public class UpdateBeanIT extends JpaBase {
         assertEquals("Expected online", 1, countItems(StatusType.ONLINE));
     }
 
-    @Test(timeout = 2_000L)
+    @Test(timeout = 10_000L)
     public void testNoteGetsUpdated() throws Exception {
         System.out.println("testNoteGetsUpdated");
         jpa(em -> {
@@ -360,7 +360,7 @@ public class UpdateBeanIT extends JpaBase {
         assertEquals("Updated Note", noteAfter);
     }
 
-    @Test(timeout = 2_000L)
+    @Test(timeout = 10_000L)
     public void testLoanRestrictionUpdate() throws Exception {
         System.out.println("testLoanRestrictionUpdate");
 
@@ -434,7 +434,7 @@ public class UpdateBeanIT extends JpaBase {
         }
     }
 
-    @Test(timeout = 2_000L)
+    @Test(timeout = 10_000L)
     public void testDecommissionedInQueueJson() throws Exception {
         System.out.println("testDecommissionedInQueueJson");
 
