@@ -35,11 +35,14 @@ pipeline {
         stage("build") {
             steps {
                 script {
+                    def version = readMavenPom().version.replace('-SNAPSHOT', '')
+                    def label = imageLabel()
+
                     def status = sh returnStatus: true, script:  """
                         rm -rf \$WORKSPACE/.repo
                         mvn -B -Dmaven.repo.local=\$WORKSPACE/.repo dependency:resolve dependency:resolve-plugins >/dev/null 2>&1 || true
                         mvn -B -Dmaven.repo.local=\$WORKSPACE/.repo clean
-                        mvn -B -Dmaven.repo.local=\$WORKSPACE/.repo --fail-at-end org.jacoco:jacoco-maven-plugin:prepare-agent install -Dsurefire.useFile=false
+                        mvn -B -Dmaven.repo.local=\$WORKSPACE/.repo -Ddocker.extra.args="--pull" -Ddocker.image.version=${version} -Ddocker.image.label=${label} --fail-at-end org.jacoco:jacoco-maven-plugin:prepare-agent install -Dsurefire.useFile=false
                     """
 
                     // We want code-coverage and pmd/spotbugs even if unittests fails
@@ -85,38 +88,18 @@ pipeline {
         stage('Docker') {
             steps {
                 script {
-                    if (! env.CHANGE_BRANCH) {
-                        imageLabel = env.BRANCH_NAME
-                    } else {
-                        imageLabel = env.CHANGE_BRANCH
-                    }
-                    if ( ! (imageLabel ==~ /master|trunk/) ) {
-                        println("Using branch_name ${imageLabel}")
-                        imageLabel = imageLabel.split(/\//)[-1]
-                        imageLabel = imageLabel.toLowerCase()
-                    } else {
-                        println(" Using Master branch ${BRANCH_NAME}")
-                        imageLabel = env.BUILD_NUMBER
-                    }
 
-                    def dockerFiles = findFiles(glob: '**/target/docker/Dockerfile')
-                    def version = readMavenPom().version.replace('-SNAPSHOT', '')
-
-                    for (def dockerFile : dockerFiles) {
-                        def dirName = dockerFile.path.replace('/target/docker/Dockerfile', '')
-                        dir(dirName) {
-                            def modulePom = readMavenPom file: 'pom.xml'
-                            def projectArtifactId = modulePom.getArtifactId()
-                            def imageName = "${projectArtifactId}-${version}".toLowerCase()
-                            println("In ${dirName} build ${projectArtifactId} as ${imageName}:$imageLabel")
-                            def app = docker.build("$imageName:${imageLabel}", "--pull --file target/docker/Dockerfile .")
-
-                            if (currentBuild.resultIsBetterOrEqualTo('SUCCESS')) {
-                                docker.withRegistry('https://docker-de.artifacts.dbccloud.dk', 'docker') {
-                                    app.push()
-                                    if (env.BRANCH_NAME ==~ /master|trunk/) {
-                                        app.push "latest"
-                                    }
+                    def pom = readMavenPom()
+                    def artifactId = pom.artifactId
+                    def version = pom.version.replace('-SNAPSHOT', '')
+                    def label = imageLabel()
+                    if (currentBuild.resultIsBetterOrEqualTo('SUCCESS')) {
+                        docker.withRegistry(dockerRepository, 'docker') {
+                            for(def image : ["holdings-items-content-service", "holdings-items-kafka-bridge", "holdings-items-monitor", "holdings-items-postgres", "holdings-items-postgres-content", "holdings-items-purge-tool", "holdings-items-solr-indexer", "holdings-items-update-webservice"]) {
+                                def app = docker.image("${image}-${version}:${label}")
+                                app.push()
+                                if (env.BRANCH_NAME == "master") {
+                                    app.push "latest"
                                 }
                             }
                         }
@@ -211,4 +194,17 @@ pipeline {
             }
         }
     }
+}
+
+def imageLabel() {
+    def label = env.BRANCH_NAME.toLowerCase()
+    if (env.CHANGE_BRANCH) {
+        label = env.CHANGE_BRANCH.toLowerCase()
+    }
+    if (label == "master") {
+        label = env.BUILD_NUMBER
+    } else {
+        label = label.split(/\//)[-1]
+    }
+    return label
 }
