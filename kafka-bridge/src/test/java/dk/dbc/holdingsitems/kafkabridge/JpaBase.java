@@ -33,6 +33,8 @@ import javax.sql.DataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static dk.dbc.holdingsitems.jpa.TablesWithMigratedContent.tablesWithMigratedContent;
+
 /**
  *
  * @author Morten Bøgeskov (mb@dbc.dk)
@@ -53,7 +55,7 @@ public class JpaBase extends AbstractJpaTestBase {
 
     @Override
     public Collection<String> keepContentOfTables() {
-        return List.of("schema_version", "queue_version", "holdingsitems_status", "item_loanrestriction");
+        return tablesWithMigratedContent();
     }
 
     protected BibliographicItemEntity fill(BibliographicItemEntity item) {

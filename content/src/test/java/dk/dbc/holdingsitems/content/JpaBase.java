@@ -9,6 +9,8 @@ import java.util.Collection;
 import java.util.List;
 import javax.sql.DataSource;
 
+import static dk.dbc.holdingsitems.jpa.TablesWithMigratedContent.tablesWithMigratedContent;
+
 public class JpaBase extends AbstractJpaAndRestTestBase {
 
     @Override
@@ -22,14 +24,14 @@ public class JpaBase extends AbstractJpaAndRestTestBase {
     }
 
     @Override
+    public Collection<String> keepContentOfTables() {
+        return tablesWithMigratedContent();
+    }
+
+    @Override
     public void populateDatabase(Connection connection) throws SQLException {
         try (Statement stmt = connection.createStatement()) {
             stmt.execute("INSERT INTO queue_rules(supplier, consumer) VALUES('SUPERSEDE', 'cons')");
         }
-    }
-
-    @Override
-    public Collection<String> keepContentOfTables() {
-        return List.of("schema_version", "queue_version", "holdingsitems_status", "item_loanrestriction");
     }
 }

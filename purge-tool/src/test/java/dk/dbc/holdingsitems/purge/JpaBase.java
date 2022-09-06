@@ -39,6 +39,8 @@ import java.util.List;
 import javax.sql.DataSource;
 import org.junit.Assert;
 
+import static dk.dbc.holdingsitems.jpa.TablesWithMigratedContent.tablesWithMigratedContent;
+
 /**
  *
  * @author Morten Bøgeskov (mb@dbc.dk)
@@ -57,7 +59,7 @@ public class JpaBase extends AbstractJpaTestBase {
 
     @Override
     public Collection<String> keepContentOfTables() {
-        return List.of("schema_version", "queue_version", "holdingsitems_status", "item_loanrestriction");
+        return tablesWithMigratedContent();
     }
 
     protected void insert(String... rows) {
