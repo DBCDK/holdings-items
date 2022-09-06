@@ -41,7 +41,6 @@ import java.util.List;
 
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 import javax.persistence.EntityManager;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
@@ -67,8 +66,7 @@ public class HoldingsItemsDAOIT extends JpaBase {
                 enqueueService.enqueue("supa", 888888, "87654321", "{}");
             }
         });
-        flushAndEvict();
-        try (Connection connection = pg.createConnection() ;
+        try (Connection connection = PG.createConnection() ;
              Statement stmt = connection.createStatement() ;
              ResultSet resultSet = stmt.executeQuery("SELECT consumer, bibliographicRecordId, agencyId, trackingId FROM queue")) {
             HashSet<String> results = new HashSet<>();
@@ -95,14 +93,12 @@ public class HoldingsItemsDAOIT extends JpaBase {
             make4(em);
         });
 
-        flushAndEvict();
-
-        Set<String> bibIds = jpa(em -> {
+        jpa(em -> {
             HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em);
-            return dao.getBibliographicIds(870970);
+            Set<String> bibIds = dao.getBibliographicIds(870970);
+            System.out.println("bibIds = " + bibIds);
+            assertThat(bibIds, hasItems("25912233", "abc"));
         });
-        System.out.println("bibIds = " + bibIds);
-        assertThat(bibIds, hasItems("25912233", "abc"));
 
         // Decommission abc:i1:d
         jpa(em -> {
@@ -113,19 +109,17 @@ public class HoldingsItemsDAOIT extends JpaBase {
             em.merge(b);
         });
 
-        flushAndEvict();
-
-        List<String> bibIdsDecom = jpa(em -> {
-            return em.createQuery("SELECT h.bibliographicRecordId" +
-                                  " FROM ItemEntity h" +
-                                  " WHERE h.agencyId = :agencyId" +
-                                  " GROUP BY h.agencyId, h.bibliographicRecordId",
-                                  String.class)
+        jpa(em -> {
+            List<String> bibIdsDecom = em.createQuery("SELECT h.bibliographicRecordId" +
+                                                      " FROM ItemEntity h" +
+                                                      " WHERE h.agencyId = :agencyId" +
+                                                      " GROUP BY h.agencyId, h.bibliographicRecordId",
+                                                      String.class)
                     .setParameter("agencyId", 870970)
                     .getResultList();
+            System.out.println("bibIds = " + bibIdsDecom);
+            assertThat(bibIdsDecom, hasItems("25912233"));
         });
-        System.out.println("bibIds = " + bibIdsDecom);
-        assertThat(bibIdsDecom, hasItems("25912233"));
     }
 
     @Test(timeout = 2_000L)
@@ -135,13 +129,12 @@ public class HoldingsItemsDAOIT extends JpaBase {
             make4(em);
         });
 
-        flushAndEvict();
-        Set<String> issues = jpa(em -> {
+        jpa(em -> {
             HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em);
-            return dao.getIssueIds("25912233", 870970);
+            Set<String> issues = dao.getIssueIds("25912233", 870970);
+            System.out.println("issues = " + issues);
+            assertThat(issues, hasItems("i1", "i2"));
         });
-        System.out.println("issues = " + issues);
-        assertThat(issues, hasItems("i1", "i2"));
     }
 
     @Test(timeout = 2_000L)
@@ -166,21 +159,19 @@ public class HoldingsItemsDAOIT extends JpaBase {
             b1.save();
         });
 
-        flushAndEvict();
-
-        Map<Status, Long> statusMap = jpa(em -> {
+        jpa(em -> {
             HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em);
-            return dao.getStatusFor("25912233", 870970);
-        });
-        System.out.println("statusMap = " + statusMap);
+            Map<Status, Long> statusMap = dao.getStatusFor("25912233", 870970);
+            System.out.println("statusMap = " + statusMap);
 
-        assertThat(statusMap.keySet(), hasItems(Status.ON_LOAN,
-                                                Status.ON_SHELF,
-                                                Status.ON_ORDER));
-        assertThat(statusMap.get(Status.ON_LOAN), is(2L));
-        assertThat(statusMap.get(Status.ON_SHELF), is(2L));
-        assertThat(statusMap.get(Status.ON_ORDER), is(1L));
-        assertThat(statusMap.size(), is(3));
+            assertThat(statusMap.keySet(), hasItems(Status.ON_LOAN,
+                                                    Status.ON_SHELF,
+                                                    Status.ON_ORDER));
+            assertThat(statusMap.get(Status.ON_LOAN), is(2L));
+            assertThat(statusMap.get(Status.ON_SHELF), is(2L));
+            assertThat(statusMap.get(Status.ON_ORDER), is(1L));
+            assertThat(statusMap.size(), is(3));
+        });
     }
 
     @Test(timeout = 12_000L)
@@ -196,13 +187,12 @@ public class HoldingsItemsDAOIT extends JpaBase {
                     .setStatus(Status.ON_SHELF);
             b1.save();
         });
-        flushAndEvict();
 
-        boolean hasLiveHoldings = jpa(em -> {
+        jpa(em -> {
             HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em);
-            return dao.hasLiveHoldings("25912233", 870970);
+            boolean hasLiveHoldings = dao.hasLiveHoldings("25912233", 870970);
+            assertTrue(hasLiveHoldings);
         });
-        assertTrue(hasLiveHoldings);
 
         // set to decommissioned
         jpa(em -> {
@@ -213,11 +203,11 @@ public class HoldingsItemsDAOIT extends JpaBase {
             b1.save();
         });
 
-        hasLiveHoldings = jpa(em -> {
+        jpa(em -> {
             HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em);
-            return dao.hasLiveHoldings("25912233", 870970);
+            boolean hasLiveHoldings = dao.hasLiveHoldings("25912233", 870970);
+            assertFalse(hasLiveHoldings);
         });
-        assertFalse(hasLiveHoldings);
 
         // Create other issue with live
         jpa(em -> {
@@ -227,13 +217,12 @@ public class HoldingsItemsDAOIT extends JpaBase {
                     .setStatus(Status.ON_SHELF);
             c2.save();
         });
-        flushAndEvict();
 
-        hasLiveHoldings = jpa(em -> {
+        jpa(em -> {
             HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em);
-            return dao.hasLiveHoldings("25912233", 870970);
+            boolean hasLiveHoldings = dao.hasLiveHoldings("25912233", 870970);
+            assertTrue(hasLiveHoldings);
         });
-        assertTrue(hasLiveHoldings);
     }
 
     @Test(timeout = 2_000L)
@@ -253,13 +242,12 @@ public class HoldingsItemsDAOIT extends JpaBase {
             b1.save();
 
         });
-        flushAndEvict();
 
-        ItemEntity item = jpa(em -> {
-            return em.find(ItemEntity.class, new ItemKey(870970, "25912233", "i1", "it1"));
+        jpa(em -> {
+            ItemEntity item = em.find(ItemEntity.class, new ItemKey(870970, "25912233", "i1", "it1"));
+            System.out.println("item = " + item);
+            assertThat(item, notNullValue());
         });
-        System.out.println("item = " + item);
-        assertThat(item, notNullValue());
     }
 
     @Test(timeout = 2_000L)
@@ -290,7 +278,6 @@ public class HoldingsItemsDAOIT extends JpaBase {
             itemEntity(issueEntity2, "6", Status.ON_LOAN);
             bibliographicItemEntity.save();
         });
-        flushAndEvict();
 
         jpa(em -> {
             System.out.println(" `- test record 1");
@@ -349,7 +336,6 @@ public class HoldingsItemsDAOIT extends JpaBase {
             itemEntity(issueEntity1, "4", Status.ON_LOAN);
             bibliographicItemEntity.save();
         });
-        flushAndEvict();
 
         jpa(em -> {
             System.out.println(" `- test record 2 with record 2+1 content");
@@ -381,7 +367,6 @@ public class HoldingsItemsDAOIT extends JpaBase {
             bibliographicItemEntity.removeIssue(bibliographicItemEntity.issue("issue2", Instant.now()));
             bibliographicItemEntity.save();
         });
-        flushAndEvict();
 
         jpa(em -> {
             System.out.println(" `- test record 2 with record 2 content");

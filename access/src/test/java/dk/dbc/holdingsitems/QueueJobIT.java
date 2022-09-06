@@ -53,7 +53,7 @@ public class QueueJobIT extends JpaBase {
         QueueJob job3 = new QueueJob(888888, "87654321", "{}", "t3");
         QueueJob job2_3 = new QueueJob(888888, "87654321", "{}", "t2\tt3");
 
-        try (Connection connection = pg.createConnection()) {
+        try (Connection connection = PG.createConnection()) {
             PreparedQueueSupplier<QueueJob> supplier = QUEUE_SUPPLIER.preparedSupplier(connection);
 
             supplier.enqueue(QUEUE, job1);
@@ -65,7 +65,7 @@ public class QueueJobIT extends JpaBase {
             QueueWorker worker = QueueWorker.builder(QueueJob.STORAGE_ABSTRACTION)
                     .skipDuplicateJobs(QueueJob.DEDUPLICATION_ABSTRACTION_IGNORE_STATECHANGE)
                     .consume(QUEUE)
-                    .dataSource(pg.datasource())
+                    .dataSource(PG.datasource())
                     .build((JobConsumer<QueueJob>) (Connection connection1, QueueJob job, JobMetaData metaData) -> {
                         list.add(job);
                     });

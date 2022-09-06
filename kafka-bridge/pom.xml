@@ -132,6 +132,11 @@
 
     <dependencies>
         <dependency>
+            <groupId>com.github.spotbugs</groupId>
+            <artifactId>spotbugs-annotations</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>dk.dbc</groupId>
             <artifactId>pg-queue-consumer</artifactId>
         </dependency>
@@ -161,8 +166,6 @@
         <dependency>
             <groupId>dk.dbc</groupId>
             <artifactId>dbc-commons-testcontainers-postgres</artifactId>
-            <version>1.0-SNAPSHOT</version>
-            <scope>test</scope>
         </dependency>
 
         <dependency>
@@ -185,18 +188,10 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>dk.dbc</groupId>
-            <artifactId>dbc-commons-testutil-jpa</artifactId>
-            <version>1.3-SNAPSHOT</version>
-            <scope>test</scope>
         </dependency>
 
     </dependencies>

@@ -48,11 +48,11 @@ public class JpaIT extends JpaBase {
             c1.save();
         });
 
-        IssueEntity v1 = jpa(em -> {
+        jpa(em -> {
             BibliographicItemEntity b1 = BibliographicItemEntity.from(em, 870970, "25912233", Instant.now(), LocalDate.now());
-            return b1.issue("i1", Instant.MIN);
+            IssueEntity v1 = b1.issue("i1", Instant.MIN);
+            assertThat(v1.getTrackingId(), is("ABC#1"));
         });
-        assertThat(v1.getTrackingId(), is("ABC#1"));
 
         jpa(em -> {
             // Taken from database: fill is not nessecary, save is merge
@@ -62,11 +62,11 @@ public class JpaIT extends JpaBase {
             c2.save();
         });
 
-        IssueEntity v2 = jpa(em -> {
+        jpa(em -> {
             BibliographicItemEntity b2 = BibliographicItemEntity.from(em, 870970, "25912233", Instant.now(), LocalDate.now());
-            return b2.issue("i1", Instant.MIN);
+            IssueEntity v2 = b2.issue("i1", Instant.MIN);
+            assertThat(v2.getTrackingId(), is("ABC#2"));
         });
-        assertThat(v2.getTrackingId(), is("ABC#2"));
     }
 
     @Test(timeout = 2_000L)
@@ -113,11 +113,9 @@ public class JpaIT extends JpaBase {
             expected[1] = c2;
         });
 
-        flushAndEvict();
-        List<IssueEntity> all = jpa(em -> {
-            return IssueEntity.byAgencyBibliographic(em, 870970, "25912233");
+        jpa(em -> {
+            List<IssueEntity> all = IssueEntity.byAgencyBibliographic(em, 870970, "25912233");
+            assertThat(all, hasItems(expected));
         });
-        assertThat(all, hasItems(expected));
     }
-
 }

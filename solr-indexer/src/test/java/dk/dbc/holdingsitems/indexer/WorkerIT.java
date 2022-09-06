@@ -141,14 +141,14 @@ public class WorkerIT extends JpaBase {
     @Test
     public void testBuildRequest() throws Exception {
         System.out.println("testBuildRequest");
-        try (Connection connection = pg.createConnection()) {
+        try (Connection connection = PG.createConnection()) {
             insert(connection, "inserts/insert1.json");
         }
 
         jpa(em -> {
             JobProcessor jobProcessor = new JobProcessor(config, em);
             jobProcessor.init();
-            try (Connection connection = pg.createConnection()) {
+            try (Connection connection = PG.createConnection()) {
                 ObjectNode json = jobProcessor.buildRequestJson(new QueueJob(700000, "87654321", "{}", "T#1"));
                 System.out.println("json = " + json);
                 assertJson(700000, json, "/agencyId");
@@ -210,7 +210,7 @@ public class WorkerIT extends JpaBase {
     public void testConsumerDequeues() throws Exception {
         log.info("testConsumerDequeues");
 
-        try (Connection connection = pg.createConnection()) {
+        try (Connection connection = PG.createConnection()) {
             PreparedQueueSupplier<QueueJob> supplier = new QueueSupplier<>(QueueJob.STORAGE_ABSTRACTION)
                     .preparedSupplier(connection);
             supplier.enqueue("q1", new QueueJob(700000, "87654321", "{}", "foo1"));
@@ -224,7 +224,7 @@ public class WorkerIT extends JpaBase {
             }
         };
         worker.config = config;
-        worker.dataSource = pg.datasource();
+        worker.dataSource = PG.datasource();
         worker.init();
         QueueJob job = jobs.poll(10, TimeUnit.SECONDS);
         worker.destroy();
@@ -234,11 +234,11 @@ public class WorkerIT extends JpaBase {
     @Test
     public void testConsumer() throws Exception {
         log.info("testConsumer");
-        try (Connection connection = pg.createConnection()) {
+        try (Connection connection = PG.createConnection()) {
             insert(connection, "inserts/insert1.json");
         }
 
-        try (Connection connection = pg.createConnection()) {
+        try (Connection connection = PG.createConnection()) {
             PreparedQueueSupplier<QueueJob> supplier = new QueueSupplier<>(QueueJob.STORAGE_ABSTRACTION)
                     .preparedSupplier(connection);
             supplier.enqueue("q1", new QueueJob(700000, "87654321", "{}", "foo1"));
@@ -247,7 +247,7 @@ public class WorkerIT extends JpaBase {
         jpa(em -> {
             Worker worker = new Worker();
             worker.config = config;
-            worker.dataSource = pg.datasource();
+            worker.dataSource = PG.datasource();
             worker.jobProcessor = new JobProcessor(config, em);
             worker.jobProcessor.init();
             worker.init();
@@ -268,7 +268,7 @@ public class WorkerIT extends JpaBase {
     public void testPurgedRecord() throws Exception {
         System.out.println("testPurgedRecord");
 
-        try (Connection connection = pg.createConnection()) {
+        try (Connection connection = PG.createConnection()) {
             PreparedQueueSupplier<QueueJob> supplier = new QueueSupplier<>(QueueJob.STORAGE_ABSTRACTION)
                     .preparedSupplier(connection);
             supplier.enqueue("q1", new QueueJob(700000, "87654321", "{}", "foo1"));
@@ -277,7 +277,7 @@ public class WorkerIT extends JpaBase {
         jpa(em -> {
             Worker worker = new Worker();
             worker.config = config;
-            worker.dataSource = pg.datasource();
+            worker.dataSource = PG.datasource();
             worker.jobProcessor = new JobProcessor(config, em);
             worker.jobProcessor.init();
             worker.init();
@@ -472,7 +472,5 @@ public class WorkerIT extends JpaBase {
             response.getWriter()
                     .print("{\"ok\":true}");
         }
-
     }
-
 }

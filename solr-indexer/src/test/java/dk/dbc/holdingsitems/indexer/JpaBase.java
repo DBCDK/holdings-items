@@ -18,159 +18,40 @@
  */
 package dk.dbc.holdingsitems.indexer;
 
-import dk.dbc.commons.persistence.JpaTestEnvironment;
-import dk.dbc.commons.testcontainers.postgres.DBCPostgreSQLContainer;
+import dk.dbc.commons.testcontainers.postgres.AbstractJpaTestBase;
 import dk.dbc.holdingsitems.DatabaseMigrator;
 import dk.dbc.holdingsitems.jpa.BibliographicItemEntity;
 import dk.dbc.holdingsitems.jpa.IssueEntity;
 import dk.dbc.holdingsitems.jpa.ItemEntity;
 import dk.dbc.holdingsitems.jpa.LoanRestriction;
 import dk.dbc.holdingsitems.jpa.Status;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.util.Map;
-import javax.persistence.EntityManager;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.postgresql.ds.PGSimpleDataSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.Collection;
+import java.util.List;
+import javax.sql.DataSource;
 
-import static org.eclipse.persistence.config.PersistenceUnitProperties.*;
+import static dk.dbc.holdingsitems.jpa.TablesWithMigratedContent.tablesWithMigratedContent;
 
 /**
  *
  * @author Morten Bøgeskov (mb@dbc.dk)
  */
-public class JpaBase {
+public class JpaBase extends AbstractJpaTestBase {
 
-    private static final Logger log = LoggerFactory.getLogger(JpaBase.class);
-
-    @ClassRule
-    public static DBCPostgreSQLContainer pg = new DBCPostgreSQLContainer();
-    private static Map<String, String> emProperties;
-
-    @BeforeClass
-    public static void migrateTestPg() {
-        DatabaseMigrator.migrate(pg.datasource());
-        emProperties = Map.of(JDBC_USER, pg.getUsername(),
-                JDBC_PASSWORD, pg.getPassword(),
-                JDBC_URL, pg.getJdbcUrl(),
-                JDBC_DRIVER, "org.postgresql.Driver",
-                "eclipselink.logging.level", "FINE");
+    @Override
+    public String persistenceUnitName() {
+        return "holdingsItemsManual_PU";
     }
 
-    @FunctionalInterface
-    public static interface JpaVoidExecution {
-
-        public void execute(EntityManager em) throws Exception;
+    @Override
+    public void migrate(DataSource dataSource) {
+        DatabaseMigrator.migrate(dataSource);
     }
 
-    @FunctionalInterface
-    public static interface JpaExecution<T extends Object> {
-
-        public T execute(EntityManager em) throws Exception;
-    }
-
-    public void jpa(JpaVoidExecution ex) {
-        JpaTestEnvironment e = env();
-        e.reset();
-        EntityManager em = e.getEntityManager();
-        e.getPersistenceContext().run(() -> {
-            try {
-                ex.execute(em);
-            } catch (Exception exc) {
-                log.error("Exception: {}", exc.getMessage());
-                log.debug("Exception: ", exc);
-                throw exc;
-            }
-        });
-    }
-
-    public <T> T jpa(JpaExecution<T> ex) {
-        JpaTestEnvironment e = env();
-        e.reset();
-        EntityManager em = e.getEntityManager();
-        return e.getPersistenceContext().run(() -> {
-            try {
-                return ex.execute(em);
-            } catch (Exception exc) {
-                log.error("Exception: {}", exc.getMessage());
-                log.debug("Exception: ", exc);
-                throw exc;
-            }
-        });
-    }
-
-    public void flushAndEvict() {
-        jpa(em -> {
-            em.flush();
-        });
-        env().getEntityManagerFactory().getCache().evictAll();
-    }
-
-    public JpaTestEnvironment env() {
-        return new JpaTestEnvironment(pg.datasource(), "holdingsItemsManual_PU", emProperties);
-    }
-
-    @Before
-    public void cleanTables() throws Exception {
-        try (Connection connection = pg.createConnection() ;
-             Statement stmt = connection.createStatement()) {
-            stmt.execute("TRUNCATE item CASCADE");
-            stmt.execute("TRUNCATE issue CASCADE");
-            stmt.execute("TRUNCATE bibliographicItem CASCADE");
-            stmt.execute("TRUNCATE queue CASCADE");
-            stmt.execute("TRUNCATE queue_error CASCADE");
-        }
-        env().getEntityManagerFactory().getCache().evictAll();
-    }
-
-    private static PGSimpleDataSource getDataSource(String databaseName) {
-        String testPort = System.getProperty("postgresql.port");
-        PGSimpleDataSource ds = new PGSimpleDataSource() {
-            @Override
-            public Connection getConnection() throws SQLException {
-                return setLogging(super.getConnection());
-            }
-
-            @Override
-            public Connection getConnection(String user, String password) throws SQLException {
-                return setLogging(super.getConnection(user, password));
-            }
-
-            private Connection setLogging(Connection connection) {
-                try (PreparedStatement stmt = connection.prepareStatement("SET log_statement = 'all';")) {
-                    stmt.execute();
-                } catch (SQLException ex) {
-                    log.warn("Cannot set logging: {}", ex.getMessage());
-                    log.debug("Cannot set logging:", ex);
-                }
-                return connection;
-            }
-        };
-
-        String userName = System.getProperty("user.name");
-        if (testPort != null) {
-            ds.setServerNames(new String[] {"localhost"});
-            ds.setDatabaseName(databaseName);
-            ds.setUser(userName);
-            ds.setPassword(userName);
-            ds.setPortNumbers(new int[] {Integer.parseUnsignedInt(testPort)});
-        } else {
-            Map<String, String> env = System.getenv();
-            ds.setUser(env.getOrDefault("PGUSER", userName));
-            ds.setPassword(env.getOrDefault("PGPASSWORD", userName));
-            ds.setServerNames(new String[] {env.getOrDefault("PGHOST", "localhost")});
-            ds.setPortNumbers(new int[] {Integer.parseUnsignedInt(env.getOrDefault("PGPORT", "5432"))});
-            ds.setDatabaseName(env.getOrDefault("PGDATABASE", userName));
-        }
-        return ds;
+    @Override
+    public Collection<String> keepContentOfTables() {
+        return tablesWithMigratedContent();
     }
 
     protected BibliographicItemEntity fill(BibliographicItemEntity item) {
@@ -209,5 +90,4 @@ public class JpaBase {
                 .setCreated(Instant.now())
                 .setTrackingId("Some-Id");
     }
-
 }
