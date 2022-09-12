@@ -2,13 +2,13 @@ package dk.dbc.holdingsitems.content;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dk.dbc.holdingsitems.content.response.AgenciesWithHoldingsResponse;
-import dk.dbc.holdingsitems.content.response.CompleteBibliographic;
 import dk.dbc.holdingsitems.content.response.ContentServiceBranchResponse;
 import dk.dbc.holdingsitems.content.response.ContentServiceItemResponse;
 import dk.dbc.holdingsitems.content.response.ContentServiceLaesekompasResponse;
 import dk.dbc.holdingsitems.content.response.ContentServicePidResponse;
 import dk.dbc.holdingsitems.content.response.LaesekompasHoldingsEntity;
 import dk.dbc.holdingsitems.content.response.ResponseHoldingEntity;
+import dk.dbc.holdingsitems.content_dto.CompleteBibliographic;
 import dk.dbc.holdingsitems.jpa.BibliographicItemEntity;
 import dk.dbc.holdingsitems.jpa.IssueEntity;
 import dk.dbc.holdingsitems.jpa.ItemEntity;

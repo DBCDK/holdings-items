@@ -1,11 +1,13 @@
 package dk.dbc.holdingsitems.jpa;
 
+import dk.dbc.holdingsitems.content_dto.CompleteBibliographic;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.sql.Date;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -15,6 +17,7 @@ import java.util.stream.Collectors;
 import javax.persistence.EntityManager;
 
 import static dk.dbc.holdingsitems.jpa.BibliographicItemEntity.fromUnLocked;
+import static java.util.stream.Collectors.toList;
 
 /**
  *
@@ -61,6 +64,20 @@ public class BibliographicItemDetached extends BibliographicItemEntity {
 
     public Collection<IssueDetached> getIssues() {
         return issueMap.values();
+    }
+
+    public CompleteBibliographic toCompleteBibliographic() {
+        CompleteBibliographic that = new CompleteBibliographic();
+        that.agencyId = getAgencyId();
+        that.bibliographicRecordId = getBibliographicRecordId();
+        that.note = getNote();
+        that.firstAccessionDate = getFirstAccessionDate().toString();
+        that.issues = getIssues().stream()
+                .sorted(Comparator.comparing(IssueDetached::getIssueId, new VersionSort()))
+                .map(IssueDetached::toCompleteIssue)
+                .collect(toList());
+        that.trackingId = trackingId;
+        return that;
     }
 
     private BibliographicItemDetached merge(EntityManager em) {

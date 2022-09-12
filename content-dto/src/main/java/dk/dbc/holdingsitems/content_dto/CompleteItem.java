@@ -16,9 +16,8 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package dk.dbc.holdingsitems.content.response;
+package dk.dbc.holdingsitems.content_dto;
 
-import dk.dbc.holdingsitems.jpa.ItemEntity;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 /**
@@ -41,21 +40,6 @@ public class CompleteItem {
     public String bibliographicRecordId;
 
     public CompleteItem() {
-    }
-
-    public CompleteItem(ItemEntity item) {
-        this.itemId = item.getItemId();
-        this.branchId = item.getBranchId();
-        this.branch = item.getBranch();
-        this.department = item.getDepartment();
-        this.loanRestriction = item.getLoanRestriction().toString();
-        this.location = item.getLocation();
-        this.subLocation = item.getSubLocation();
-        this.circulationRule = item.getCirculationRule();
-        this.loanRestriction = item.getLoanRestriction().toString();
-        this.accessionDate = item.getAccessionDate().toString();
-        this.status = item.getStatus().toString();
-        this.bibliographicRecordId = item.getBibliographicRecordId();
     }
 
     @Override

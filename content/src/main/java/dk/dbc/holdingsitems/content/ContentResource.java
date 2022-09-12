@@ -9,7 +9,7 @@ import dk.dbc.commons.mdc.LogAs;
 import dk.dbc.holdingsitems.HoldingsItemsDAO;
 import dk.dbc.holdingsitems.HoldingsItemsException;
 import dk.dbc.holdingsitems.content.response.AgenciesWithHoldingsResponse;
-import dk.dbc.holdingsitems.content.response.CompleteBibliographic;
+import dk.dbc.holdingsitems.content_dto.CompleteBibliographic;
 import dk.dbc.holdingsitems.content.response.CompleteItemFull;
 import dk.dbc.holdingsitems.content.response.ContentServiceBranchResponse;
 import dk.dbc.holdingsitems.content.response.ContentServiceLaesekompasResponse;
@@ -141,7 +141,7 @@ public class ContentResource {
             List<CompleteItemFull> completeItems = bibliographicIds.stream()
                     .map(b -> dao.getItemsFromBranchIdAndBibliographicRecordId(agencyId, branchId, b))
                     .flatMap(Collection::stream)
-                    .map(CompleteItemFull::new)
+                    .map(CompleteItemFull::from)
                     .collect(toList());
             ContentServiceBranchResponse res = new ContentServiceBranchResponse(trackingId, completeItems);
             return Response.ok(res, MediaType.APPLICATION_JSON_TYPE).build();
@@ -238,7 +238,8 @@ public class ContentResource {
             }
 
             log.info("Requested complete {}:{}", agencyId, bibliographicRecordId);
-            CompleteBibliographic resp = new CompleteBibliographic(detached, trackingId);
+            CompleteBibliographic resp = detached.toCompleteBibliographic();
+            resp.trackingId = trackingId;
             return Response.ok(resp).build();
         }
     }

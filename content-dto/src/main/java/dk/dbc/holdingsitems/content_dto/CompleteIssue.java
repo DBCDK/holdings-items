@@ -16,18 +16,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package dk.dbc.holdingsitems.content.response;
+package dk.dbc.holdingsitems.content_dto;
 
-import dk.dbc.holdingsitems.jpa.IssueDetached;
-import dk.dbc.holdingsitems.jpa.ItemEntity;
-import dk.dbc.holdingsitems.jpa.VersionSort;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
 
 /**
  *
@@ -43,17 +38,6 @@ public class CompleteIssue {
     public List<CompleteItem> items;
 
     public CompleteIssue() {
-    }
-
-    public CompleteIssue(IssueDetached issue) {
-        this.issueId = issue.getIssueId();
-        this.issueText = issue.getIssueText();
-        this.expectedDelivery = issue.getExpectedDelivery() != null ? issue.getExpectedDelivery().toString() : null;
-        this.readyForLoan = issue.getReadyForLoan();
-        this.items = issue.stream()
-                .sorted(Comparator.comparing(ItemEntity::getItemId, new VersionSort()))
-                .map(CompleteItem::new)
-                .collect(Collectors.toList());
     }
 
     public void merge(CompleteIssue other) {
