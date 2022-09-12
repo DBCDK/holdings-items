@@ -86,7 +86,7 @@ public class BibliographicItemDetached extends BibliographicItemEntity {
                 .sorted(new VersionSort().reversed())
                 .map(bibId -> fromUnLocked(em, agencyId, bibId))
                 .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+                .collect(toList());
         if (!extraBibItems.isEmpty()) {
             extraBibItems.forEach(extraBib -> {
                 mergeFirstAccessionDate(extraBib.getFirstAccessionDate());

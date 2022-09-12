@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
  *
  * @author Morten Bøgeskov (mb@dbc.dk)
  */
-@SuppressFBWarnings("URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD")
+@SuppressFBWarnings({"URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD", "UWF_UNWRITTEN_PUBLIC_OR_PROTECTED_FIELD"})
 public class CompleteIssue {
 
     public String issueId;

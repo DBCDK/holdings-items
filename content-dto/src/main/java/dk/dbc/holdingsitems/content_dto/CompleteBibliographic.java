@@ -21,12 +21,11 @@ package dk.dbc.holdingsitems.content_dto;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.List;
 
-
 /**
  *
  * @author Morten Bøgeskov (mb@dbc.dk)
  */
-@SuppressFBWarnings("URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD")
+@SuppressFBWarnings({"URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD", "UUF_UNUSED_PUBLIC_OR_PROTECTED_FIELD"})
 public class CompleteBibliographic {
 
     public int agencyId;
@@ -38,18 +37,6 @@ public class CompleteBibliographic {
 
     public CompleteBibliographic() {
     }
-
-//    public CompleteBibliographic(BibliographicItemDetached rec, String trackingId) {
-//        this.agencyId = rec.getAgencyId();
-//        this.bibliographicRecordId = rec.getBibliographicRecordId();
-//        this.note = rec.getNote();
-//        this.firstAccessionDate = rec.getFirstAccessionDate().toString();
-//        this.issues = rec.getIssues().stream()
-//                .sorted(Comparator.comparing(IssueDetached::getIssueId, new VersionSort()))
-//                .map(CompleteIssue::new)
-//                .collect(toList());
-//        this.trackingId = trackingId;
-//    }
 
     @Override
     public String toString() {
