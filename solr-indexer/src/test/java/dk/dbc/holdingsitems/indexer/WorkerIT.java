@@ -85,7 +85,7 @@ public class WorkerIT extends JpaBase {
     private static final ObjectMapper O = new ObjectMapper();
     private static final Logger log = LoggerFactory.getLogger(WorkerIT.class);
 
-    private Config config;
+    private static Config config;
     private static int solrDocStorePort;
     private static Server jettyServer;
     private static Consumer consumer;
@@ -125,17 +125,15 @@ public class WorkerIT extends JpaBase {
         jettyServer.setHandler(consumer);
         jettyServer.start();
         solrDocStorePort = ( (ServerConnector) jettyServer.getConnectors()[0] ).getLocalPort();
-
-    }
-
-    @Before
-    public void setUp() throws Exception {
         config = new Config("queues=q1,q2",
                             "solr-doc-store-url=http://localhost:" + solrDocStorePort + "/",
                             "holdings-items-content-service-url=" + CONTENT_SERVICE_URL);
         config.init();
         log.debug("config = {}", config);
+    }
 
+    @Before
+    public void setUp() throws Exception {
         consumer.requests.clear();
     }
 
