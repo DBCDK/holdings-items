@@ -18,9 +18,8 @@
  */
 package dk.dbc.holdingsitems.indexer;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import dk.dbc.holdingsitems.QueueJob;
+import dk.dbc.holdingsitems.content_dto.CompleteBibliographic;
 import dk.dbc.holdingsitems.indexer.logic.JobProcessor;
 import dk.dbc.pgqueue.consumer.JobMetaData;
 import dk.dbc.pgqueue.consumer.QueueWorker;
@@ -93,14 +92,12 @@ public class Worker {
     public void work(Connection connection, QueueJob job, JobMetaData metaData) {
         log.info("Processing job: {}:{}", job.getAgencyId(), job.getBibliographicRecordId());
         try {
-            ObjectNode json = jobProcessor.buildRequestJson(job);
-            JsonNode response = jobProcessor.sendToSolrDocStore(json);
-            if (response.get("status").asInt(-1) != 200) {
-                String status = response.get("status-text").asText("Unknown response code");
-                log.error("Communication failure: {}", status);
-                String body = response.get("body").asText("Unknown response body");
-                log.debug("Communication failure: ", body);
-                throw new RuntimeException(status);
+            CompleteBibliographic complete = jobProcessor.getContent(job);
+            if (complete != null) {
+                String json = jobProcessor.buildRequestJson(complete);
+                jobProcessor.putIntoSolrDocStore(job, json);
+            } else {
+                jobProcessor.deleteFromSolrDocStore(job);
             }
         } catch (RuntimeException ex) {
             throw ex;
@@ -108,5 +105,4 @@ public class Worker {
             throw new RuntimeException(ex);
         }
     }
-
 }
