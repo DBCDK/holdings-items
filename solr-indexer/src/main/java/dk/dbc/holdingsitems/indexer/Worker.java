@@ -93,8 +93,11 @@ public class Worker {
         log.info("Processing job: {}:{}", job.getAgencyId(), job.getBibliographicRecordId());
         try {
             CompleteBibliographic complete = jobProcessor.getContent(job);
+            String json = null;
             if (complete != null) {
-                String json = jobProcessor.buildRequestJson(complete);
+                json = jobProcessor.buildRequestJson(complete);
+            }
+            if (json != null) {
                 jobProcessor.putIntoSolrDocStore(job, json);
             } else {
                 jobProcessor.deleteFromSolrDocStore(job);

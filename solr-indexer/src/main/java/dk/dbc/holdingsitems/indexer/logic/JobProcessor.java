@@ -28,7 +28,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.time.temporal.ChronoUnit;
+import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 import javax.annotation.PostConstruct;
 import javax.ejb.Stateless;
 import javax.inject.Inject;
@@ -150,7 +152,10 @@ public class JobProcessor {
                 grouping.add(itemData);
             });
         });
-        return O.writeValueAsString(Map.of("indexKeys", grouping.documents()));
+        Collection<Map<String, Set<String>>> documents = grouping.documents();
+        if (documents.isEmpty())
+            return null;
+        return O.writeValueAsString(Map.of("indexKeys", documents));
     }
 
     @Timed
