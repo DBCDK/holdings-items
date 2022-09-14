@@ -18,29 +18,32 @@
  */
 package dk.dbc.holdingsitems.indexer.logic;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import dk.dbc.holdingsitems.HoldingsItemsDAO;
 import dk.dbc.holdingsitems.QueueJob;
+import dk.dbc.holdingsitems.content_dto.CompleteBibliographic;
 import dk.dbc.holdingsitems.indexer.Config;
-import dk.dbc.holdingsitems.jpa.BibliographicItemEntity;
+import dk.dbc.pgqueue.consumer.NonFatalQueueError;
 import java.io.IOException;
-import java.util.HashMap;
+import java.io.InputStream;
+import java.net.URI;
+import java.time.temporal.ChronoUnit;
+import java.util.Collection;
+import java.util.Map;
+import java.util.Set;
 import javax.annotation.PostConstruct;
 import javax.ejb.Stateless;
-import javax.ejb.TransactionAttribute;
-import javax.ejb.TransactionAttributeType;
 import javax.inject.Inject;
-import javax.persistence.EntityManager;
+import javax.ws.rs.NotFoundException;
 import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
+import net.jodah.failsafe.Failsafe;
+import net.jodah.failsafe.FailsafeExecutor;
+import net.jodah.failsafe.RetryPolicy;
 import org.eclipse.microprofile.metrics.annotation.Timed;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -49,95 +52,141 @@ import org.eclipse.microprofile.metrics.annotation.Timed;
 @Stateless
 public class JobProcessor {
 
-    private static final ObjectMapper O = new ObjectMapper();
+    private static final org.slf4j.Logger log = LoggerFactory.getLogger(JobProcessor.class);
+
+    private static final ObjectMapper O = new ObjectMapper()
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+
+    private static final FailsafeExecutor<CompleteBibliographic> RETRIEVE_DELAY = Failsafe.with(new RetryPolicy<CompleteBibliographic>()
+            .abortOn(JobProcessor::notFoundButEndpointHasHandled)
+            .withBackoff(1, 5, ChronoUnit.SECONDS)
+            .withJitter(.5)
+            .withMaxAttempts(3));
+
+    private static final FailsafeExecutor<String> SEND_DELAY = Failsafe.with(new RetryPolicy<String>()
+            .withBackoff(1, 5, ChronoUnit.SECONDS)
+            .withJitter(.5)
+            .withMaxAttempts(3));
+
+    private static boolean notFoundButEndpointHasHandled(Throwable t) {
+        return t instanceof NotFoundException &&
+               ( (NotFoundException) t ).getResponse().getHeaderString("X-DBC-Status") != null;
+    }
 
     private Client client;
-    private UriBuilder uriBuilder;
+    private UriBuilder solrDocStoreUri;
+    private UriBuilder contentServiceUri;
 
     @Inject
     Config config;
 
-    @Inject
-    EntityManager em;
-
     public JobProcessor() {
     }
 
-    public JobProcessor(Config config, EntityManager em) {
+    public JobProcessor(Config config) {
         this.config = config;
-        this.em = em;
     }
 
     @PostConstruct
     public void init() {
-        client = ClientBuilder.newBuilder()
-                .build();
-        uriBuilder = UriBuilder.fromUri(config.getSolrDocStoreUrl());
+        client = config.getClient();
+        solrDocStoreUri = UriBuilder.fromUri(config.getSolrDocStoreUrl())
+                .path("{agencyId}-{bibliographicRecordId}").queryParam("trackingId", "{trackingId}");
+        contentServiceUri = UriBuilder.fromUri(config.getHoldingsItemsContentServiceUrl())
+                .path("{agencyId}").path("{bibliographicRecordId}").queryParam("trackingId", "{trackingId}");
     }
 
     @Timed
-    @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
-    public ObjectNode buildRequestJson(QueueJob job) throws Exception {
-        String trackingId = job.getTrackingId();
-
-        HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, trackingId);
-        String bibliographicRecordId = job.getBibliographicRecordId();
-        int agencyId = job.getAgencyId();
-        BibliographicItemEntity b = dao.getRecordCollectionUnLocked(bibliographicRecordId, agencyId);
-
-        ObjectNode json = O.createObjectNode();
-        addMetadata(json, agencyId, bibliographicRecordId, trackingId);
-        ArrayNode jsonRecords = json.putArray("indexKeys");
-
-        if (b != null) {
-            HashMap<UniqueFields, RepeatedFields> records = new HashMap<>();
-            b.stream().forEach(issue -> {
-                issue.stream().forEach(item -> {
-                    UniqueFields key = new UniqueFields(issue, item);
-                    RepeatedFields repeatedFields = records.computeIfAbsent(key, v -> new RepeatedFields(b.getTrackingId(), issue.getTrackingId(), job.getTrackingId()));
-                    repeatedFields.addRepeatedFieldsFrom(item);
-                });
-            });
-
-            records.forEach((unique, repeated) -> {
-                ObjectNode node = jsonRecords.addObject();
-                node.putArray(SolrFields.NOTE.getFieldName()).add(b.getNote());
-                node.putArray(SolrFields.FIRST_ACCESSION_DATE.getFieldName()).add(UniqueFields.isoDate(b.getFirstAccessionDate()));
-                unique.fillIn(node);
-                repeated.fillIn(node);
-            });
-        }
-        return json;
-    }
-
-    @Timed
-    public JsonNode sendToSolrDocStore(JsonNode node) {
-        ObjectNode res = O.createObjectNode();
+    public CompleteBibliographic getContent(QueueJob job) throws NonFatalQueueError {
+        URI uri = contentServiceUri.buildFromMap(Map.of("agencyId", job.getAgencyId(),
+                                                        "bibliographicRecordId", job.getBibliographicRecordId(),
+                                                        "trackingId", job.getTrackingId()));
+        log.debug("fetching: {}", uri);
         try {
-            Response response = client.target(uriBuilder)
-                    .request(MediaType.APPLICATION_JSON_TYPE)
-                    .buildPost(Entity.json(O.writeValueAsString(node)))
-                    .invoke();
-            res.put("status", response.getStatus());
-            res.put("status-text", response.getStatusInfo().getReasonPhrase());
-            res.put("content-type", response.getMediaType().toString());
-            if (response.hasEntity()) {
-                String body = response.readEntity(String.class);
-                res.put("body", body);
-                if (MediaType.APPLICATION_JSON_TYPE.equals(response.getMediaType())) {
-                    res.set("json", O.readTree(body));
+            return RETRIEVE_DELAY.get(() -> {
+                try (InputStream is = client
+                        .target(uri)
+                        .request(MediaType.APPLICATION_JSON_TYPE)
+                        .get(InputStream.class)) {
+                    return O.readValue(is, CompleteBibliographic.class);
+                } catch (IOException ex) {
+                    throw new RuntimeException(ex);
                 }
+            });
+        } catch (RuntimeException ex) {
+            if (notFoundButEndpointHasHandled(ex)) {
+                return null;
             }
-        } catch (IOException ex) {
-            res.put("status", -1);
-            res.put("status-text", ex.toString());
+            throw new NonFatalQueueError("Error getting content for: " + uri + " " + ex.getMessage(), ex);
         }
-        return res;
     }
 
-    private void addMetadata(ObjectNode record, int agencyId, String bibliographicRecordId, String trackingId) {
-        record.put("agencyId", agencyId);
-        record.put("bibliographicRecordId", bibliographicRecordId);
-        record.put("trackingId", trackingId);
+    @Timed
+    public String buildRequestJson(CompleteBibliographic complete) throws Exception {
+        ItemGrouping grouping = new ItemGrouping();
+        ItemMerge bibliographicData = new ItemMerge()
+                .with(SolrFields.AGENCY_ID.getFieldName(), String.valueOf(complete.agencyId))
+                .with(SolrFields.BIBLIOGRAPHIC_RECORD_ID.getFieldName(), complete.bibliographicRecordId)
+                .with(SolrFields.FIRST_ACCESSION_DATE.getFieldName(), complete.firstAccessionDate)
+                .with(SolrFields.NOTE.getFieldName(), complete.note)
+                .with(SolrFields.REC_BIBLIOGRAPHIC_RECORD_ID.getFieldName(), complete.bibliographicRecordId);
+        complete.issues.forEach(issue -> {
+            ItemMerge issueData = bibliographicData.deepCopy()
+                    .with(SolrFields.EXPECTED_DELIVERY.getFieldName(), issue.expectedDelivery)
+                    .with(SolrFields.ISSUE_ID.getFieldName(), issue.issueId)
+                    .with(SolrFields.ISSUE_TEXT.getFieldName(), issue.issueText)
+                    .with(SolrFields.READY_FOR_LOAN.getFieldName(), issue.readyForLoan);
+            issue.items.forEach(item -> {
+                ItemMerge itemData = issueData.deepCopy()
+                        .with(SolrFields.ACCESSION_DATE.getFieldName(), item.accessionDate)
+                        .with(SolrFields.BIBLIOGRAPHIC_RECORD_ID.getFieldName(), item.bibliographicRecordId)
+                        .with(SolrFields.BRANCH.getFieldName(), item.branch)
+                        .with(SolrFields.BRANCH_ID.getFieldName(), item.branchId)
+                        .with(SolrFields.CIRCULATION_RULE.getFieldName(), item.circulationRule)
+                        .with(SolrFields.DEPARTMENT.getFieldName(), item.department)
+                        .with(SolrFields.ITEM_ID.getFieldName(), item.itemId)
+                        .with(SolrFields.LOAN_RESTRICTION.getFieldName(), item.loanRestriction)
+                        .with(SolrFields.LOCATION.getFieldName(), item.location)
+                        .with(SolrFields.STATUS.getFieldName(), item.status)
+                        .with(SolrFields.SUBLOCATION.getFieldName(), item.subLocation);
+                grouping.add(itemData);
+            });
+        });
+        Collection<Map<String, Set<String>>> documents = grouping.documents();
+        if (documents.isEmpty())
+            return null;
+        return O.writeValueAsString(Map.of("indexKeys", documents));
+    }
+
+    @Timed
+    public void putIntoSolrDocStore(QueueJob job, String json) throws NonFatalQueueError {
+        URI uri = solrDocStoreUri.buildFromMap(Map.of("agencyId", job.getAgencyId(),
+                                                      "bibliographicRecordId", job.getBibliographicRecordId(),
+                                                      "trackingId", job.getTrackingId()));
+        log.debug("putting: {}", uri);
+        try {
+            SEND_DELAY.get(() ->
+                    client.target(uri)
+                            .request(MediaType.APPLICATION_JSON_TYPE)
+                            .put(Entity.json(json), String.class));
+        } catch (RuntimeException ex) {
+            throw new NonFatalQueueError("Error sending content to: " + uri + " " + ex.getMessage(), ex);
+        }
+    }
+
+    @Timed
+    public void deleteFromSolrDocStore(QueueJob job) throws NonFatalQueueError {
+        URI uri = solrDocStoreUri.buildFromMap(Map.of("agencyId", job.getAgencyId(),
+                                                      "bibliographicRecordId", job.getBibliographicRecordId(),
+                                                      "trackingId", job.getTrackingId()));
+        log.debug("deleting: {}", uri);
+        try {
+            SEND_DELAY.get(() ->
+                    client.target(uri)
+                            .request(MediaType.APPLICATION_JSON_TYPE)
+                            .delete(String.class));
+        } catch (RuntimeException ex) {
+            throw new NonFatalQueueError("Error sending content to: " + uri + " " + ex.getMessage(), ex);
+        }
     }
 }

@@ -31,6 +31,10 @@ import javax.ejb.Singleton;
 import javax.ejb.Startup;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.ClientRequestContext;
+import javax.ws.rs.client.ClientRequestFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,7 +56,8 @@ public class Config {
     private String[] queues;
     private int threads;
     private String solrDocStoreUrl;
-    private String jmxDomain;
+    private Client client;
+    private String holdingsItemsContentServiceUrl;
 
     public Config() {
         props = null;
@@ -79,7 +84,16 @@ public class Config {
         this.solrDocStoreUrl = URI.create(getOrFail("solr-doc-store-url"))
                 .resolve("/api/holdings")
                 .toString();
-        this.jmxDomain = getOrDefault("jmx-domain", "metrics");
+        this.holdingsItemsContentServiceUrl = URI.create(getOrFail("holdings-items-content-service-url"))
+                .resolve("/api/complete")
+                .toString();
+
+        String userAgent = getOrDefault("user-agent", "Unknown/0.0");
+        log.debug("Using: {} as HttpUserAgent", userAgent);
+        this.client = clientBuilder()
+                .register((ClientRequestFilter) (ClientRequestContext context) -> {
+                    context.getHeaders().putSingle("User-Agent", userAgent);
+                }).build();
     }
 
     @SuppressFBWarnings("EI_EXPOSE_REP")
@@ -95,8 +109,12 @@ public class Config {
         return solrDocStoreUrl;
     }
 
-    public String getJmxDomain() {
-        return jmxDomain;
+    public String getHoldingsItemsContentServiceUrl() {
+        return holdingsItemsContentServiceUrl;
+    }
+
+    public Client getClient() {
+        return client;
     }
 
     private String getOrFail(String property) {
@@ -131,9 +149,12 @@ public class Config {
         return new Properties();
     }
 
-    @Override
-    public String toString() {
-        return "Config{" + "queues=" + Arrays.toString(queues) + ", threads=" + threads + ", solrDocStoreUrl=" + solrDocStoreUrl + ", jmxDomain=" + jmxDomain + '}';
+    protected ClientBuilder clientBuilder() {
+        return ClientBuilder.newBuilder();
     }
 
+    @Override
+    public String toString() {
+        return "Config{queues=" + Arrays.toString(queues) + ", threads=" + threads + ", solrDocStoreUrl=" + solrDocStoreUrl + ", holdingsItemsContentServiceUrl=" + holdingsItemsContentServiceUrl + '}';
+    }
 }

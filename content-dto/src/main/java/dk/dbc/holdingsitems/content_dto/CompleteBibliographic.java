@@ -16,22 +16,16 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package dk.dbc.holdingsitems.content.response;
+package dk.dbc.holdingsitems.content_dto;
 
-import dk.dbc.holdingsitems.jpa.BibliographicItemDetached;
-import dk.dbc.holdingsitems.jpa.IssueDetached;
-import dk.dbc.holdingsitems.jpa.VersionSort;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import java.util.Comparator;
 import java.util.List;
-
-import static java.util.stream.Collectors.toList;
 
 /**
  *
  * @author Morten Bøgeskov (mb@dbc.dk)
  */
-@SuppressFBWarnings("URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD")
+@SuppressFBWarnings({"URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD", "UUF_UNUSED_PUBLIC_OR_PROTECTED_FIELD"})
 public class CompleteBibliographic {
 
     public int agencyId;
@@ -42,18 +36,6 @@ public class CompleteBibliographic {
     public String trackingId;
 
     public CompleteBibliographic() {
-    }
-
-    public CompleteBibliographic(BibliographicItemDetached rec, String trackingId) {
-        this.agencyId = rec.getAgencyId();
-        this.bibliographicRecordId = rec.getBibliographicRecordId();
-        this.note = rec.getNote();
-        this.firstAccessionDate = rec.getFirstAccessionDate().toString();
-        this.issues = rec.getIssues().stream()
-                .sorted(Comparator.comparing(IssueDetached::getIssueId, new VersionSort()))
-                .map(CompleteIssue::new)
-                .collect(toList());
-        this.trackingId = trackingId;
     }
 
     @Override

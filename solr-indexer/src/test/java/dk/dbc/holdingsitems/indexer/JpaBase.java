@@ -18,6 +18,7 @@
  */
 package dk.dbc.holdingsitems.indexer;
 
+import dk.dbc.commons.testcontainers.postgres.AbstractJpaAndRestTestBase;
 import dk.dbc.commons.testcontainers.postgres.AbstractJpaTestBase;
 import dk.dbc.holdingsitems.DatabaseMigrator;
 import dk.dbc.holdingsitems.jpa.BibliographicItemEntity;
@@ -37,7 +38,7 @@ import static dk.dbc.holdingsitems.jpa.TablesWithMigratedContent.tablesWithMigra
  *
  * @author Morten Bøgeskov (mb@dbc.dk)
  */
-public class JpaBase extends AbstractJpaTestBase {
+public class JpaBase extends AbstractJpaAndRestTestBase {
 
     @Override
     public String persistenceUnitName() {

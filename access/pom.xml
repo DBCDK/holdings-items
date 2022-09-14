@@ -61,6 +61,13 @@
     </build>
     
     <dependencies>
+
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>holdings-items-content-dto</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
         
         <dependency>
             <groupId>org.flywaydb</groupId>
@@ -117,7 +124,7 @@
             <scope>test</scope>
         </dependency>
 
-<!--        <dependency>
+        <!--        <dependency>
             <groupId>com.codahale.metrics</groupId>
             <artifactId>metrics-core</artifactId>
             <scope>test</scope>

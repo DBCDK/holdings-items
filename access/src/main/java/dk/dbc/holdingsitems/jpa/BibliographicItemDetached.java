@@ -1,20 +1,22 @@
 package dk.dbc.holdingsitems.jpa;
 
+import dk.dbc.holdingsitems.content_dto.CompleteBibliographic;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.sql.Date;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 import javax.persistence.EntityManager;
 
 import static dk.dbc.holdingsitems.jpa.BibliographicItemEntity.fromUnLocked;
+import static java.util.stream.Collectors.toList;
 
 /**
  *
@@ -63,13 +65,27 @@ public class BibliographicItemDetached extends BibliographicItemEntity {
         return issueMap.values();
     }
 
+    public CompleteBibliographic toCompleteBibliographic() {
+        CompleteBibliographic that = new CompleteBibliographic();
+        that.agencyId = getAgencyId();
+        that.bibliographicRecordId = getBibliographicRecordId();
+        that.note = getNote();
+        that.firstAccessionDate = getFirstAccessionDate().toString();
+        that.issues = getIssues().stream()
+                .sorted(Comparator.comparing(IssueDetached::getIssueId, new VersionSort()))
+                .map(IssueDetached::toCompleteIssue)
+                .collect(toList());
+        that.trackingId = trackingId;
+        return that;
+    }
+
     private BibliographicItemDetached merge(EntityManager em) {
         List<BibliographicItemEntity> extraBibItems = SupersedesEntity.bySupersedingNoLock(em, bibliographicRecordId)
                 .map(SupersedesEntity::getSuperseded)
                 .sorted(new VersionSort().reversed())
                 .map(bibId -> fromUnLocked(em, agencyId, bibId))
                 .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+                .collect(toList());
         if (!extraBibItems.isEmpty()) {
             extraBibItems.forEach(extraBib -> {
                 mergeFirstAccessionDate(extraBib.getFirstAccessionDate());

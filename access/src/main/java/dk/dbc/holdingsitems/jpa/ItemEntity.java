@@ -18,6 +18,7 @@
  */
 package dk.dbc.holdingsitems.jpa;
 
+import dk.dbc.holdingsitems.content_dto.CompleteItem;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.Serializable;
 import java.sql.Timestamp;
@@ -289,6 +290,23 @@ public class ItemEntity implements Serializable {
     public ItemEntity setTrackingId(String trackingId) {
         this.trackingId = trackingId;
         return this;
+    }
+
+    public CompleteItem toCompleteItem() {
+        CompleteItem that = new CompleteItem();
+        that.itemId = getItemId();
+        that.branchId = getBranchId();
+        that.branch = getBranch();
+        that.department = getDepartment();
+        that.loanRestriction = getLoanRestriction().toString();
+        that.location = getLocation();
+        that.subLocation = getSubLocation();
+        that.circulationRule = getCirculationRule();
+        that.loanRestriction = getLoanRestriction().toString();
+        that.accessionDate = getAccessionDate().toString();
+        that.status = getStatus().toString();
+        that.bibliographicRecordId = getBibliographicRecordId();
+        return that;
     }
 
     // only PRIMARY KEY fields for hash-code

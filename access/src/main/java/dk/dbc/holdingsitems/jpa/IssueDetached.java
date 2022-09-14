@@ -1,10 +1,13 @@
 package dk.dbc.holdingsitems.jpa;
 
+import dk.dbc.holdingsitems.content_dto.CompleteIssue;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -50,5 +53,18 @@ public class IssueDetached extends IssueEntity {
 
     public Set<ItemEntity> getItems() {
         return Collections.unmodifiableSet(items);
+    }
+
+    public CompleteIssue toCompleteIssue() {
+        CompleteIssue that = new CompleteIssue();
+        that.issueId = getIssueId();
+        that.issueText = getIssueText();
+        that.expectedDelivery = getExpectedDelivery() != null ? getExpectedDelivery().toString() : null;
+        that.readyForLoan = getReadyForLoan();
+        that.items = stream()
+                .sorted(Comparator.comparing(ItemEntity::getItemId, new VersionSort()))
+                .map(ItemEntity::toCompleteItem)
+                .collect(Collectors.toList());
+        return that;
     }
 }

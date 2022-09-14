@@ -5,12 +5,14 @@ COPY target/docker/*.jar /opt/payara5/jars/
 ENV THREADS=4 \
     RETRIES=5 \
     APPLICATION_NAME=HoldingsItemsSolrDocStoreIndexer \
+    USER_AGENT=${project.build.finalName}/${project.version} \
     MAX_POOL_SIZE=2
 
 LABEL HOLDINGS_ITEMS_POSTGRES_URL="Holdingsitems database url (required: user:pass@host:port/database)" \
       QUEUES="Comma separated list og queue names in order to drain (required)" \
       THREADS="Number of threads (default 4)" \
       RETRIES="Now many times to try to process a queue entry (default: 5)" \
+      HOLDINGS_ITEMS_CONTENT_SERVICE_URL="holdings-items-content-service base url (required (ex. http://hics.example.com:8080/))" \
       SOLR_DOC_STORE_URL="solr-doc-store base url (required (ex. http://sds.example.com:8080/))" \
       DATABASE_THROTTLE="Database connect error throttle (default: 1/5s,3/m,5/10m)" \
       FAILURE_THROTTLE="Processing failure throttle (default: 2/100ms,3/s,5/m)" \

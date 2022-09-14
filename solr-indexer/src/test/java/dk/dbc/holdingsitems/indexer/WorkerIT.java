@@ -22,11 +22,18 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.github.dockerjava.api.model.ContainerNetwork;
+import dk.dbc.commons.testcontainers.postgres.DBCPostgreSQLContainer;
 import dk.dbc.holdingsitems.QueueJob;
+import dk.dbc.holdingsitems.content_dto.CompleteBibliographic;
 import dk.dbc.holdingsitems.indexer.logic.JobProcessor;
 import dk.dbc.pgqueue.supplier.PreparedQueueSupplier;
 import dk.dbc.pgqueue.supplier.QueueSupplier;
 import dk.dbc.pgqueue.consumer.JobMetaData;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletInputStream;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.Connection;
@@ -35,6 +42,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -44,10 +52,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import javax.servlet.ServletException;
-import javax.servlet.ServletInputStream;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
@@ -64,7 +68,11 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.output.Slf4jLogConsumer;
+import org.testcontainers.containers.wait.strategy.Wait;
 
+import static dk.dbc.commons.testcontainers.postgres.AbstractJpaTestBase.PG;
 import static org.junit.Assert.*;
 import static java.sql.Types.*;
 
@@ -77,10 +85,38 @@ public class WorkerIT extends JpaBase {
     private static final ObjectMapper O = new ObjectMapper();
     private static final Logger log = LoggerFactory.getLogger(WorkerIT.class);
 
-    private Config config;
+    private static Config config;
     private static int solrDocStorePort;
     private static Server jettyServer;
     private static Consumer consumer;
+
+    private static final GenericContainer CONTENT_SERVICE = makeService(PG);
+    private static final String CONTENT_SERVICE_URL = "http://" + containerIp(CONTENT_SERVICE) + ":8080/";
+
+    private static GenericContainer makeService(DBCPostgreSQLContainer pg) {
+        String dockerImagePostfix = System.getProperty("docker.image.postfix", "-current:latest");
+        GenericContainer container = new GenericContainer("holdings-items-content-service" + dockerImagePostfix)
+                .withLogConsumer(new Slf4jLogConsumer(LoggerFactory.getLogger("dk.dbc.PAYARA")))
+                .withEnv("JAVA_MAX_HEAP_SIZE", "1G")
+                .withEnv("HOLDINGS_ITEMS_POSTGRES_URL", pg.getPayaraDockerJdbcUrl())
+                .withEnv("LOG__dk_dbc", "DEBUG")
+                .withExposedPorts(8080)
+                .waitingFor(Wait.forHttp("/health"))
+                .withStartupTimeout(Duration.ofMinutes(3));
+        container.start();
+        return container;
+    }
+
+    private static String containerIp(GenericContainer container) {
+        return container.getCurrentContainerInfo()
+                .getNetworkSettings()
+                .getNetworks()
+                .values()
+                .stream()
+                .map(ContainerNetwork::getIpAddress)
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("Container has no IP address?"));
+    }
 
     @BeforeClass
     public static void setUpClass() throws Exception {
@@ -89,15 +125,15 @@ public class WorkerIT extends JpaBase {
         jettyServer.setHandler(consumer);
         jettyServer.start();
         solrDocStorePort = ( (ServerConnector) jettyServer.getConnectors()[0] ).getLocalPort();
+        config = new Config("queues=q1,q2",
+                            "solr-doc-store-url=http://localhost:" + solrDocStorePort + "/",
+                            "holdings-items-content-service-url=" + CONTENT_SERVICE_URL);
+        config.init();
+        log.debug("config = {}", config);
     }
 
     @Before
     public void setUp() throws Exception {
-        config = new Config("queues=q1,q2",
-                            "solr-doc-store-url=http://localhost:" + solrDocStorePort + "/");
-        config.init();
-        log.debug("config = {}", config);
-
         consumer.requests.clear();
     }
 
@@ -125,13 +161,9 @@ public class WorkerIT extends JpaBase {
     @Test
     public void testResponse() throws Exception {
         log.info("testResponse");
-        JobProcessor jobProcessor = new JobProcessor(config, null);
+        JobProcessor jobProcessor = new JobProcessor(config);
         jobProcessor.init();
-        JsonNode node = O.readTree("{\"hello\":\"there\"}");
-        JsonNode response = jobProcessor.sendToSolrDocStore(node);
-        log.debug("response = {}", response);
-        assertNotNull(response);
-        assertJson(200, response, "/status");
+        jobProcessor.putIntoSolrDocStore(new QueueJob(700000, "87654321", "{}", "x"), "{\"hello\":\"there\"}");
         ObjectNode request = consumer.requests.poll();
         log.debug("request = {}", request);
         assertNotNull(request);
@@ -146,14 +178,12 @@ public class WorkerIT extends JpaBase {
         }
 
         jpa(em -> {
-            JobProcessor jobProcessor = new JobProcessor(config, em);
+            JobProcessor jobProcessor = new JobProcessor(config);
             jobProcessor.init();
             try (Connection connection = PG.createConnection()) {
-                ObjectNode json = jobProcessor.buildRequestJson(new QueueJob(700000, "87654321", "{}", "T#1"));
+                CompleteBibliographic content = jobProcessor.getContent(new QueueJob(700000, "87654321", "{}", "T#1"));
+                JsonNode json = O.readTree(jobProcessor.buildRequestJson(content));
                 System.out.println("json = " + json);
-                assertJson(700000, json, "/agencyId");
-                assertJson("87654321", json, "/bibliographicRecordId");
-                assertTrue(json.get("indexKeys").isArray());
                 ArrayNode subDocs = (ArrayNode) json.get("indexKeys");
                 assertEquals(3, subDocs.size());
                 ObjectNode dp = findSubDocContaining(subDocs, "/holdingsitem.itemId", "dp1");
@@ -162,7 +192,7 @@ public class WorkerIT extends JpaBase {
                 ObjectNode rpo1 = findSubDocContaining(subDocs, "/holdingsitem.itemId", "rpo1");
                 log.debug("rpo1 = {}", rpo1);
                 assertEquals(O.readTree("{\"holdingsitem.note\":[\"any-text\"]," +
-                                        "\"holdingsitem.firstAccessionDate\":[\"2019-03-04T00:00:00Z\"]," +
+                                        "\"holdingsitem.firstAccessionDate\":[\"2019-03-04\"]," +
                                         "\"holdingsitem.agencyId\":[\"700000\"]," +
                                         "\"holdingsitem.bibliographicRecordId\":[\"87654321\"]," +
                                         "\"rec.bibliographicRecordId\":[\"87654321\"]," +
@@ -175,15 +205,14 @@ public class WorkerIT extends JpaBase {
                                         "\"holdingsitem.location\":[\"\"]," +
                                         "\"holdingsitem.subLocation\":[\"\"]," +
                                         "\"holdingsitem.circulationRule\":[\"\"]," +
-                                        "\"holdingsitem.accessionDate\":[\"2016-02-03T00:00:00Z\"]," +
+                                        "\"holdingsitem.accessionDate\":[\"2016-02-03\"]," +
                                         "\"holdingsitem.itemId\":[\"rpo1\"]," +
-                                        "\"holdingsitem.status\":[\"OnLoan\"]," +
-                                        "\"rec.trackingId\":[\"\",\"T#1\",\"xxx\"]}"),
+                                        "\"holdingsitem.status\":[\"OnLoan\"]}"),
                              rpo1);
                 ObjectNode rpo2 = findSubDocContaining(subDocs, "/holdingsitem.itemId", "rpo2");
                 log.debug("rpo2 = {}", rpo2);
                 assertEquals(O.readTree("{\"holdingsitem.note\":[\"any-text\"]," +
-                                        "\"holdingsitem.firstAccessionDate\":[\"2019-03-04T00:00:00Z\"]," +
+                                        "\"holdingsitem.firstAccessionDate\":[\"2019-03-04\"]," +
                                         "\"holdingsitem.agencyId\":[\"700000\"]," +
                                         "\"holdingsitem.bibliographicRecordId\":[\"87654321\"]," +
                                         "\"rec.bibliographicRecordId\":[\"87654321\"]," +
@@ -196,11 +225,10 @@ public class WorkerIT extends JpaBase {
                                         "\"holdingsitem.location\":[\"\"]," +
                                         "\"holdingsitem.subLocation\":[\"\"]," +
                                         "\"holdingsitem.circulationRule\":[\"\"]," +
-                                        "\"holdingsitem.accessionDate\":[\"2015-01-02T00:00:00Z\"]," +
+                                        "\"holdingsitem.accessionDate\":[\"2015-01-02\"]," +
                                         "\"holdingsitem.loanRestriction\":[\"e\"]," +
                                         "\"holdingsitem.itemId\":[\"rpo2\"]," +
-                                        "\"holdingsitem.status\":[\"OnShelf\"]," +
-                                        "\"rec.trackingId\":[\"\",\"T#1\",\"xxx\"]}"),
+                                        "\"holdingsitem.status\":[\"OnShelf\"]}"),
                              rpo2);
             }
         });
@@ -244,24 +272,22 @@ public class WorkerIT extends JpaBase {
             supplier.enqueue("q1", new QueueJob(700000, "87654321", "{}", "foo1"));
         }
 
-        jpa(em -> {
-            Worker worker = new Worker();
-            worker.config = config;
-            worker.dataSource = PG.datasource();
-            worker.jobProcessor = new JobProcessor(config, em);
-            worker.jobProcessor.init();
-            worker.init();
-            ObjectNode job = consumer.requests.poll(10, TimeUnit.SECONDS);
-            log.debug("job = {}", job);
-            worker.destroy();
-            assertNotNull(job);
+        Worker worker = new Worker();
+        worker.config = config;
+        worker.dataSource = PG.datasource();
+        worker.jobProcessor = new JobProcessor(config);
+        worker.jobProcessor.init();
+        worker.init();
+        ObjectNode job = consumer.requests.poll(10, TimeUnit.SECONDS);
+        log.debug("job = {}", job);
+        worker.destroy();
+        assertNotNull(job);
 
-            JsonNode json = job.get("body");
-            assertTrue(json.get("indexKeys").isArray());
-            ArrayNode subDocs = (ArrayNode) json.get("indexKeys");
-            assertEquals(3, subDocs.size());
-            // Content tested in: testBuildRequest
-        });
+        JsonNode json = job.get("body");
+        assertTrue(json.get("indexKeys").isArray());
+        ArrayNode subDocs = (ArrayNode) json.get("indexKeys");
+        assertEquals(3, subDocs.size());
+        // Content tested in: testBuildRequest
     }
 
     @Test(timeout = 20_000L)
@@ -274,24 +300,19 @@ public class WorkerIT extends JpaBase {
             supplier.enqueue("q1", new QueueJob(700000, "87654321", "{}", "foo1"));
         }
 
-        jpa(em -> {
-            Worker worker = new Worker();
-            worker.config = config;
-            worker.dataSource = PG.datasource();
-            worker.jobProcessor = new JobProcessor(config, em);
-            worker.jobProcessor.init();
-            worker.init();
-            ObjectNode job = consumer.requests.poll(10, TimeUnit.SECONDS);
-            log.debug("job = {}", job);
-            worker.destroy();
-            assertNotNull(job);
+        Worker worker = new Worker();
+        worker.config = config;
+        worker.dataSource = PG.datasource();
+        worker.jobProcessor = new JobProcessor(config);
+        worker.jobProcessor.init();
+        worker.init();
+        ObjectNode job = consumer.requests.poll(10, TimeUnit.SECONDS);
+        log.debug("job = {}", job);
+        worker.destroy();
 
-            JsonNode json = job.get("body");
-            assertTrue(json.get("indexKeys").isArray());
-            ArrayNode subDocs = (ArrayNode) json.get("indexKeys");
-            assertEquals(0, subDocs.size());
-        });
-
+        assertNotNull(job);
+        JsonNode method = job.get("_method");
+        assertEquals("DELETE", method.asText(""));
     }
 
     private ObjectNode findSubDocContaining(ArrayNode nodes, String path, String value) {
@@ -456,12 +477,11 @@ public class WorkerIT extends JpaBase {
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
 
             ObjectNode data = O.createObjectNode();
-            data.put("uri", target);
-            if (request.getMethod().equals("POST")) {
-                try (ServletInputStream is = request.getInputStream()) {
-                    JsonNode tree = O.readTree(is);
-                    data.set("body", tree);
-                }
+            data.put("_uri", target);
+            data.put("_method", request.getMethod());
+            try (ServletInputStream is = request.getInputStream()) {
+                JsonNode tree = O.readTree(is);
+                data.set("body", tree);
             }
             log.debug("data = {}", data);
             requests.add(data);

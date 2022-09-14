@@ -29,7 +29,6 @@ public enum SolrFields {
     BIBLIOGRAPHIC_RECORD_ID("holdingsitem.bibliographicRecordId"),
     AGENCY_ID("holdingsitem.agencyId"),
     ISSUE_ID("holdingsitem.issueId"),
-    ISSUE_ID_LITERAL("holdingsitem.issueId.literal"),
     ISSUE_TEXT("holdingsitem.issueText"),
     ITEM_ID("holdingsitem.itemId"),
     BRANCH("holdingsitem.branch"),

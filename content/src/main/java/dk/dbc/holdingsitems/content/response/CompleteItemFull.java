@@ -18,6 +18,7 @@
  */
 package dk.dbc.holdingsitems.content.response;
 
+import dk.dbc.holdingsitems.content_dto.CompleteItem;
 import dk.dbc.holdingsitems.jpa.BibliographicItemEntity;
 import dk.dbc.holdingsitems.jpa.IssueEntity;
 import dk.dbc.holdingsitems.jpa.ItemEntity;
@@ -39,15 +40,30 @@ public class CompleteItemFull extends CompleteItem {
     public CompleteItemFull() {
     }
 
-    public CompleteItemFull(ItemEntity item) {
-        super(item);
+    public static CompleteItemFull from(ItemEntity item) {
+        CompleteItemFull that = new CompleteItemFull();
+
+        that.itemId = item.getItemId();
+        that.branchId = item.getBranchId();
+        that.branch = item.getBranch();
+        that.department = item.getDepartment();
+        that.loanRestriction = item.getLoanRestriction().toString();
+        that.location = item.getLocation();
+        that.subLocation = item.getSubLocation();
+        that.circulationRule = item.getCirculationRule();
+        that.loanRestriction = item.getLoanRestriction().toString();
+        that.accessionDate = item.getAccessionDate().toString();
+        that.status = item.getStatus().toString();
+        that.bibliographicRecordId = item.getBibliographicRecordId();
+
         IssueEntity issue = item.getOwner();
         BibliographicItemEntity bibl = issue.getOwner();
-        this.agencyId = bibl.getAgencyId();
-        this.note = bibl.getNote();
-        this.issueId = issue.getIssueId();
-        this.issueText = issue.getIssueText();
-        this.readyForLoan = issue.getReadyForLoan();
+        that.agencyId = bibl.getAgencyId();
+        that.note = bibl.getNote();
+        that.issueId = issue.getIssueId();
+        that.issueText = issue.getIssueText();
+        that.readyForLoan = issue.getReadyForLoan();
+        return that;
     }
 
     @Override
