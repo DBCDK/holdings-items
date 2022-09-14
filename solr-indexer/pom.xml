@@ -79,6 +79,14 @@
 
     <dependencies>
         <dependency>
+            <!-- test dependency since we need the docker artifact -->
+            <groupId>${project.groupId}</groupId>
+            <artifactId>holdings-items-content-service</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
             <groupId>dk.dbc</groupId>
             <artifactId>pg-queue-consumer</artifactId>
         </dependency>
