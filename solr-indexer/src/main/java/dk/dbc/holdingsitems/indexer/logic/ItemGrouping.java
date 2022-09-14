@@ -19,6 +19,7 @@ public class ItemGrouping {
     private static final Logger log = LoggerFactory.getLogger(ItemGrouping.class);
 
     private static final Set<String> REPEATABLE_FIELDS = Set.of(
+            SolrFields.BIBLIOGRAPHIC_RECORD_ID.getFieldName(),
             SolrFields.BRANCH.getFieldName(),
             SolrFields.ITEM_ID.getFieldName(),
             SolrFields.TRACKING_ID.getFieldName());

@@ -139,7 +139,7 @@ public class JobProcessor {
             issue.items.forEach(item -> {
                 ItemMerge itemData = issueData.deepCopy()
                         .with(SolrFields.ACCESSION_DATE.getFieldName(), item.accessionDate)
-                        .with(SolrFields.BIBLIOGRAPHIC_RECORD_ID.getFieldName(), item.bibliographicRecordId)
+                        .with(SolrFields.ORIGINAL_BIBLIOGRAPHIC_RECORD_ID.getFieldName(), item.bibliographicRecordId)
                         .with(SolrFields.BRANCH.getFieldName(), item.branch)
                         .with(SolrFields.BRANCH_ID.getFieldName(), item.branchId)
                         .with(SolrFields.CIRCULATION_RULE.getFieldName(), item.circulationRule)
