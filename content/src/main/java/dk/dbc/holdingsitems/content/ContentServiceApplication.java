@@ -22,6 +22,8 @@ public class ContentServiceApplication extends Application {
                 ContentResource.class,
                 Status.class,
                 Supersedes.class,
+                // developer
+                DeveloperResource.class,
                 // common
                 JacksonFeature.class,
                 JacksonObjectMapperProvider.class)
