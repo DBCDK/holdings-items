@@ -24,6 +24,7 @@ import dk.dbc.holdingsitems.HoldingsItemsDAO;
 import dk.dbc.holdingsitems.jpa.BibliographicItemEntity;
 import dk.dbc.holdingsitems.jpa.ItemEntity;
 import dk.dbc.holdingsitems.jpa.LoanRestriction;
+import dk.dbc.holdingsitems.jpa.SupersedesEntity;
 import dk.dbc.oss.ns.holdingsitemsupdate.Authentication;
 import dk.dbc.oss.ns.holdingsitemsupdate.BibliographicItem;
 import dk.dbc.oss.ns.holdingsitemsupdate.CompleteBibliographicItem;
@@ -60,11 +61,13 @@ import org.eclipse.microprofile.metrics.Counter;
 import org.eclipse.microprofile.metrics.Timer;
 import org.junit.Test;
 
-import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.*;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  *
@@ -87,28 +90,31 @@ public class UpdateBeanIT extends JpaBase {
             HoldingsItemsUpdateResult resp = mockUpdateBean(em)
                     .holdingsItemsUpdate(updateReq1());
             System.out.println("status = " + resp.getHoldingsItemsUpdateStatusMessage());
-            assertEquals("Expedcted success from request", HoldingsItemsUpdateStatusEnum.OK, resp.getHoldingsItemsUpdateStatus());
+            assertThat("Expedcted success from request", resp.getHoldingsItemsUpdateStatus(), is(HoldingsItemsUpdateStatusEnum.OK));
         });
-        assertEquals("Expected collections", 2, countAllIssues());
-        assertEquals("Expected items", 3, countAllItems());
-        assertEquals("Expected on shelf", 2, countItems(StatusType.ON_SHELF));
-        assertEquals("Expected on order", 1, countItems(StatusType.ON_ORDER));
+        assertThat("Expected collections", countAllIssues(), is(2));
+        assertThat("Expected items", countAllItems(), is(3));
+        assertThat("Expected on shelf", countItems(StatusType.ON_SHELF), is(2));
+        assertThat("Expected on order", countItems(StatusType.ON_ORDER), is(1));
 
         HashMap<String, String> row = checkRow(101010, "12345678", "I1", "it1-1");
-        assertNotNull("Expected a row", row);
-        assertEquals("complete time same as original modified", "2017-09-07T09:09:00Z", row.get("c.complete"));
+        assertThat("Expected a row", row, notNullValue());
+        assertThat("complete time same as original modified", row.get("c.complete"), is("2017-09-07T09:09:00Z"));
         System.out.println("OK");
     }
 
     @Test(timeout = 10_000L)
     public void testHoldingsItemsUpdateQueue() throws Exception {
         System.out.println("testHoldingsItemsUpdateQueue");
+
         jpa(em -> {
+            em.persist(new SupersedesEntity("12345678", "87654321"));
             mockUpdateBean(em)
                     .holdingsItemsUpdate(updateReq1());
         });
         HashMap<String, Set<String>> queue = getQueue();
-        assertEquals("queue size", 1, queue.get("update").size());
+        assertThat(queue, hasEntry(is("update"), contains(startsWith("101010|87654321|"))));
+        assertThat(queue, hasEntry(is("update-original"), contains(startsWith("101010|12345678|"))));
         System.out.println("OK");
     }
 
@@ -119,23 +125,23 @@ public class UpdateBeanIT extends JpaBase {
             HoldingsItemsUpdateResult respSetup = mockUpdateBean(em)
                     .holdingsItemsUpdate(updateReq1());
             System.out.println("status = " + respSetup.getHoldingsItemsUpdateStatusMessage());
-            assertEquals("Expedcted success from request", HoldingsItemsUpdateStatusEnum.OK, respSetup.getHoldingsItemsUpdateStatus());
+            assertThat("Expedcted success from request", respSetup.getHoldingsItemsUpdateStatus(), is(HoldingsItemsUpdateStatusEnum.OK));
         });
         jpa(em -> {
             HoldingsItemsUpdateResult respCreate = mockUpdateBean(em)
                     .onlineHoldingsItemsUpdate(onlineReqCreate());
             System.out.println("status = " + respCreate.getHoldingsItemsUpdateStatusMessage());
-            assertEquals("Expedcted success from request", HoldingsItemsUpdateStatusEnum.OK, respCreate.getHoldingsItemsUpdateStatus());
+            assertThat("Expedcted success from request", respCreate.getHoldingsItemsUpdateStatus(), is(HoldingsItemsUpdateStatusEnum.OK));
         });
-        assertEquals("Expected collections", 3, countAllIssues());
-        assertEquals("Expected items", 4, countAllItems());
-        assertEquals("Expected online items", 1, countItems(StatusType.ONLINE));
-        assertEquals("Expected online items", 0, countItems(StatusType.DECOMMISSIONED));
+        assertThat("Expected collections", countAllIssues(), is(3));
+        assertThat("Expected items", countAllItems(), is(4));
+        assertThat("Expected online items", countItems(StatusType.ONLINE), is(1));
+        assertThat("Expected online items", countItems(StatusType.DECOMMISSIONED), is(0));
         jpa(em -> {
             HoldingsItemsUpdateResult delete = mockUpdateBean(em)
                     .onlineHoldingsItemsUpdate(onlineReqDelete());
             System.out.println("status = " + delete.getHoldingsItemsUpdateStatusMessage());
-            assertEquals("Expedcted success from request", HoldingsItemsUpdateStatusEnum.OK, delete.getHoldingsItemsUpdateStatus());
+            assertThat("Expedcted success from request", delete.getHoldingsItemsUpdateStatus(), is(HoldingsItemsUpdateStatusEnum.OK));
         });
         System.out.println("OK");
     }
@@ -148,7 +154,7 @@ public class UpdateBeanIT extends JpaBase {
                     .onlineHoldingsItemsUpdate(onlineReqCreate());
         });
         HashMap<String, Set<String>> queue = getQueue();
-        assertEquals("queue size", 1, queue.get("online").size());
+        assertThat("queue size", queue.get("online").size(), is(1));
         System.out.println("OK");
     }
 
@@ -160,7 +166,7 @@ public class UpdateBeanIT extends JpaBase {
                     .completeHoldingsItemsUpdate(completeReq2());
         });
         HashMap<String, Set<String>> queue = getQueue();
-        assertEquals("queue size", 1, queue.get("complete").size());
+        assertThat("queue size", queue.get("complete").size(), is(1));
         System.out.println("OK");
     }
 
@@ -179,7 +185,7 @@ public class UpdateBeanIT extends JpaBase {
                     .holdingsItemsUpdate(updateReq2());
         });
         HashMap<String, Set<String>> queue = getQueue();
-        assertEquals("queue size", 2, queue.get("update").size());
+        assertThat("queue size", queue.get("update").size(), is(2));
         String rec12345678str = queue.get("update").stream()
                 .filter(s -> s.contains("12345678"))
                 .findAny().orElseThrow(() -> new RuntimeException("Cannot find 12345678 record"));
@@ -189,11 +195,11 @@ public class UpdateBeanIT extends JpaBase {
                 .findAny().orElseThrow(() -> new RuntimeException("Cannot find 87654321 record"));
         System.out.println("rec87654321 = " + rec87654321str);
         JsonNode rec12345678 = O.readTree(rec12345678str.substring(rec12345678str.indexOf('{')));
-        assertEquals("OnLoan", rec12345678.at("/it1-2/newStatus").asText(""));
-        assertEquals("OnShelf", rec12345678.at("/it1-2/oldStatus").asText(""));
+        assertThat(rec12345678.at("/it1-2/newStatus").asText(""), is("OnLoan"));
+        assertThat(rec12345678.at("/it1-2/oldStatus").asText(""), is("OnShelf"));
         JsonNode rec87654321 = O.readTree(rec87654321str.substring(rec87654321str.indexOf('{')));
-        assertEquals("OnLoan", rec87654321.at("/it3-1/newStatus").asText(""));
-        assertEquals("UNKNOWN", rec87654321.at("/it3-1/oldStatus").asText(""));
+        assertThat(rec87654321.at("/it3-1/newStatus").asText(""), is("OnLoan"));
+        assertThat(rec87654321.at("/it3-1/oldStatus").asText(""), is("UNKNOWN"));
     }
 
     @Test(timeout = 10_000L)
@@ -220,7 +226,7 @@ public class UpdateBeanIT extends JpaBase {
                     ));
         });
         HashMap<String, Set<String>> queue = getQueue();
-        assertEquals("queue size", 1, queue.get("update").size());
+        assertThat("queue size", queue.get("update").size(), is(1));
 
         String rec12345678str = queue.get("update").stream()
                 .filter(s -> s.contains("12345678"))
@@ -228,8 +234,8 @@ public class UpdateBeanIT extends JpaBase {
         System.out.println("rec12345678 = " + rec12345678str);
         JsonNode rec12345678 = O.readTree(rec12345678str.substring(rec12345678str.indexOf('{'), rec12345678str.lastIndexOf('}') + 1));
         System.out.println("rec12345678 = " + rec12345678);
-        assertEquals("Decommissioned", rec12345678.at("/i1/newStatus").asText(""));
-        assertEquals("OnShelf", rec12345678.at("/i1/oldStatus").asText(""));
+        assertThat(rec12345678.at("/i1/newStatus").asText(""), is("Decommissioned"));
+        assertThat(rec12345678.at("/i1/oldStatus").asText(""), is("OnShelf"));
     }
 
     @Test(timeout = 10_000L)
@@ -246,7 +252,7 @@ public class UpdateBeanIT extends JpaBase {
                     ));
         });
         HashMap<String, Set<String>> queue = getQueue();
-        assertEquals("queue size", 1, queue.get("update").size());
+        assertThat("queue size", queue.get("update").size(), is(1));
 
         String rec12345678str = queue.get("update").stream()
                 .filter(s -> s.contains("12345678"))
@@ -254,7 +260,7 @@ public class UpdateBeanIT extends JpaBase {
         System.out.println("rec12345678 = " + rec12345678str);
         JsonNode rec12345678 = O.readTree(rec12345678str.substring(rec12345678str.indexOf('{'), rec12345678str.lastIndexOf('}') + 1));
         System.out.println("rec12345678 = " + rec12345678);
-        assertEquals(null, rec12345678.get("i1"));
+        assertThat(rec12345678.get("i1"), nullValue());
     }
 
     @Test(timeout = 10_000L)
@@ -271,17 +277,17 @@ public class UpdateBeanIT extends JpaBase {
                     .completeHoldingsItemsUpdate(completeReq3());
         });
         HashMap<String, Set<String>> queue = getQueue();
-        assertEquals("queue size", 1, queue.get("complete").size());
+        assertThat("queue size", queue.get("complete").size(), is(1));
 
         String rec12345678str = queue.get("complete").stream()
                 .filter(s -> s.contains("12345678"))
                 .findAny().orElseThrow(() -> new RuntimeException("Cannot find 12345678 record"));
         System.out.println("rec12345678 = " + rec12345678str);
         JsonNode rec12345678 = O.readTree(rec12345678str.substring(rec12345678str.indexOf('{')));
-        assertEquals("OnLoan", rec12345678.at("/it3-2/newStatus").asText(""));
-        assertEquals("UNKNOWN", rec12345678.at("/it3-2/oldStatus").asText(""));
-        assertEquals("Decommissioned", rec12345678.at("/it3-1/newStatus").asText(""));
-        assertEquals("OnLoan", rec12345678.at("/it3-1/oldStatus").asText(""));
+        assertThat(rec12345678.at("/it3-2/newStatus").asText(""), is("OnLoan"));
+        assertThat(rec12345678.at("/it3-2/oldStatus").asText(""), is("UNKNOWN"));
+        assertThat(rec12345678.at("/it3-1/newStatus").asText(""), is("Decommissioned"));
+        assertThat(rec12345678.at("/it3-1/oldStatus").asText(""), is("OnLoan"));
 
         System.out.println("OK");
     }
@@ -301,15 +307,15 @@ public class UpdateBeanIT extends JpaBase {
                     .completeHoldingsItemsUpdate(completeReqEmpty());
         });
         HashMap<String, Set<String>> queue = getQueue();
-        assertEquals("queue size", 1, queue.get("complete").size());
+        assertThat("queue size", queue.get("complete").size(), is(1));
 
         String rec12345678str = queue.get("complete").stream()
                 .filter(s -> s.contains("12345678"))
                 .findAny().orElseThrow(() -> new RuntimeException("Cannot find 12345678 record"));
         System.out.println("rec12345678 = " + rec12345678str);
         JsonNode rec12345678 = O.readTree(rec12345678str.substring(rec12345678str.indexOf('{')));
-        assertEquals("Decommissioned", rec12345678.at("/it3-1/newStatus").asText(""));
-        assertEquals("OnLoan", rec12345678.at("/it3-1/oldStatus").asText(""));
+        assertThat(rec12345678.at("/it3-1/newStatus").asText(""), is("Decommissioned"));
+        assertThat(rec12345678.at("/it3-1/oldStatus").asText(""), is("OnLoan"));
 
         System.out.println("OK");
     }
@@ -326,23 +332,23 @@ public class UpdateBeanIT extends JpaBase {
             HoldingsItemsUpdateResult respSetup = mockUpdateBean(em)
                     .holdingsItemsUpdate(updateReq1());
             System.out.println("status = " + respSetup.getHoldingsItemsUpdateStatusMessage());
-            assertEquals("Expedcted success from request", HoldingsItemsUpdateStatusEnum.OK, respSetup.getHoldingsItemsUpdateStatus());
+            assertThat("Expedcted success from request", respSetup.getHoldingsItemsUpdateStatus(), is(HoldingsItemsUpdateStatusEnum.OK));
         });
         jpa(em -> {
             HoldingsItemsUpdateResult resp = mockUpdateBean(em)
                     .completeHoldingsItemsUpdate(completeReq1());
             System.out.println("status = " + resp.getHoldingsItemsUpdateStatusMessage());
-            assertEquals("Expedcted success from request", HoldingsItemsUpdateStatusEnum.OK, resp.getHoldingsItemsUpdateStatus());
+            assertThat("Expedcted success from request", resp.getHoldingsItemsUpdateStatus(), is(HoldingsItemsUpdateStatusEnum.OK));
         });
         jpa(em -> {
             HoldingsItemsUpdateResult respOnline = mockUpdateBean(em)
                     .onlineHoldingsItemsUpdate(onlineReqCreate());
             System.out.println("status = " + respOnline.getHoldingsItemsUpdateStatusMessage());
-            assertEquals("Expedcted success from request", HoldingsItemsUpdateStatusEnum.OK, respOnline.getHoldingsItemsUpdateStatus());
+            assertThat("Expedcted success from request", respOnline.getHoldingsItemsUpdateStatus(), is(HoldingsItemsUpdateStatusEnum.OK));
         });
-        assertEquals("Expected collections", 2, countAllIssues());
-        assertEquals("Expected items", 2, countAllItems());
-        assertEquals("Expected online", 1, countItems(StatusType.ONLINE));
+        assertThat("Expected collections", countAllIssues(), is(2));
+        assertThat("Expected items", countAllItems(), is(2));
+        assertThat("Expected online", countItems(StatusType.ONLINE), is(1));
     }
 
     @Test(timeout = 10_000L)
@@ -352,12 +358,12 @@ public class UpdateBeanIT extends JpaBase {
             mockUpdateBean(em).holdingsItemsUpdate(updateReqNote1());
         });
         String noteBefore = checkRow(101010, "12345678", "I1", "it1-1").getOrDefault("b.note", "N/A");
-        assertEquals("Original Note", noteBefore);
+        assertThat(noteBefore, is("Original Note"));
         jpa(em -> {
             mockUpdateBean(em).holdingsItemsUpdate(updateReqNote2());
         });
         String noteAfter = checkRow(101010, "12345678", "I1", "it1-1").getOrDefault("b.note", "N/A");
-        assertEquals("Updated Note", noteAfter);
+        assertThat(noteAfter, is("Updated Note"));
     }
 
     @Test(timeout = 10_000L)
@@ -382,7 +388,7 @@ public class UpdateBeanIT extends JpaBase {
                 BibliographicItemEntity notSet = dao.getRecordCollectionUnLocked("12345678", 101010);
                 ItemEntity itemNotSet = notSet.stream().findFirst().orElseThrow(() -> new RuntimeException("No issues"))
                         .stream().findFirst().orElseThrow(() -> new RuntimeException("No items"));
-                assertEquals(LoanRestriction.EMPTY, itemNotSet.getLoanRestriction());
+                assertThat(itemNotSet.getLoanRestriction(), is(LoanRestriction.EMPTY));
             });
         }
 
@@ -405,7 +411,7 @@ public class UpdateBeanIT extends JpaBase {
                 BibliographicItemEntity setToE = dao.getRecordCollectionUnLocked("12345678", 101010);
                 ItemEntity itemSetToX = setToE.stream().findFirst().orElseThrow(() -> new RuntimeException("No issues"))
                         .stream().findFirst().orElseThrow(() -> new RuntimeException("No items"));
-                assertEquals(LoanRestriction.e, itemSetToX.getLoanRestriction());
+                assertThat(itemSetToX.getLoanRestriction(), is(LoanRestriction.e));
             });
         }
 
@@ -428,8 +434,8 @@ public class UpdateBeanIT extends JpaBase {
                 BibliographicItemEntity retain = dao.getRecordCollectionUnLocked("12345678", 101010);
                 ItemEntity itemRetain = retain.stream().findFirst().orElseThrow(() -> new RuntimeException("No issues"))
                         .stream().findFirst().orElseThrow(() -> new RuntimeException("No items"));
-                assertEquals(LoanRestriction.EMPTY, itemRetain.getLoanRestriction());
-                assertEquals(Instant.parse("2017-09-07T09:09:02.000Z"), itemRetain.getModified());
+                assertThat(itemRetain.getLoanRestriction(), is(LoanRestriction.EMPTY));
+                assertThat(itemRetain.getModified(), is(Instant.parse("2017-09-07T09:09:02.000Z")));
             });
         }
     }
@@ -452,8 +458,8 @@ public class UpdateBeanIT extends JpaBase {
             });
 
             HashMap<String, Set<String>> queue = getQueue();
-            assertTrue(queue.containsKey("update"));
-            assertEquals(1, queue.get("update").size());
+            assertThat(queue.containsKey("update"), is(true));
+            assertThat(queue.get("update").size(), is(1));
             String queued = queue.get("update").iterator().next();
             String json = queued.substring(queued.lastIndexOf('|') + 1);
             assertThat(json, containsString("\"newStatus\":\"OnShelf\""));
@@ -473,8 +479,8 @@ public class UpdateBeanIT extends JpaBase {
             });
 
             HashMap<String, Set<String>> queue = getQueue();
-            assertTrue(queue.containsKey("update"));
-            assertEquals(1, queue.get("update").size());
+            assertThat(queue.containsKey("update"), is(true));
+            assertThat(queue.get("update").size(), is(1));
             String queued = queue.get("update").iterator().next();
             String json = queued.substring(queued.lastIndexOf('|') + 1);
             assertThat(json, containsString("\"newStatus\":\"Decommissioned\""));
@@ -624,7 +630,8 @@ public class UpdateBeanIT extends JpaBase {
         doCallRealMethod().when(mock).onlineHoldingsItemsUpdate(any(OnlineHoldingsItemsUpdateRequest.class));
 
         WebServiceContext wsc = mock(WebServiceContext.class);
-        doReturn(mockMessageContext()).when(wsc).getMessageContext();
+        MessageContext mc = mock(MessageContext.class);
+        doReturn(mc).when(wsc).getMessageContext();
         mock.setWebServiceContext(wsc);
 
         return mock;
@@ -651,11 +658,6 @@ public class UpdateBeanIT extends JpaBase {
         }
         System.out.println("queue = " + result);
         return result;
-    }
-
-    private MessageContext mockMessageContext() {
-        MessageContext mock = mock(MessageContext.class);
-        return mock;
     }
 
     private Config mockConfig() {

@@ -31,7 +31,6 @@ import java.sql.Statement;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Collection;
-import java.util.List;
 import javax.sql.DataSource;
 
 import static dk.dbc.holdingsitems.jpa.TablesWithMigratedContent.tablesWithMigratedContent;
@@ -58,6 +57,9 @@ public class JpaBase extends AbstractJpaTestBase {
             stmt.execute("INSERT INTO queue_rules(supplier, consumer) VALUES('UPDATE', 'update')");
             stmt.execute("INSERT INTO queue_rules(supplier, consumer) VALUES('COMPLETE', 'complete')");
             stmt.execute("INSERT INTO queue_rules(supplier, consumer) VALUES('ONLINE', 'online')");
+            stmt.execute("INSERT INTO queue_rules(supplier, consumer) VALUES('UPDATE_ORIGINAL', 'update-original')");
+            stmt.execute("INSERT INTO queue_rules(supplier, consumer) VALUES('COMPLETE_ORIGINAL', 'complete-original')");
+            stmt.execute("INSERT INTO queue_rules(supplier, consumer) VALUES('ONLINE_ORIGINAL', 'online-original')");
         }
     }
 

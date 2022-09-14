@@ -18,9 +18,7 @@
  */
 package dk.dbc.holdingsitems.update;
 
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import javax.ws.rs.ApplicationPath;
@@ -33,9 +31,10 @@ import javax.ws.rs.core.Application;
 @ApplicationPath("/api")
 public class UpdateWebserviceApplication extends Application {
 
-    private static final Set<Class<?>> CLASSES = new HashSet<Class<?>>(Arrays.asList(
+    private static final Set<Class<?>> CLASSES = Set.of(
+            DeveloperResource.class,
             Status.class
-    ));
+    );
 
     @Override
     public Set<Class<?>> getClasses() {

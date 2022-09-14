@@ -50,6 +50,7 @@ import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
@@ -177,7 +178,7 @@ public class UpdateBean {
             log.info("Setting tracking id to: {}", trackingId);
             req.setTrackingId(trackingId);
         }
-        try ( LogWith logWith = new LogWith(req.getTrackingId())) {
+        try (LogWith logWith = new LogWith(req.getTrackingId())) {
             logWith.agencyId(req.getAgencyId());
 
             logXml(req.getAgencyId(), req, req.getAuthentication());
@@ -199,8 +200,13 @@ public class UpdateBean {
                 }
 
                 @Override
-                public String getQueueSupplierName() {
+                public Optional<String> getQueueSupplierName() {
                     return config.getUpdateSupplier();
+                }
+
+                @Override
+                public Optional<String> getOriginalQueueSupplierName() {
+                    return config.getUpdateOriginalSupplier();
                 }
 
                 /**
@@ -217,7 +223,7 @@ public class UpdateBean {
 
                                 Instant modified = parseTimestamp(bibliographicItem.getModificationTimeStamp());
                                 String bibliographicRecordId = bibliographicItem.getBibliographicRecordId();
-                                try ( LogWith logWith = new LogWith()) {
+                                try (LogWith logWith = new LogWith()) {
                                     logWith.bibliographicRecordId(bibliographicRecordId);
                                     BibliographicItemEntity bibItem = dao.getRecordCollection(bibliographicRecordId, getAgencyId(), modified);
                                     if (!bibItem.getModified().isAfter(modified)) {
@@ -254,7 +260,7 @@ public class UpdateBean {
             log.info("Setting tracking id to: {}", trackingId);
             req.setTrackingId(trackingId);
         }
-        try ( LogWith logWith = new LogWith(req.getTrackingId())) {
+        try (LogWith logWith = new LogWith(req.getTrackingId())) {
             logWith.agencyId(req.getAgencyId());
 
             logXml(req.getAgencyId(), req, req.getAuthentication());
@@ -276,8 +282,13 @@ public class UpdateBean {
                 }
 
                 @Override
-                public String getQueueSupplierName() {
+                public Optional<String> getQueueSupplierName() {
                     return config.getCompleteSupplier();
+                }
+
+                @Override
+                public Optional<String> getOriginalQueueSupplierName() {
+                    return config.getCompleteOriginalSupplier();
                 }
 
                 /**
@@ -289,7 +300,7 @@ public class UpdateBean {
                     CompleteBibliographicItem bibliographicItem = req.getCompleteBibliographicItem();
                     Instant modified = parseTimestamp(bibliographicItem.getModificationTimeStamp());
                     String bibliographicRecordId = bibliographicItem.getBibliographicRecordId();
-                    try ( LogWith logWith = new LogWith()) {
+                    try (LogWith logWith = new LogWith()) {
                         logWith.bibliographicRecordId(bibliographicRecordId);
                         BibliographicItemEntity bibItem = dao.getRecordCollection(bibliographicRecordId, getAgencyId(), modified);
 
@@ -352,7 +363,7 @@ public class UpdateBean {
             log.info("Setting tracking id to: {}", trackingId);
             req.setTrackingId(trackingId);
         }
-        try ( LogWith logWith = new LogWith(req.getTrackingId())) {
+        try (LogWith logWith = new LogWith(req.getTrackingId())) {
             logWith.agencyId(req.getAgencyId());
 
             logXml(req.getAgencyId(), req, req.getAuthentication());
@@ -374,8 +385,13 @@ public class UpdateBean {
                 }
 
                 @Override
-                public String getQueueSupplierName() {
+                public Optional<String> getQueueSupplierName() {
                     return config.getOnlineSupplier();
+                }
+
+                @Override
+                public Optional<String> getOriginalQueueSupplierName() {
+                    return config.getOnlineOriginalSupplier();
                 }
 
                 @Override
@@ -393,11 +409,11 @@ public class UpdateBean {
                 private void processBibliograhicItem(OnlineBibliographicItem bibliographicItem) {
                     Instant modified = parseTimestamp(bibliographicItem.getModificationTimeStamp());
                     String bibliographicRecordId = bibliographicItem.getBibliographicRecordId();
-                    try ( LogWith logWith = new LogWith()) {
+                    try (LogWith logWith = new LogWith()) {
                         logWith.bibliographicRecordId(bibliographicRecordId);
                         log.info("OnlineItem");
                         IssueEntity collection;
-                        try ( Timer.Context time = loadCollectionTimer.time()) {
+                        try (Timer.Context time = loadCollectionTimer.time()) {
                             collection = dao.getRecordCollection(bibliographicRecordId, getAgencyId(), modified)
                                     .issue("", modified);
                         }

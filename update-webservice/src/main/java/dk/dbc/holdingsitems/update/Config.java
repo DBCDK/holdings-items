@@ -20,6 +20,7 @@ package dk.dbc.holdingsitems.update;
 
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javax.annotation.PostConstruct;
@@ -46,9 +47,12 @@ public class Config {
 
     private static final Logger log = LoggerFactory.getLogger(Config.class);
 
-    private String updateSupplier;
-    private String completeSupplier;
-    private String onlineSupplier;
+    private Optional<String> updateSupplier;
+    private Optional<String> updateOriginalSupplier;
+    private Optional<String> completeSupplier;
+    private Optional<String> completeOriginalSupplier;
+    private Optional<String> onlineSupplier;
+    private Optional<String> onlineSOriginalupplier;
     private Set<Integer> shouldLogXmlAgenciesSet;
     private boolean disableAuthentication;
     private UriBuilder idpUrl;
@@ -74,9 +78,12 @@ public class Config {
     }
 
     private void configure() {
-        updateSupplier = get("UPDATE_SUPPLIER", "UPDATE");
-        completeSupplier = get("COMPLETE_SUPPLIER", "COMPLETE");
-        onlineSupplier = get("ONLINE_SUPPLIER", "ONLINE");
+        updateSupplier = optional(get("UPDATE_SUPPLIER", "UPDATE"));
+        completeSupplier = optional(get("COMPLETE_SUPPLIER", "COMPLETE"));
+        onlineSupplier = optional(get("ONLINE_SUPPLIER", "ONLINE"));
+        updateOriginalSupplier = optional(get("UPDATE_ORIGINAL_SUPPLIER", "UPDATE_ORIGINAL"));
+        completeOriginalSupplier = optional(get("COMPLETE_ORIGINAL_SUPPLIER", "COMPLETE_ORIGINAL"));
+        onlineSOriginalupplier = optional(get("ONLINE_ORIGINAL_SUPPLIER", "ONLINE_ORIGINAL"));
         shouldLogXmlAgenciesSet = Arrays.stream(get("DEBUG_XML_AGENCIES", "").split(";"))
                 .filter(s -> !s.isEmpty())
                 .map(Integer::parseInt)
@@ -103,16 +110,35 @@ public class Config {
         return env.getOrDefault(var, defaultValue);
     }
 
-    public String getUpdateSupplier() {
+    private Optional<String> optional(String source) {
+        if (source != null && !source.isEmpty()) {
+            return Optional.of(source);
+        }
+        return Optional.empty();
+    }
+
+    public Optional<String> getUpdateSupplier() {
         return updateSupplier;
     }
 
-    public String getCompleteSupplier() {
+    public Optional<String> getUpdateOriginalSupplier() {
+        return updateOriginalSupplier;
+    }
+
+    public Optional<String> getCompleteSupplier() {
         return completeSupplier;
     }
 
-    public String getOnlineSupplier() {
+    public Optional<String> getCompleteOriginalSupplier() {
+        return completeOriginalSupplier;
+    }
+
+    public Optional<String> getOnlineSupplier() {
         return onlineSupplier;
+    }
+
+    public Optional<String> getOnlineOriginalSupplier() {
+        return onlineSOriginalupplier;
     }
 
     public boolean getDisableAuthentication() {
