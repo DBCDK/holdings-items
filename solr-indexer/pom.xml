@@ -83,6 +83,7 @@
             <groupId>${project.groupId}</groupId>
             <artifactId>holdings-items-content-service</artifactId>
             <version>${project.version}</version>
+            <type>war</type>
             <scope>test</scope>
         </dependency>
 
