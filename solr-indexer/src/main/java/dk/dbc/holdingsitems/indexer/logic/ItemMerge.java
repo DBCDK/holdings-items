@@ -17,6 +17,9 @@ public class ItemMerge {
     private final Map<String, Set<String>> map;
 
     private final Map<String, Function<Object, Object>> FIELD_MAPPERS = Map.of(
+            SolrFields.ACCESSION_DATE.getFieldName(), ItemMerge::dateToTimestamp,
+            SolrFields.EXPECTED_DELIVERY.getFieldName(), ItemMerge::dateToTimestamp,
+            SolrFields.FIRST_ACCESSION_DATE.getFieldName(), ItemMerge::dateToTimestamp,
             SolrFields.LOAN_RESTRICTION.getFieldName(), ItemMerge::loanRestriction,
             SolrFields.NOTE.getFieldName(), ItemMerge::note
     );
@@ -67,5 +70,9 @@ public class ItemMerge {
 
     private static Object note(Object o) {
         return "".equals(o) ? null : o;
+    }
+
+    private static Object dateToTimestamp(Object o) {
+        return o == null ? null : String.valueOf(o) + "T00:00:00Z";
     }
 }
