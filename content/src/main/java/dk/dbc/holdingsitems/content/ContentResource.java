@@ -81,7 +81,7 @@ public class ContentResource {
                 agencies.addAll(dao.getAgenciesThatHasHoldingsFor(bibliographicRecordId));
                 for (String superseded : SupersedesEntity.bySupersedingNoLock(em, bibliographicRecordId)
                         .map(SupersedesEntity::getSuperseded)
-                        .collect(Collectors.toList())) {
+                        .collect(toList())) {
                     agencies.addAll(dao.getAgenciesThatHasHoldingsFor(superseded));
                 }
                 AgenciesWithHoldingsResponse resp = new AgenciesWithHoldingsResponse(agencies, trackingId);
