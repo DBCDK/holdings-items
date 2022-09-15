@@ -22,6 +22,7 @@ import dk.dbc.holdingsitems.jpa.BibliographicItemEntity;
 import dk.dbc.holdingsitems.jpa.IssueEntity;
 import dk.dbc.holdingsitems.jpa.ItemEntity;
 import dk.dbc.holdingsitems.jpa.Status;
+import dk.dbc.holdingsitems.jpa.SupersedesEntity;
 import dk.dbc.holdingsitems.jpa.VersionSort;
 
 import javax.persistence.EntityManager;
@@ -314,6 +315,15 @@ public class HoldingsItemsDAO {
                     .sorted(Comparator.comparing(IssueEntity::getIssueId, versionSort))
                     .flatMap(IssueEntity::stream)
                     .sorted(Comparator.comparing(ItemEntity::getItemId, versionSort));
+        }
+    }
+
+    public String getActualBibliographicRecordId(String bibliographicRecordId) {
+        SupersedesEntity superseded = em.find(SupersedesEntity.class, bibliographicRecordId);
+        if (superseded == null) {
+            return bibliographicRecordId;
+        } else {
+            return superseded.getSuperseding();
         }
     }
 

@@ -48,6 +48,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -91,11 +92,18 @@ public abstract class UpdateRequest {
     public abstract String getTrakingId();
 
     /**
-     * List queues a request should enqueue onto
+     * Queue rule selector for optionally superseded records
      *
-     * @return comma separated list of queues for this endpoint
+     * @return Name of queue-supplier (used in table queue_rules)
      */
-    public abstract String getQueueSupplierName();
+    public abstract Optional<String> getQueueSupplierName();
+
+    /**
+     * Queue rule selector for original records
+     *
+     * @return Name of queue-supplier (used in table queue_rules)
+     */
+    public abstract Optional<String> getOriginalQueueSupplierName();
 
     /**
      * Actually process the request content
@@ -148,13 +156,15 @@ public abstract class UpdateRequest {
      * @throws HoldingsItemsException in case of a queue error
      */
     public final void queue() throws HoldingsItemsException {
-        String supplier = getQueueSupplierName();
-        if (supplier == null || supplier.isEmpty())
+        Optional<String> originalSupplier = getOriginalQueueSupplierName();
+        Optional<String> supplier = getQueueSupplierName();
+        if (originalSupplier.isEmpty() && supplier.isEmpty()) {
             return;
+        }
         int agencyId = getAgencyId();
         try (EnqueueService enqueueService = dao.enqueueService()) {
             for (String bibliographicRecordId : touchedBibliographicRecordIds) {
-                log.info("QUEUE: {}|{}|{}", agencyId, bibliographicRecordId, supplier);
+                log.info("QUEUE: {}|{}|{}/{}", agencyId, bibliographicRecordId, originalSupplier, supplier);
                 try {
                     String saveStateChangeText = "{}";
                     try {
@@ -164,13 +174,16 @@ public abstract class UpdateRequest {
                         log.error("Cannot make json to string: {}", ex.getMessage());
                         log.debug("Cannot make json to string: ", ex);
                     }
-                    enqueueService.enqueue(supplier, agencyId, bibliographicRecordId, saveStateChangeText);
+                    if (originalSupplier.isPresent()) {
+                        enqueueService.enqueue(originalSupplier.get(), agencyId, bibliographicRecordId, saveStateChangeText);
+                    }
+                    if (supplier.isPresent()) {
+                        enqueueService.enqueue(supplier.get(), agencyId, dao.getActualBibliographicRecordId(bibliographicRecordId), saveStateChangeText);
+                    }
                 } catch (HoldingsItemsException ex) {
                     throw new WrapperException(ex);
                 }
-
             }
-
         }
     }
 

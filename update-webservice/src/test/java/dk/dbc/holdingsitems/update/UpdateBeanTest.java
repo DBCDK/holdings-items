@@ -19,6 +19,7 @@
 package dk.dbc.holdingsitems.update;
 
 import dk.dbc.oss.ns.holdingsitemsupdate.Authentication;
+import java.util.Optional;
 import org.junit.Test;
 
 /**
@@ -126,7 +127,12 @@ public class UpdateBeanTest {
             }
 
             @Override
-            public String getQueueSupplierName() {
+            public Optional<String> getQueueSupplierName() {
+                throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+            }
+
+            @Override
+            public Optional<String> getOriginalQueueSupplierName() {
                 throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
             }
 
