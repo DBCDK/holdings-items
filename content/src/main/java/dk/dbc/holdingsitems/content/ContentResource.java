@@ -21,6 +21,7 @@ import dk.dbc.holdingsitems.jpa.BibliographicItemDetached;
 import dk.dbc.holdingsitems.jpa.BibliographicItemEntity;
 import dk.dbc.holdingsitems.jpa.ItemEntity;
 import dk.dbc.holdingsitems.jpa.Status;
+import dk.dbc.holdingsitems.jpa.SupersedesEntity;
 import dk.dbc.log.LogWith;
 import java.util.Collection;
 import org.slf4j.Logger;
@@ -42,6 +43,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.ws.rs.PathParam;
 import org.eclipse.microprofile.metrics.annotation.Timed;
 
@@ -75,7 +77,13 @@ public class ContentResource {
 
             HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, trackingId);
             try {
-                Set<Integer> agencies = dao.getAgenciesThatHasHoldingsFor(bibliographicRecordId);
+                Set<Integer> agencies = new HashSet<>();
+                agencies.addAll(dao.getAgenciesThatHasHoldingsFor(bibliographicRecordId));
+                for (String superseded : SupersedesEntity.bySupersedingNoLock(em, bibliographicRecordId)
+                        .map(SupersedesEntity::getSuperseded)
+                        .collect(Collectors.toList())) {
+                    agencies.addAll(dao.getAgenciesThatHasHoldingsFor(superseded));
+                }
                 AgenciesWithHoldingsResponse resp = new AgenciesWithHoldingsResponse(agencies, trackingId);
                 return Response.ok(resp).build();
             } catch (HoldingsItemsException e) {
