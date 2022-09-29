@@ -36,6 +36,7 @@ public class CompleteItem {
     public String circulationRule;
     public String loanRestriction;
     public String accessionDate;
+    public String lastLoanDate;
     public String status;
     public String bibliographicRecordId;
 

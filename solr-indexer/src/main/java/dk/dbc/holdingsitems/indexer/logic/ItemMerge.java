@@ -20,6 +20,7 @@ public class ItemMerge {
             SolrFields.ACCESSION_DATE.getFieldName(), ItemMerge::dateToTimestamp,
             SolrFields.EXPECTED_DELIVERY.getFieldName(), ItemMerge::dateToTimestamp,
             SolrFields.FIRST_ACCESSION_DATE.getFieldName(), ItemMerge::dateToTimestamp,
+            SolrFields.LAST_LOAN_DATE.getFieldName(), ItemMerge::dateToTimestamp,
             SolrFields.LOAN_RESTRICTION.getFieldName(), ItemMerge::loanRestriction,
             SolrFields.NOTE.getFieldName(), ItemMerge::note
     );

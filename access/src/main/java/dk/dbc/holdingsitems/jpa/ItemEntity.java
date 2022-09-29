@@ -99,6 +99,9 @@ public class ItemEntity implements Serializable {
     @Convert(converter = StatusConverter.class)
     private Status status;
 
+    @Column(nullable = true)
+    private Date lastLoanDate;
+
     @Column(nullable = false)
     private Timestamp modified;
 
@@ -265,6 +268,22 @@ public class ItemEntity implements Serializable {
         return this;
     }
 
+    public LocalDate getLastLoanDate() {
+        if (lastLoanDate == null) {
+            return null;
+        }
+        return lastLoanDate.toLocalDate();
+    }
+
+    public ItemEntity setLastLoanDate(LocalDate lastLoanDate) {
+        if (lastLoanDate == null) {
+            this.lastLoanDate = null;
+        } else {
+            this.lastLoanDate = Date.valueOf(lastLoanDate);
+        }
+        return this;
+    }
+
     public Instant getModified() {
         return modified.toInstant();
     }
@@ -298,13 +317,14 @@ public class ItemEntity implements Serializable {
         that.branchId = getBranchId();
         that.branch = getBranch();
         that.department = getDepartment();
-        that.loanRestriction = getLoanRestriction().toString();
+        that.lastLoanDate = String.valueOf(getLastLoanDate());
+        that.loanRestriction = String.valueOf(getLoanRestriction());
         that.location = getLocation();
         that.subLocation = getSubLocation();
         that.circulationRule = getCirculationRule();
-        that.loanRestriction = getLoanRestriction().toString();
-        that.accessionDate = getAccessionDate().toString();
-        that.status = getStatus().toString();
+        that.loanRestriction = String.valueOf(getLoanRestriction());
+        that.accessionDate = String.valueOf(getAccessionDate());
+        that.status = String.valueOf(getStatus());
         that.bibliographicRecordId = getBibliographicRecordId();
         return that;
     }
@@ -338,6 +358,7 @@ public class ItemEntity implements Serializable {
                Objects.equals(this.subLocation, other.subLocation) &&
                Objects.equals(this.circulationRule, other.circulationRule) &&
                Objects.equals(this.accessionDate, other.accessionDate) &&
+               Objects.equals(this.lastLoanDate, other.lastLoanDate) &&
                Objects.equals(this.loanRestriction, other.loanRestriction) &&
                Objects.equals(this.status, other.status) &&
                Objects.equals(this.modified, other.modified) &&
@@ -347,7 +368,7 @@ public class ItemEntity implements Serializable {
 
     @Override
     public String toString() {
-        return "ItemEntity{" + "agencyId=" + agencyId + ", bibliographicRecordId=" + bibliographicRecordId + ", issueId=" + issueId + ", itemId=" + itemId + ", branch=" + branch + ", branchId=" + branchId + ", department=" + department + ", location=" + location + ", subLocation=" + subLocation + ", circulationRule=" + circulationRule + ", accessionDate=" + accessionDate + ", loanRestriction=" + loanRestriction + ", status=" + status + ", modified=" + modified + ", created=" + created + ", trackingId=" + trackingId + '}';
+        return "ItemEntity{" + "agencyId=" + agencyId + ", bibliographicRecordId=" + bibliographicRecordId + ", issueId=" + issueId + ", itemId=" + itemId + ", branch=" + branch + ", branchId=" + branchId + ", department=" + department + ", location=" + location + ", subLocation=" + subLocation + ", circulationRule=" + circulationRule + ", accessionDate=" + accessionDate + ", lastLoanDate=" + lastLoanDate + ", loanRestriction=" + loanRestriction + ", status=" + status + ", modified=" + modified + ", created=" + created + ", trackingId=" + trackingId + '}';
     }
 
 }

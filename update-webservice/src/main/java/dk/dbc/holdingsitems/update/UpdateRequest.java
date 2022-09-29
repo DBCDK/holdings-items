@@ -325,6 +325,10 @@ public abstract class UpdateRequest {
             if (accessionDate != null) {
                 item.setAccessionDate(toDate(accessionDate, false));
             }
+            XMLGregorianCalendar lastLoanDate = holdingsItem.getLastLoanDate();
+            if (lastLoanDate != null) {
+                item.setLastLoanDate(toDate(lastLoanDate, false));
+            }
             StatusType status = holdingsItem.getStatus();
             if (status == null) {
                 throw new FailedUpdateInternalException("Status is required for all items");

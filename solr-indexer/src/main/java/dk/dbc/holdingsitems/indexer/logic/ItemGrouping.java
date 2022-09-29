@@ -22,6 +22,7 @@ public class ItemGrouping {
             SolrFields.BIBLIOGRAPHIC_RECORD_ID.getFieldName(),
             SolrFields.BRANCH.getFieldName(),
             SolrFields.ITEM_ID.getFieldName(),
+            SolrFields.LAST_LOAN_DATE.getFieldName(),
             SolrFields.TRACKING_ID.getFieldName());
 
     private final Map<Map<String, Set<String>>, Map<String, Set<String>>> map;

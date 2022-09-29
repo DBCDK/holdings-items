@@ -34,6 +34,8 @@ public enum Status {
     NOT_FOR_LOAN("NotForLoan"),
     ON_LOAN("OnLoan"),
     ON_SHELF("OnShelf"),
+    LOST("Lost"),
+    DISCARDED("Discarded"),
     DECOMMISSIONED("Decommissioned"), // THIS CANNOT BE STORED IN DATABASE ANY LONGER
     ONLINE("Online"),
     UNKNOWN("UNKNOWN");

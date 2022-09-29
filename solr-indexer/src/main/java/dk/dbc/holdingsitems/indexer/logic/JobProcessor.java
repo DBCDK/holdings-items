@@ -145,6 +145,7 @@ public class JobProcessor {
                         .with(SolrFields.CIRCULATION_RULE.getFieldName(), item.circulationRule)
                         .with(SolrFields.DEPARTMENT.getFieldName(), item.department)
                         .with(SolrFields.ITEM_ID.getFieldName(), item.itemId)
+                        .with(SolrFields.LAST_LOAN_DATE.getFieldName(), item.lastLoanDate)
                         .with(SolrFields.LOAN_RESTRICTION.getFieldName(), item.loanRestriction)
                         .with(SolrFields.LOCATION.getFieldName(), item.location)
                         .with(SolrFields.STATUS.getFieldName(), item.status)

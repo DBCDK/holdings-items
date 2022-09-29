@@ -40,8 +40,9 @@
                             <hol:circulationRule> ? </hol:circulationRule>
                             <!-- optional -->
                             <hol:loanRestriction>|a|b|c|d|e|f|g</hol:loanRestriction>
-                            <hol:status>NotForLoan|OnOrder|OnShelf|OnLoan|Decommissioned</hol:status>
+                            <hol:status>NotForLoan|OnOrder|OnShelf|OnLoan|Lost|Discarded|Decommissioned</hol:status>
                             <hol:accessionDate>2014-06-26</hol:accessionDate>
+                            <hol:lastLoanDate>2010-01-02</hol:lastLoanDate>
                         </hol:holdingsItem>
                     </hol:holding>
                 </hol:completeBibliographicItem>
