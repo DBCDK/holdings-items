@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <catalog xmlns="urn:oasis:names:tc:entity:xmlns:xml:catalog" prefer="system">
-    <system systemId="https://svn.dbc.dk/repos/WSContracts/holdingsItemsUpdate/trunk/holdingsItemsUpdate.wsdl" uri="wsdl/svn.dbc.dk/repos/WSContracts/holdingsItemsUpdate/trunk/holdingsItemsUpdate.wsdl"/>
-    <system systemId="https://svn.dbc.dk/repos/WSContracts/holdingsItemsUpdate/trunk/holdingsItemsUpdate.xsd" uri="wsdl/svn.dbc.dk/repos/WSContracts/holdingsItemsUpdate/trunk/holdingsItemsUpdate.xsd"/>
+    <system systemId="info:holdingsItemsUpdate.wsdl" uri="wsdl/holdingsItemsUpdate.wsdl"/>
+    <system systemId="info:holdingsItemsUpdate.xsd" uri="wsdl/holdingsItemsUpdate.xsd"/>
 </catalog>

@@ -117,6 +117,7 @@
             <xs:element ref="tns:loanRestriction" minOccurs="0" />
             <xs:element ref="tns:status"/>
             <xs:element ref="tns:accessionDate"/>
+            <xs:element ref="tns:lastLoanDate"/>
         </xs:sequence>
     </xs:complexType>
     <xs:element name="ModificationTimeStamp" type="tns:ModificationTimeStamp"/>
@@ -205,6 +206,11 @@
     <xs:element name="itemId" type="xs:string">
         <xs:annotation>
             <xs:documentation xml:lang="en">Unique id of the item. Id of the specific copy of the item</xs:documentation>
+        </xs:annotation>
+    </xs:element>
+    <xs:element name="lastLoanDate" type="xs:date">
+        <xs:annotation>
+            <xs:documentation xml:lang="en">Date of last loan of this specific copy.</xs:documentation>
         </xs:annotation>
     </xs:element>
     <xs:element name="loanRestriction" type="tns:loanRestrictionEnum">
@@ -301,6 +307,8 @@
             <xs:enumeration value="OnOrder"/>
             <xs:enumeration value="OnShelf"/>
             <xs:enumeration value="Online"/>
+            <xs:enumeration value="Lost"/>
+            <xs:enumeration value="Discarded"/>
             <xs:enumeration value="Decommissioned"/>
         </xs:restriction>
     </xs:simpleType>

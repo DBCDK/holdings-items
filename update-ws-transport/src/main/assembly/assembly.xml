@@ -9,7 +9,7 @@
     <includeBaseDirectory>false</includeBaseDirectory>
     <fileSets>
         <fileSet>
-            <directory>${project.basedir}/src/main/wsdl/svn.dbc.dk/repos/WSContracts/holdingsItemsUpdate/trunk</directory>
+            <directory>${project.basedir}/src/main/wsdl</directory>
             <outputDirectory></outputDirectory>
             <includes>
                 <include>*</include>

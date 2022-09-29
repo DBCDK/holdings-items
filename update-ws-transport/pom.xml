@@ -5,7 +5,7 @@
     <parent>
         <groupId>dk.dbc</groupId>
         <artifactId>holdings-items</artifactId>
-        <version>1.3-SNAPSHOT</version>
+        <version>1.4-SNAPSHOT</version>
     </parent>
 
     <artifactId>holdings-items-ws-transport</artifactId>
@@ -25,7 +25,7 @@
                         </goals>
                         <configuration>
                             <wsdlLocation>https://holdingsitemsupdate.addi.dk/holdingsitemsupdate-1.3/HoldingsItemsUpdateServices?wsdl</wsdlLocation>
-                            <wsdlDirectory>src/main/wsdl/svn.dbc.dk/repos/WSContracts/holdingsItemsUpdate/trunk</wsdlDirectory>
+                            <wsdlDirectory>src/main/wsdl</wsdlDirectory>
                             <wsdlFiles>
                                 <wsdlFile>holdingsItemsUpdate.wsdl</wsdlFile>
                             </wsdlFiles>
