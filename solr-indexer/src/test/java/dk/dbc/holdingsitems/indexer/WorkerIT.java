@@ -191,48 +191,54 @@ public class WorkerIT extends JpaBase {
                 assertEquals("Two entries collapsed", 2, dp.get("holdingsitem.itemId").size());
                 ObjectNode rpo1 = findSubDocContaining(subDocs, "/holdingsitem.itemId", "rpo1");
                 log.debug("rpo1 = {}", rpo1);
-                assertEquals(O.readTree("{\"holdingsitem.note\":[\"any-text\"]," +
-                                        "\"holdingsitem.firstAccessionDate\":[\"2019-03-04T00:00:00Z\"]," +
-                                        "\"holdingsitem.agencyId\":[\"700000\"]," +
-                                        "\"holdingsitem.bibliographicRecordId\":[\"87654321\"]," +
-                                        "\"holdingsitem.originalBibliographicRecordId\":[\"87654321\"]," +
-                                        "\"rec.bibliographicRecordId\":[\"87654321\"]," +
-                                        "\"holdingsitem.issueId\":[\"rpo\"]," +
-                                        "\"holdingsitem.issueText\":[\"ready player one\"]," +
-                                        "\"holdingsitem.readyForLoan\":[\"-1\"]," +
-                                        "\"holdingsitem.branch\":[\"Here\"]," +
-                                        "\"holdingsitem.branchId\":[\"345678\"]," +
-                                        "\"holdingsitem.department\":[\"\"]," +
-                                        "\"holdingsitem.location\":[\"\"]," +
-                                        "\"holdingsitem.subLocation\":[\"\"]," +
-                                        "\"holdingsitem.circulationRule\":[\"\"]," +
-                                        "\"holdingsitem.accessionDate\":[\"2016-02-03T00:00:00Z\"]," +
-                                        "\"holdingsitem.lastLoanDate\":[\"2006-01-02T00:00:00Z\"]," +
-                                        "\"holdingsitem.itemId\":[\"rpo1\"]," +
-                                        "\"holdingsitem.status\":[\"OnLoan\"]}"),
+                assertEquals(O.readTree(
+                        "{" +
+                        "\"holdingsitem.accessionDate\":[\"2016-02-03T00:00:00Z\"]," +
+                        "\"holdingsitem.agencyId\":[\"700000\"]," +
+                        "\"holdingsitem.bibliographicRecordId\":[\"87654321\"]," +
+                        "\"holdingsitem.branch\":[\"Here\"]," +
+                        "\"holdingsitem.branchId\":[\"345678\"]," +
+                        "\"holdingsitem.circulationRule\":[\"\"]," +
+                        "\"holdingsitem.department\":[\"\"]," +
+                        "\"holdingsitem.firstAccessionDate\":[\"2019-03-04T00:00:00Z\"]," +
+                        "\"holdingsitem.issueId\":[\"rpo\"]," +
+                        "\"holdingsitem.issueText\":[\"ready player one\"]," +
+                        "\"holdingsitem.itemId\":[\"rpo1\"]," +
+                        "\"holdingsitem.lastLoanDate\":[\"2006-01-02T00:00:00Z\"]," +
+                        "\"holdingsitem.location\":[\"\"]," +
+                        "\"holdingsitem.note\":[\"any-text\"]," +
+                        "\"holdingsitem.originalBibliographicRecordId\":[\"87654321\"]," +
+                        "\"holdingsitem.readyForLoan\":[\"-1\"]," +
+                        "\"holdingsitem.status\":[\"OnLoan\"]," +
+                        "\"holdingsitem.subLocation\":[\"\"]," +
+                        "\"rec.bibliographicRecordId\":[\"87654321\"]" +
+                        "}"),
                              rpo1);
                 ObjectNode rpo2 = findSubDocContaining(subDocs, "/holdingsitem.itemId", "rpo2");
                 log.debug("rpo2 = {}", rpo2);
-                assertEquals(O.readTree("{\"holdingsitem.note\":[\"any-text\"]," +
-                                        "\"holdingsitem.firstAccessionDate\":[\"2019-03-04T00:00:00Z\"]," +
-                                        "\"holdingsitem.agencyId\":[\"700000\"]," +
-                                        "\"holdingsitem.bibliographicRecordId\":[\"87654321\"]," +
-                                        "\"holdingsitem.originalBibliographicRecordId\":[\"87654321\"]," +
-                                        "\"rec.bibliographicRecordId\":[\"87654321\"]," +
-                                        "\"holdingsitem.issueId\":[\"rpo\"]," +
-                                        "\"holdingsitem.issueText\":[\"ready player one\"]," +
-                                        "\"holdingsitem.readyForLoan\":[\"-1\"]," +
-                                        "\"holdingsitem.branch\":[\"There\"]," +
-                                        "\"holdingsitem.branchId\":[\"456789\"]," +
-                                        "\"holdingsitem.department\":[\"\"]," +
-                                        "\"holdingsitem.location\":[\"\"]," +
-                                        "\"holdingsitem.subLocation\":[\"\"]," +
-                                        "\"holdingsitem.circulationRule\":[\"\"]," +
-                                        "\"holdingsitem.accessionDate\":[\"2015-01-02T00:00:00Z\"]," +
-                                        "\"holdingsitem.lastLoanDate\":[\"2005-01-02T00:00:00Z\"]," +
-                                        "\"holdingsitem.loanRestriction\":[\"e\"]," +
-                                        "\"holdingsitem.itemId\":[\"rpo2\"]," +
-                                        "\"holdingsitem.status\":[\"OnShelf\"]}"),
+                assertEquals(O.readTree(
+                        "{" +
+                        "\"holdingsitem.accessionDate\":[\"2015-01-02T00:00:00Z\"]," +
+                        "\"holdingsitem.agencyId\":[\"700000\"]," +
+                        "\"holdingsitem.bibliographicRecordId\":[\"87654321\"]," +
+                        "\"holdingsitem.branchId\":[\"456789\"]," +
+                        "\"holdingsitem.branch\":[\"There\"]," +
+                        "\"holdingsitem.circulationRule\":[\"\"]," +
+                        "\"holdingsitem.department\":[\"\"]," +
+                        "\"holdingsitem.firstAccessionDate\":[\"2019-03-04T00:00:00Z\"]," +
+                        "\"holdingsitem.issueId\":[\"rpo\"]," +
+                        "\"holdingsitem.issueText\":[\"ready player one\"]," +
+                        "\"holdingsitem.itemId\":[\"rpo2\"]," +
+                        "\"holdingsitem.lastLoanDate\":[\"2005-01-02T00:00:00Z\"]," +
+                        "\"holdingsitem.loanRestriction\":[\"e\"]," +
+                        "\"holdingsitem.location\":[\"\"]," +
+                        "\"holdingsitem.note\":[\"any-text\"]," +
+                        "\"holdingsitem.originalBibliographicRecordId\":[\"87654321\"]," +
+                        "\"holdingsitem.readyForLoan\":[\"-1\"]," +
+                        "\"holdingsitem.status\":[\"OnShelf\"]," +
+                        "\"holdingsitem.subLocation\":[\"\"]," +
+                        "\"rec.bibliographicRecordId\":[\"87654321\"]" +
+                        "}"),
                              rpo2);
             }
         });
