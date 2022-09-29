@@ -434,6 +434,7 @@ public class UpdateBean {
                             rec.setSubLocation("");
                             rec.setCirculationRule("");
                             rec.setAccessionDate(LocalDate.now());
+                            rec.setLastLoanDate(null);
                         }
                         rec.setTrackingId(getTrakingId());
                         touchedBibliographicRecordId(bibliographicRecordId);

@@ -65,9 +65,6 @@
                 <configuration>
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
                     <trimStackTrace>false</trimStackTrace>
-                    <systemPropertyVariables>
-                        <postgresql.port>${postgresql.port}</postgresql.port>
-                    </systemPropertyVariables>
                 </configuration>
                 <executions>
                     <execution>

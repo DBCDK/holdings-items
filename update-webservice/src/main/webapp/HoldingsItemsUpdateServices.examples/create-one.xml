@@ -39,8 +39,9 @@
                             <hol:circulationRule>None</hol:circulationRule>
                             <!-- optional -->
                             <hol:loanRestriction></hol:loanRestriction>
-                            <hol:status>Online</hol:status>
+                            <hol:status>OnLoan</hol:status>
                             <hol:accessionDate>2014-06-26</hol:accessionDate>
+                            <hol:lastLoanDate>2010-01-02</hol:lastLoanDate>
                         </hol:holdingsItem>
                     </hol:holding>
                 </hol:bibliographicItem>

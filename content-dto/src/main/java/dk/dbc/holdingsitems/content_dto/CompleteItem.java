@@ -36,6 +36,7 @@ public class CompleteItem {
     public String circulationRule;
     public String loanRestriction;
     public String accessionDate;
+    public String lastLoanDate;
     public String status;
     public String bibliographicRecordId;
 
@@ -44,7 +45,7 @@ public class CompleteItem {
 
     @Override
     public String toString() {
-        return "CompleteItem{" + "itemId=" + itemId + ", branchId=" + branchId + ", branch=" + branch + ", department=" + department + ", location=" + location + ", subLocation=" + subLocation + ", circulationRule=" + circulationRule + ", loanRestriction=" + loanRestriction + ", accessionDate=" + accessionDate + ", status=" + status + ", bibliographicRecordId=" + bibliographicRecordId + '}';
+        return "CompleteItem{" + "itemId=" + itemId + ", branchId=" + branchId + ", branch=" + branch + ", department=" + department + ", location=" + location + ", subLocation=" + subLocation + ", circulationRule=" + circulationRule + ", loanRestriction=" + loanRestriction + ", accessionDate=" + accessionDate + ", lastLoanDate=" + lastLoanDate + ", status=" + status + ", bibliographicRecordId=" + bibliographicRecordId + '}';
     }
 
 }

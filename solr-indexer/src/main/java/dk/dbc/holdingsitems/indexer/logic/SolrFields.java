@@ -42,6 +42,7 @@ public enum SolrFields {
     EXPECTED_DELIVERY("holdingsitem.expectedDelivery"),
     READY_FOR_LOAN("holdingsitem.readyForLoan"),
     ACCESSION_DATE("holdingsitem.accessionDate"),
+    LAST_LOAN_DATE("holdingsitem.lastLoanDate"),
     FIRST_ACCESSION_DATE("holdingsitem.firstAccessionDate"),
     LOAN_RESTRICTION("holdingsitem.loanRestriction"),
     NOTE("holdingsitem.note"),
