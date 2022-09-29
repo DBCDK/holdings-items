@@ -207,6 +207,7 @@ public class WorkerIT extends JpaBase {
                                         "\"holdingsitem.subLocation\":[\"\"]," +
                                         "\"holdingsitem.circulationRule\":[\"\"]," +
                                         "\"holdingsitem.accessionDate\":[\"2016-02-03T00:00:00Z\"]," +
+                                        "\"holdingsitem.lastLoanDate\":[\"2006-01-02T00:00:00Z\"]," +
                                         "\"holdingsitem.itemId\":[\"rpo1\"]," +
                                         "\"holdingsitem.status\":[\"OnLoan\"]}"),
                              rpo1);
@@ -228,6 +229,7 @@ public class WorkerIT extends JpaBase {
                                         "\"holdingsitem.subLocation\":[\"\"]," +
                                         "\"holdingsitem.circulationRule\":[\"\"]," +
                                         "\"holdingsitem.accessionDate\":[\"2015-01-02T00:00:00Z\"]," +
+                                        "\"holdingsitem.lastLoanDate\":[\"2005-01-02T00:00:00Z\"]," +
                                         "\"holdingsitem.loanRestriction\":[\"e\"]," +
                                         "\"holdingsitem.itemId\":[\"rpo2\"]," +
                                         "\"holdingsitem.status\":[\"OnShelf\"]}"),
