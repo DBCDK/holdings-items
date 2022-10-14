@@ -11,26 +11,19 @@ import dk.dbc.holdingsitems.content.response.ResponseHoldingEntity;
 import dk.dbc.holdingsitems.content_dto.CompleteBibliographic;
 import dk.dbc.holdingsitems.jpa.BibliographicItemEntity;
 import dk.dbc.holdingsitems.jpa.IssueEntity;
-import dk.dbc.holdingsitems.jpa.ItemEntity;
 import dk.dbc.holdingsitems.jpa.Status;
 import dk.dbc.holdingsitems.jpa.SupersedesEntity;
-import java.lang.reflect.Field;
 import org.junit.Test;
 
 import javax.persistence.EntityManager;
 import javax.ws.rs.core.Response;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
-import org.hamcrest.BaseMatcher;
-import org.hamcrest.Description;
-import org.hamcrest.Matcher;
 
 import static org.hamcrest.Matchers.*;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -65,12 +58,12 @@ public class ContentTest extends JpaBase {
         System.out.println("Test getItemEntity endpoint, non-existing agency...");
         jpa(em -> {
             ContentResource contentResource = MockContentResource(em);
-            BibliographicItemEntity bibliographicItemEntity = BibliographicItemEntity.from(em, 654321, "12345678", Instant.now(), LocalDate.now());
-            bibliographicItemEntity.setTrackingId("somethingToMakeTestHappier");
-            IssueEntity issueEntity = bibliographicItemEntity.issue("issue1", Instant.now());
-            issueEntity.setTrackingId("somethingToMakeTestHappier");
-            issueEntity.setIssueText("#1");
-            issueEntity.setReadyForLoan(1);
+            BibliographicItemEntity bibliographicItemEntity = BibliographicItemEntity.from(em, 654321, "12345678", Instant.now(), LocalDate.now())
+                    .setTrackingId("somethingToMakeTestHappier");
+            IssueEntity issueEntity = issueEntity(bibliographicItemEntity, "issue1")
+                    .setTrackingId("somethingToMakeTestHappier")
+                    .setIssueText("#1")
+                    .setReadyForLoan(1);
             itemEntity(issueEntity, "1234", Status.ON_SHELF);
             itemEntity(issueEntity, "2345", Status.ON_LOAN);
             bibliographicItemEntity.save();
@@ -87,12 +80,12 @@ public class ContentTest extends JpaBase {
         System.out.println("Test getItemEntity endpoint, non-existing item id...");
         jpa(em -> {
             ContentResource contentResource = MockContentResource(em);
-            BibliographicItemEntity bibliographicItemEntity = BibliographicItemEntity.from(em, 654321, "12345678", Instant.now(), LocalDate.now());
-            bibliographicItemEntity.setTrackingId("somethingToMakeTestHappier");
-            IssueEntity issueEntity = bibliographicItemEntity.issue("issue1", Instant.now());
-            issueEntity.setTrackingId("somethingToMakeTestHappier");
-            issueEntity.setIssueText("#1");
-            issueEntity.setReadyForLoan(1);
+            BibliographicItemEntity bibliographicItemEntity = BibliographicItemEntity.from(em, 654321, "12345678", Instant.now(), LocalDate.now())
+                    .setTrackingId("somethingToMakeTestHappier");
+            IssueEntity issueEntity = issueEntity(bibliographicItemEntity, "issue1")
+                    .setTrackingId("somethingToMakeTestHappier")
+                    .setIssueText("#1")
+                    .setReadyForLoan(1);
             itemEntity(issueEntity, "1234", Status.ON_SHELF);
             itemEntity(issueEntity, "2345", Status.ON_LOAN);
             bibliographicItemEntity.save();
@@ -109,12 +102,12 @@ public class ContentTest extends JpaBase {
         System.out.println("Test getItemEntity endpoint...");
         jpa(em -> {
             ContentResource contentResource = MockContentResource(em);
-            BibliographicItemEntity bibliographicItemEntity = BibliographicItemEntity.from(em, 654321, "12345678", Instant.now(), LocalDate.now());
-            bibliographicItemEntity.setTrackingId("somethingToMakeTestHappier");
-            IssueEntity issueEntity = bibliographicItemEntity.issue("issue1", Instant.now());
-            issueEntity.setTrackingId("somethingToMakeTestHappier");
-            issueEntity.setIssueText("#1");
-            issueEntity.setReadyForLoan(1);
+            BibliographicItemEntity bibliographicItemEntity = BibliographicItemEntity.from(em, 654321, "12345678", Instant.now(), LocalDate.now())
+                    .setTrackingId("somethingToMakeTestHappier");
+            IssueEntity issueEntity = issueEntity(bibliographicItemEntity, "issue1")
+                    .setTrackingId("somethingToMakeTestHappier")
+                    .setIssueText("#1")
+                    .setReadyForLoan(1);
             itemEntity(issueEntity, "1234", Status.ON_SHELF);
             itemEntity(issueEntity, "2345", Status.ON_LOAN);
             bibliographicItemEntity.save();
@@ -151,13 +144,12 @@ public class ContentTest extends JpaBase {
     public void testGetByBranch() throws Exception {
         System.out.println("testGetByBranch");
         jpa(em -> {
-            BibliographicItemEntity bibliographicItemEntity = BibliographicItemEntity.from(em, 654321, "25912233", Instant.now(), LocalDate.now());
-            System.out.println("bibliographicItemEntity = " + bibliographicItemEntity);
-            bibliographicItemEntity.setTrackingId("somethingToMakeTestHappier");
-            IssueEntity issueEntity = bibliographicItemEntity.issue("issue1", Instant.now());
-            issueEntity.setTrackingId("somethingToMakeTestHappier");
-            issueEntity.setIssueText("#1");
-            issueEntity.setReadyForLoan(1);
+            BibliographicItemEntity bibliographicItemEntity = BibliographicItemEntity.from(em, 654321, "25912233", Instant.now(), LocalDate.now())
+                    .setTrackingId("somethingToMakeTestHappier");
+            IssueEntity issueEntity = issueEntity(bibliographicItemEntity, "issue1")
+                    .setTrackingId("somethingToMakeTestHappier")
+                    .setIssueText("#1")
+                    .setReadyForLoan(1);
             itemEntity(issueEntity, "1234", Status.ON_SHELF).setBranchId("123456");
             itemEntity(issueEntity, "2345", Status.ON_LOAN).setBranchId("123456");
             itemEntity(issueEntity, "3456", Status.ON_LOAN).setBranchId("000000");
@@ -177,12 +169,12 @@ public class ContentTest extends JpaBase {
         System.out.println("Test getItemByPid endpoint, one pid");
         jpa(em -> {
             ContentResource contentResource = MockContentResource(em);
-            BibliographicItemEntity bibliographicItemEntity = BibliographicItemEntity.from(em, 654321, "12345678", Instant.now(), LocalDate.now());
-            bibliographicItemEntity.setTrackingId("somethingToMakeTestHappier");
-            IssueEntity issueEntity = bibliographicItemEntity.issue("issue1", Instant.now());
-            issueEntity.setTrackingId("somethingToMakeTestHappier");
-            issueEntity.setIssueText("#1");
-            issueEntity.setReadyForLoan(1);
+            BibliographicItemEntity bibliographicItemEntity = BibliographicItemEntity.from(em, 654321, "12345678", Instant.now(), LocalDate.now())
+                    .setTrackingId("somethingToMakeTestHappier");
+            IssueEntity issueEntity = issueEntity(bibliographicItemEntity, "issue1")
+                    .setTrackingId("somethingToMakeTestHappier")
+                    .setIssueText("#1")
+                    .setReadyForLoan(1);
             itemEntity(issueEntity, "1234", Status.ON_SHELF);
             itemEntity(issueEntity, "2345", Status.ON_LOAN);
             bibliographicItemEntity.save();
@@ -208,22 +200,22 @@ public class ContentTest extends JpaBase {
         System.out.println("Test getItemByPid endpoint, two pids");
         jpa(em -> {
             ContentResource contentResource = MockContentResource(em);
-            BibliographicItemEntity bibliographicItemEntity = BibliographicItemEntity.from(em, 654321, "12345678", Instant.now(), LocalDate.now());
-            bibliographicItemEntity.setTrackingId("somethingToMakeTestHappier");
-            IssueEntity issueEntity = bibliographicItemEntity.issue("issue1", Instant.now());
-            issueEntity.setTrackingId("somethingToMakeTestHappier");
-            issueEntity.setIssueText("#1");
-            issueEntity.setReadyForLoan(1);
+            BibliographicItemEntity bibliographicItemEntity = BibliographicItemEntity.from(em, 654321, "12345678", Instant.now(), LocalDate.now())
+                    .setTrackingId("somethingToMakeTestHappier");
+            IssueEntity issueEntity = issueEntity(bibliographicItemEntity, "issue1")
+                    .setTrackingId("somethingToMakeTestHappier")
+                    .setIssueText("#1")
+                    .setReadyForLoan(1);
             itemEntity(issueEntity, "1234", Status.ON_SHELF);
             itemEntity(issueEntity, "2345", Status.ON_LOAN);
             bibliographicItemEntity.save();
 
-            BibliographicItemEntity bibliographicItemEntity2 = BibliographicItemEntity.from(em, 654321, "87654321", Instant.now(), LocalDate.now());
-            bibliographicItemEntity2.setTrackingId("somethingToMakeTestHappier");
-            IssueEntity issueEntity2 = bibliographicItemEntity2.issue("issue2", Instant.now());
-            issueEntity2.setTrackingId("somethingToMakeTestHappier");
-            issueEntity2.setIssueText("#2");
-            issueEntity2.setReadyForLoan(1);
+            BibliographicItemEntity bibliographicItemEntity2 = BibliographicItemEntity.from(em, 654321, "87654321", Instant.now(), LocalDate.now())
+                    .setTrackingId("somethingToMakeTestHappier");
+            IssueEntity issueEntity2 = issueEntity(bibliographicItemEntity2, "issue2")
+                    .setTrackingId("somethingToMakeTestHappier")
+                    .setIssueText("#2")
+                    .setReadyForLoan(1);
             itemEntity(issueEntity2, "4321", Status.ON_SHELF);
             bibliographicItemEntity2.save();
 
@@ -257,12 +249,12 @@ public class ContentTest extends JpaBase {
         System.out.println("Test getItemByPid endpoint, non-existing pid");
         jpa(em -> {
             ContentResource contentResource = MockContentResource(em);
-            BibliographicItemEntity bibliographicItemEntity = BibliographicItemEntity.from(em, 654321, "12345678", Instant.now(), LocalDate.now());
-            bibliographicItemEntity.setTrackingId("somethingToMakeTestHappier");
-            IssueEntity issueEntity = bibliographicItemEntity.issue("issue1", Instant.now());
-            issueEntity.setTrackingId("somethingToMakeTestHappier");
-            issueEntity.setIssueText("#1");
-            issueEntity.setReadyForLoan(1);
+            BibliographicItemEntity bibliographicItemEntity = BibliographicItemEntity.from(em, 654321, "12345678", Instant.now(), LocalDate.now())
+                    .setTrackingId("somethingToMakeTestHappier");
+            IssueEntity issueEntity = issueEntity(bibliographicItemEntity, "issue1")
+                    .setTrackingId("somethingToMakeTestHappier")
+                    .setIssueText("#1")
+                    .setReadyForLoan(1);
             itemEntity(issueEntity, "1234", Status.ON_SHELF);
             itemEntity(issueEntity, "2345", Status.ON_LOAN);
             bibliographicItemEntity.save();
@@ -314,12 +306,12 @@ public class ContentTest extends JpaBase {
         System.out.println("Test POST getItemByPid endpoint, one pid");
         jpa(em -> {
             ContentResource contentResource = MockContentResource(em);
-            BibliographicItemEntity bibliographicItemEntity = BibliographicItemEntity.from(em, 654321, "23456781", Instant.now(), LocalDate.now());
-            bibliographicItemEntity.setTrackingId("somethingToMakeTestHappier");
-            IssueEntity issueEntity = bibliographicItemEntity.issue("issue1", Instant.now());
-            issueEntity.setTrackingId("somethingToMakePostTestHappier");
-            issueEntity.setIssueText("#1");
-            issueEntity.setReadyForLoan(1);
+            BibliographicItemEntity bibliographicItemEntity = BibliographicItemEntity.from(em, 654321, "23456781", Instant.now(), LocalDate.now())
+                    .setTrackingId("somethingToMakeTestHappier");
+            IssueEntity issueEntity = issueEntity(bibliographicItemEntity, "issue1")
+                    .setTrackingId("somethingToMakePostTestHappier")
+                    .setIssueText("#1")
+                    .setReadyForLoan(1);
             itemEntity(issueEntity, "2341", Status.ON_SHELF);
             itemEntity(issueEntity, "3452", Status.ON_LOAN);
             bibliographicItemEntity.save();
@@ -344,22 +336,22 @@ public class ContentTest extends JpaBase {
         System.out.println("Test getItemByPid endpoint, two pids");
         jpa(em -> {
             ContentResource contentResource = MockContentResource(em);
-            BibliographicItemEntity bibliographicItemEntity = BibliographicItemEntity.from(em, 654321, "12345678", Instant.now(), LocalDate.now());
-            bibliographicItemEntity.setTrackingId("somethingToMakePostTestHappier");
-            IssueEntity issueEntity = bibliographicItemEntity.issue("issue1", Instant.now());
-            issueEntity.setTrackingId("somethingToMakeTestHappier");
-            issueEntity.setIssueText("#1");
-            issueEntity.setReadyForLoan(1);
+            BibliographicItemEntity bibliographicItemEntity = BibliographicItemEntity.from(em, 654321, "12345678", Instant.now(), LocalDate.now())
+                    .setTrackingId("somethingToMakePostTestHappier");
+            IssueEntity issueEntity = issueEntity(bibliographicItemEntity, "issue1")
+                    .setTrackingId("somethingToMakeTestHappier")
+                    .setIssueText("#1")
+                    .setReadyForLoan(1);
             itemEntity(issueEntity, "1234", Status.ON_SHELF);
             itemEntity(issueEntity, "2345", Status.ON_LOAN);
             bibliographicItemEntity.save();
 
-            BibliographicItemEntity bibliographicItemEntity2 = BibliographicItemEntity.from(em, 654321, "87654321", Instant.now(), LocalDate.now());
-            bibliographicItemEntity2.setTrackingId("somethingToMakeTestHappier");
-            IssueEntity issueEntity2 = bibliographicItemEntity2.issue("issue2", Instant.now());
-            issueEntity2.setTrackingId("somethingToMakeTestHappier");
-            issueEntity2.setIssueText("#2");
-            issueEntity2.setReadyForLoan(1);
+            BibliographicItemEntity bibliographicItemEntity2 = BibliographicItemEntity.from(em, 654321, "87654321", Instant.now(), LocalDate.now())
+                    .setTrackingId("somethingToMakeTestHappier");
+            IssueEntity issueEntity2 = issueEntity(bibliographicItemEntity2, "issue2")
+                    .setTrackingId("somethingToMakeTestHappier")
+                    .setIssueText("#2")
+                    .setReadyForLoan(1);
             itemEntity(issueEntity2, "4321", Status.ON_SHELF);
             bibliographicItemEntity2.save();
 
@@ -400,12 +392,12 @@ public class ContentTest extends JpaBase {
     public void testComplete() throws Exception {
         System.out.println("testComplete");
         jpa(em -> {
-            BibliographicItemEntity bibliographicItemEntity = BibliographicItemEntity.from(em, 654321, "12345678", Instant.now(), LocalDate.now());
-            bibliographicItemEntity.setTrackingId("somethingToMakePostTestHappier");
-            IssueEntity issueEntity = bibliographicItemEntity.issue("issue1", Instant.now());
-            issueEntity.setTrackingId("somethingToMakeTestHappier");
-            issueEntity.setIssueText("#1");
-            issueEntity.setReadyForLoan(1);
+            BibliographicItemEntity bibliographicItemEntity = BibliographicItemEntity.from(em, 654321, "12345678", Instant.now(), LocalDate.now())
+                    .setTrackingId("somethingToMakePostTestHappier");
+            IssueEntity issueEntity = issueEntity(bibliographicItemEntity, "issue1")
+                    .setTrackingId("somethingToMakeTestHappier")
+                    .setIssueText("#1")
+                    .setReadyForLoan(1);
             itemEntity(issueEntity, "1234", Status.ON_SHELF);
             itemEntity(issueEntity, "2345", Status.ON_LOAN);
             bibliographicItemEntity.save();
@@ -433,27 +425,27 @@ public class ContentTest extends JpaBase {
 
         jpa(em -> {
             System.out.println(" `- load record 1");
-            BibliographicItemEntity bibliographicItemEntity = BibliographicItemEntity.from(em, agencyId1, bibId, Instant.now(), LocalDate.now());
-            bibliographicItemEntity.setTrackingId("track");
-            bibliographicItemEntity.setFirstAccessionDate(LocalDate.of(2001, 2, 24));
-            bibliographicItemEntity.setNote("NOTE TEXT");
-            IssueEntity issueEntity = bibliographicItemEntity.issue("issue1", Instant.now());
-            issueEntity.setTrackingId("track");
-            issueEntity.setIssueText("#1");
-            issueEntity.setReadyForLoan(1);
+            BibliographicItemEntity bibliographicItemEntity = BibliographicItemEntity.from(em, agencyId1, bibId, Instant.now(), LocalDate.now())
+                    .setTrackingId("track")
+                    .setFirstAccessionDate(LocalDate.of(2001, 2, 24))
+                    .setNote("NOTE TEXT");
+            IssueEntity issueEntity = issueEntity(bibliographicItemEntity, "issue1")
+                    .setTrackingId("track")
+                    .setIssueText("#1")
+                    .setReadyForLoan(1);
             itemEntity(issueEntity, "1", Status.ON_SHELF);
             bibliographicItemEntity.save();
         });
         jpa(em -> {
             System.out.println(" `- load record 2");
-            BibliographicItemEntity bibliographicItemEntity = BibliographicItemEntity.from(em, agencyId2, bibId, Instant.now(), LocalDate.now());
-            bibliographicItemEntity.setTrackingId("track");
-            bibliographicItemEntity.setFirstAccessionDate(LocalDate.of(2012, 11, 7));
-            bibliographicItemEntity.setNote("NOTE TEXT");
-            IssueEntity issueEntity = bibliographicItemEntity.issue("none", Instant.now());
-            issueEntity.setTrackingId("track");
-            issueEntity.setIssueText("#1");
-            issueEntity.setReadyForLoan(1);
+            BibliographicItemEntity bibliographicItemEntity = BibliographicItemEntity.from(em, agencyId2, bibId, Instant.now(), LocalDate.now())
+                    .setTrackingId("track")
+                    .setFirstAccessionDate(LocalDate.of(2012, 11, 7))
+                    .setNote("NOTE TEXT");
+            IssueEntity issueEntity = issueEntity(bibliographicItemEntity, "none")
+                    .setTrackingId("track")
+                    .setIssueText("#1")
+                    .setReadyForLoan(1);
             itemEntity(issueEntity, "2", Status.ON_SHELF);
             bibliographicItemEntity.save();
         });
@@ -479,20 +471,17 @@ public class ContentTest extends JpaBase {
 
         jpa(em -> {
             System.out.println(" `- load record 1");
-            BibliographicItemEntity bibliographicItemEntity = BibliographicItemEntity.from(em, agencyId, bibId1, Instant.now(), LocalDate.now());
-            bibliographicItemEntity.setTrackingId("track");
-            bibliographicItemEntity.setFirstAccessionDate(LocalDate.of(2001, 2, 24));
-            bibliographicItemEntity.setNote("NOTE TEXT");
-            IssueEntity issueEntity1 = bibliographicItemEntity.issue("issue1", Instant.now());
-            issueEntity1.setTrackingId("track");
-            issueEntity1.setIssueText("old#1");
-            issueEntity1.setReadyForLoan(1);
+            BibliographicItemEntity bibliographicItemEntity = BibliographicItemEntity.from(em, agencyId, bibId1, Instant.now(), LocalDate.now())
+                    .setTrackingId("track")
+                    .setFirstAccessionDate(LocalDate.of(2001, 2, 24))
+                    .setNote("NOTE TEXT");
+            IssueEntity issueEntity1 = issueEntity(bibliographicItemEntity, "issue1");
             itemEntity(issueEntity1, "1", Status.ON_SHELF);
             itemEntity(issueEntity1, "2", Status.ON_LOAN);
-            IssueEntity issueEntity2 = bibliographicItemEntity.issue("issue2", Instant.now());
-            issueEntity2.setTrackingId("track");
-            issueEntity2.setIssueText("old#2");
-            issueEntity2.setReadyForLoan(1);
+            IssueEntity issueEntity2 = issueEntity(bibliographicItemEntity, "issue2")
+                    .setTrackingId("track")
+                    .setIssueText("old#2")
+                    .setReadyForLoan(1);
             itemEntity(issueEntity2, "5", Status.ON_SHELF);
             itemEntity(issueEntity2, "6", Status.ON_LOAN);
             bibliographicItemEntity.save();
@@ -537,13 +526,13 @@ public class ContentTest extends JpaBase {
 
         jpa(em -> {
             System.out.println(" `- load record 2");
-            BibliographicItemEntity bibliographicItemEntity = BibliographicItemEntity.from(em, agencyId, bibId2, Instant.now(), LocalDate.now());
-            bibliographicItemEntity.setTrackingId("track");
-            bibliographicItemEntity.setFirstAccessionDate(LocalDate.of(2012, 4, 12));
-            IssueEntity issueEntity1 = bibliographicItemEntity.issue("issue1", Instant.now());
-            issueEntity1.setTrackingId("track");
-            issueEntity1.setIssueText("new#1");
-            issueEntity1.setReadyForLoan(1);
+            BibliographicItemEntity bibliographicItemEntity = BibliographicItemEntity.from(em, agencyId, bibId2, Instant.now(), LocalDate.now())
+                    .setTrackingId("track")
+                    .setFirstAccessionDate(LocalDate.of(2012, 4, 12));
+            IssueEntity issueEntity1 = issueEntity(bibliographicItemEntity, "issue1")
+                    .setTrackingId("track")
+                    .setIssueText("new#1")
+                    .setReadyForLoan(1);
             itemEntity(issueEntity1, "3", Status.ON_SHELF);
             itemEntity(issueEntity1, "4", Status.ON_LOAN);
             bibliographicItemEntity.save();
@@ -612,68 +601,4 @@ public class ContentTest extends JpaBase {
         });
     }
 
-    private ItemEntity itemEntity(IssueEntity issueEntity, String itemId, Status status) {
-        ItemEntity itemEntity = issueEntity.item(itemId, Instant.now());
-        itemEntity.setAccessionDate(localNow());
-        itemEntity.setStatus(status);
-        itemEntity.setBranch("branch");
-        itemEntity.setBranchId("9876");
-        itemEntity.setDepartment("department");
-        itemEntity.setLocation("location");
-        itemEntity.setSubLocation("subLocation");
-        itemEntity.setCirculationRule("");
-        return itemEntity;
-    }
-
-    private LocalDate localNow() {
-        return LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC).toLocalDate();
-    }
-
-    private static <T, R> FieldMatcher field(String field, Matcher<R> matcher) {
-        return new FieldMatcher(field, matcher);
-    }
-
-    private static class FieldMatcher<T, R> extends BaseMatcher<T> {
-
-        private final String field;
-        private final Matcher<R> matcher;
-        private String error;
-
-        private FieldMatcher(String field, Matcher<R> matcher) {
-            this.field = field;
-            this.matcher = matcher;
-            this.error = null;
-        }
-
-        @Override
-        public boolean matches(Object item) {
-            if (item == null) {
-                error = "object needs to be defined";
-            } else {
-                try {
-                    Field f = item.getClass().getField(field);
-                    return matcher.matches(f.get(item));
-                } catch (IllegalAccessException | IllegalArgumentException | NoSuchFieldException | SecurityException ex) {
-                    error = "cannot access field: '" + field + "'";
-                }
-            }
-            return false;
-        }
-
-        @Override
-        public void describeMismatch(Object item, Description mismatchDescription) {
-            if (error == null) {
-                mismatchDescription.appendText("." + field + " ");
-                matcher.describeMismatch(item, mismatchDescription);
-            } else {
-                mismatchDescription.appendText(error);
-            }
-        }
-
-        @Override
-        public void describeTo(Description description) {
-            description.appendText("." + field + " ");
-            matcher.describeTo(description);
-        }
-    }
 }
