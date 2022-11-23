@@ -41,6 +41,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.StreamingOutput;
 import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -104,7 +105,7 @@ public class ContentResource {
         HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, trackingId);
         Collection<String> holdingItems = dao.getHoldingItems(agencyId);
         StreamingOutput streamingOutput = outputStream -> {
-            PrintStream stream = new PrintStream(outputStream);
+            PrintStream stream = new PrintStream(outputStream, false, StandardCharsets.UTF_8);
             for (String holdingItem : holdingItems) {
                 stream.println(holdingItem);
             }

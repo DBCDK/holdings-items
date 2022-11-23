@@ -31,6 +31,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Set;
@@ -120,7 +121,7 @@ public class HoldingsItemsConnector {
             } else if (response.getStatus() >= 400) {
                 throw new InternalServerErrorException("Failed to fetch holdings for agency : " + agencyId + ", reason: " + response.getStatusInfo().toEnum());
             }
-            try(BufferedReader reader = new BufferedReader(new InputStreamReader(response.readEntity(InputStream.class)))) {
+            try(BufferedReader reader = new BufferedReader(new InputStreamReader(response.readEntity(InputStream.class), StandardCharsets.UTF_8))) {
                 return reader.lines().collect(Collectors.toSet());
             } catch (IOException e) {
                 throw new ProcessingException("Failed to fetch holdings for agency " + agencyId, e);
