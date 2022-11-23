@@ -143,6 +143,14 @@ public class HoldingsItemsDAO {
                 .getResultList());
     }
 
+    public List<String> getHoldingItems(int agencyId) {
+        //noinspection unchecked
+        String query = "SELECT DISTINCT COALESCE(s.superseding, i.bibliographicRecordId) FROM ItemEntity i " +
+                "LEFT JOIN SupersedesEntity s ON i.bibliographicRecordId = s.superseded " +
+                "WHERE i.agencyId=:agencyId";
+        return em.createQuery(query, String.class).setParameter("agencyId", agencyId).getResultList();
+    }
+
     /**
      * Find all issueids for a given bibliographic record
      *
