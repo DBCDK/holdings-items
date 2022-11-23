@@ -108,12 +108,6 @@ public class HoldingsItemsConnector {
         httpClient = FailSafeHttpClient.create(client, RETRY_POLICY);
     }
 
-//    public Set<Integer> getAgenciesThatHasHoldingsFor(MarcRecord marcRecord) {
-//        MarcRecordReader mm = new MarcRecordReader(marcRecord);
-//        Stream<String> ids = Stream.concat(Stream.of(mm.getRecordId()), mm.getCentralAliasIds().stream());
-//        return ids.map(this::getAgenciesThatHasHoldingsForId).flatMap(Collection::stream).collect(Collectors.toSet());
-//    }
-
     public Set<String> getHoldings(int agencyId) {
         try (Response response = new HttpGet(httpClient).withBaseUrl(holdingsServiceUrl + "/holdings-by-agency-id/" + agencyId).execute()) {
             if (response.getStatusInfo().toEnum() == Status.NOT_FOUND) {
