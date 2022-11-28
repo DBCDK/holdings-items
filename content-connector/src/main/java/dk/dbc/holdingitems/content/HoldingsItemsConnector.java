@@ -142,7 +142,7 @@ public class HoldingsItemsConnector {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    private static class HoldingsResponse {
+    public static class HoldingsResponse {
         private Set<Integer> agencies;
         private String trackingId;
 
