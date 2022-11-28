@@ -37,9 +37,10 @@ import java.time.Instant;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static javax.ws.rs.core.Response.Status;
+import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
+import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 
 /**
  * EJB to provide access to the HoldingsItems database.
@@ -47,7 +48,7 @@ import static javax.ws.rs.core.Response.Status;
 @Stateless
 public class HoldingsItemsConnector {
     public static final Tag METHOD_TAG = new Tag("method", "getAgenciesThatHasHoldingsForId");
-    private static final Set<Integer> NO_RETRY_RESPONSES = Stream.of(Status.INTERNAL_SERVER_ERROR, Status.BAD_REQUEST).map(Status::getStatusCode).collect(Collectors.toSet());
+    private static final Set<Integer> NO_RETRY_RESPONSES = Set.of(INTERNAL_SERVER_ERROR.getStatusCode(), BAD_REQUEST.getStatusCode());
     private static final RetryPolicy<Response> RETRY_POLICY = new RetryPolicy<Response>()
             .handle(ProcessingException.class)
             .handleResultIf(response -> NO_RETRY_RESPONSES.contains(response.getStatus()))
@@ -58,15 +59,15 @@ public class HoldingsItemsConnector {
     MetricsHandlerBean metricsHandlerBean;
 
     @Inject
-    @ConfigProperty(name = "HOLDINGS_URL")
+    @ConfigProperty(name = "HOLDING_ITEMS_CONTENT_SERVICE_URL")
     private String holdingsServiceUrl;
 
     @Inject
-    @ConfigProperty(name = "HOLDINGS_CONNECT_TIMEOUT", defaultValue = "PT1S")
+    @ConfigProperty(name = "HOLDINGS_ITEMS_CONNECT_TIMEOUT", defaultValue = "PT1S")
     private Duration connectTimeout;
 
     @Inject
-    @ConfigProperty(name = "HOLDINGS_READ_TIMEOUT", defaultValue = "PT1S")
+    @ConfigProperty(name = "HOLDINGS_ITEMS_READ_TIMEOUT", defaultValue = "PT1S")
     private Duration readTimeout;
 
     private HttpClient httpClient;
