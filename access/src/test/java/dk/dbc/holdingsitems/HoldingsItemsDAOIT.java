@@ -25,10 +25,14 @@ import dk.dbc.holdingsitems.jpa.ItemEntity;
 import dk.dbc.holdingsitems.jpa.ItemKey;
 import dk.dbc.holdingsitems.jpa.Status;
 import dk.dbc.holdingsitems.jpa.SupersedesEntity;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
+import org.hamcrest.BaseMatcher;
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
 import org.junit.Test;
 
+import javax.persistence.EntityManager;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
@@ -38,17 +42,19 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.HashSet;
 import java.util.List;
-
 import java.util.Map;
 import java.util.Set;
-import javax.persistence.EntityManager;
-import org.hamcrest.BaseMatcher;
-import org.hamcrest.Description;
-import org.hamcrest.Matcher;
 
-import static org.hamcrest.Matchers.*;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.*;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.hasItems;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /**
  *
@@ -119,6 +125,22 @@ public class HoldingsItemsDAOIT extends JpaBase {
                     .getResultList();
             System.out.println("bibIds = " + bibIdsDecom);
             assertThat(bibIdsDecom, hasItems("25912233"));
+        });
+    }
+
+    @Test(timeout = 2_000L)
+    public void allHoldingsItemIdsForAgencyWithSupercedes() throws Exception {
+        System.out.println("allHoldingsItemIdsForAgencyWithSupercedes");
+        jpa(em -> {
+            make4(em);
+            makeSupercede(em);
+        });
+
+        jpa(em -> {
+            HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em);
+            List<String> ids = dao.getHoldingItems(870970);
+            System.out.println("issues = " + ids);
+            assertThat(ids, hasItems("25912233", "def"));
         });
     }
 
@@ -424,6 +446,10 @@ public class HoldingsItemsDAOIT extends JpaBase {
         ItemEntity i4 = c4.item("d", Instant.MIN);
         fill(i4);
         b3.save();
+    }
+
+    private void makeSupercede(EntityManager em) {
+        em.persist(new SupersedesEntity("abc", "def"));
     }
 
     private ItemEntity itemEntity(IssueEntity issueEntity, String itemId, Status status) {
