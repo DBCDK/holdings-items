@@ -336,4 +336,6 @@ public class HoldingsItemsDAO {
     public EnqueueService enqueueService() throws HoldingsItemsException {
         return new EnqueueService(em.unwrap(Connection.class), trackingId);
     }
+
+    //TODO ? add db query SELECT status, COUNT(*) FROM item WHERE agencyid={agencyId} GROUP BY STATUS
 }

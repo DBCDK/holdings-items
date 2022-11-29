@@ -66,6 +66,14 @@ public class ContentResource {
             .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 
     @GET
+    @Path("holdings-per-status/{agencyId}")
+    @Produces({MediaType.APPLICATION_JSON})
+    @Timed
+    public Response holdingsPerStatusByAgency(@QueryParam("trackingId") @LogAs("trackingId") @GenerateTrackingId String trackingId)) {
+
+    }
+
+    @GET
     @Path("agencies-with-holdings/{bibliographicRecordId}")
     @Produces({MediaType.APPLICATION_JSON})
     @Timed
