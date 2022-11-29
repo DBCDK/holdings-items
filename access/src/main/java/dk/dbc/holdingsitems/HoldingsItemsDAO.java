@@ -45,7 +45,7 @@ import java.util.stream.Stream;
  * @author DBC {@literal <dbc.dk>}
  */
 public class HoldingsItemsDAO {
-    Set<Status> DEAD_ITEMS = EnumSet.of(Status.DECOMMISSIONED, Status.DISCARDED, Status.LOST);
+    Set<Status> DEAD_ITEMS = EnumSet.of(Status.DISCARDED, Status.LOST);
     private final EntityManager em;
     private final String trackingId;
 
