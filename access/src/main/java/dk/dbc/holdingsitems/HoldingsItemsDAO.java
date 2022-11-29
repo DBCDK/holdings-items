@@ -32,6 +32,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -44,7 +45,7 @@ import java.util.stream.Stream;
  * @author DBC {@literal <dbc.dk>}
  */
 public class HoldingsItemsDAO {
-
+    Set<Status> DEAD_ITEMS = EnumSet.of(Status.DECOMMISSIONED, Status.DISCARDED, Status.LOST);
     private final EntityManager em;
     private final String trackingId;
 
@@ -147,8 +148,11 @@ public class HoldingsItemsDAO {
         //noinspection unchecked
         String query = "SELECT DISTINCT COALESCE(s.superseding, i.bibliographicRecordId) FROM ItemEntity i " +
                 "LEFT JOIN SupersedesEntity s ON i.bibliographicRecordId = s.superseded " +
-                "WHERE i.agencyId=:agencyId";
-        return em.createQuery(query, String.class).setParameter("agencyId", agencyId).getResultList();
+                "WHERE i.agencyId=:agencyId AND i.status NOT IN :list";
+        return em.createQuery(query, String.class)
+                .setParameter("agencyId", agencyId)
+                .setParameter("list", DEAD_ITEMS)
+                .getResultList();
     }
 
     /**
