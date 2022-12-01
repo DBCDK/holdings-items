@@ -18,6 +18,7 @@
  */
 package dk.dbc.holdingsitems;
 
+import dk.dbc.holdingsitems.jpa.AgencyHoldingsItemsStatusCountEntity;
 import dk.dbc.holdingsitems.jpa.BibliographicItemEntity;
 import dk.dbc.holdingsitems.jpa.IssueEntity;
 import dk.dbc.holdingsitems.jpa.ItemEntity;
@@ -288,6 +289,17 @@ public class HoldingsItemsDAO {
                 .collect(Collectors.groupingBy(ItemEntity::getStatus, Collectors.counting()));
     }
 
+    //TODO ? add db query SELECT status, COUNT(*) FROM item WHERE agencyid={agencyId} GROUP BY STATUS
+    public AgencyHoldingsItemsStatusCountEntity getStatusCountsByAgency(int agency) throws HoldingsItemsException {
+        return em.createQuery("SELECT i.status, COUNT(i) " +
+                        "FROM ItemEntity i " +
+                        "WHERE i.agencyId = :agencyId " +
+                        "GROUP BY i.status",
+                        AgencyHoldingsItemsStatusCountEntity.class)
+                .setParameter("agencyId", agency)
+                .getSingleResult();
+    }
+
     /**
      * Has a holding that is not decommissioned (ignore supersedes)
      *
@@ -336,6 +348,4 @@ public class HoldingsItemsDAO {
     public EnqueueService enqueueService() throws HoldingsItemsException {
         return new EnqueueService(em.unwrap(Connection.class), trackingId);
     }
-
-    //TODO ? add db query SELECT status, COUNT(*) FROM item WHERE agencyid={agencyId} GROUP BY STATUS
 }
