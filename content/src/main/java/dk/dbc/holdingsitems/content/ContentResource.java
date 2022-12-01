@@ -69,8 +69,16 @@ public class ContentResource {
     @Path("holdings-per-status/{agencyId}")
     @Produces({MediaType.APPLICATION_JSON})
     @Timed
-    public Response holdingsPerStatusByAgency(@QueryParam("trackingId") @LogAs("trackingId") @GenerateTrackingId String trackingId)) {
+    public Response holdingsPerStatusByAgency(@PathParam("agencyId") Integer agencyId,
+                                                  @QueryParam("trackingId") @LogAs("trackingId") @GenerateTrackingId String trackingId) {
 
+        if (agencyId == null || agencyId < 0) {
+            log.error("holdings-per-status called with no agency");
+            return Response.status(Response.Status.BAD_REQUEST).build();
+        }
+
+            // TODO return something useful
+        return Response.noContent().build();
     }
 
     @GET
