@@ -9,7 +9,7 @@ import dk.dbc.commons.mdc.LogAs;
 import dk.dbc.holdingsitems.HoldingsItemsDAO;
 import dk.dbc.holdingsitems.HoldingsItemsException;
 import dk.dbc.holdingsitems.content.response.AgenciesWithHoldingsResponse;
-import dk.dbc.holdingsitems.content.response.AgencyHoldingsItemsStatusCountResponse;
+import dk.dbc.holdingsitems.content.response.StatusCountResponse;
 import dk.dbc.holdingsitems.content_dto.CompleteBibliographic;
 import dk.dbc.holdingsitems.content.response.CompleteItemFull;
 import dk.dbc.holdingsitems.content.response.ContentServiceBranchResponse;
@@ -18,7 +18,7 @@ import dk.dbc.holdingsitems.content.response.ContentServiceItemResponse;
 import dk.dbc.holdingsitems.content.response.ContentServicePidResponse;
 import dk.dbc.holdingsitems.content.response.IndexHtml;
 import dk.dbc.holdingsitems.content.response.LaesekompasHoldingsEntity;
-import dk.dbc.holdingsitems.jpa.AgencyHoldingsItemsStatusCountEntity;
+import dk.dbc.holdingsitems.jpa.StatusCountEntity;
 import dk.dbc.holdingsitems.jpa.BibliographicItemDetached;
 import dk.dbc.holdingsitems.jpa.BibliographicItemEntity;
 import dk.dbc.holdingsitems.jpa.ItemEntity;
@@ -67,11 +67,13 @@ public class ContentResource {
             .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
             .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 
+    // TODO WIP
     @GET
     @Path("holdings-per-status/{agencyId}")
     @Produces({MediaType.APPLICATION_JSON})
     @Timed
-    public Response holdingsPerStatusByAgency(@PathParam("agencyId") Integer agencyId, @QueryParam("trackingId") @LogAs("trackingId") @GenerateTrackingId String trackingId) {
+    public Response holdingsPerStatusByAgency(@PathParam("agencyId") Integer agencyId,
+                                              @QueryParam("trackingId") @LogAs("trackingId") @GenerateTrackingId String trackingId) {
 
         if (agencyId == null || agencyId < 0) {
             log.error("holdings-per-status called with no agency");
@@ -83,8 +85,8 @@ public class ContentResource {
 
             HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, trackingId);
             try {
-                AgencyHoldingsItemsStatusCountEntity resp = dao.getStatusCountsByAgency(agencyId);
-                return Response.ok(resp).build();
+                StatusCountEntity resp = dao.getStatusCountsByAgency(agencyId, trackingId);
+                return Response.ok(new StatusCountResponse(resp.getAgencyId(), resp.getStatusCounts(), resp.getTrackingId())).build();
             } catch (HoldingsItemsException e) {
                 log.error("Exception requesting for agencyId: {}: {}", agencyId, e.getMessage());
                 log.debug("Exception requesting for agencyId: {}: ", agencyId, e);

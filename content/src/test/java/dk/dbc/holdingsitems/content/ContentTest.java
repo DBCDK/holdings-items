@@ -11,6 +11,7 @@ import dk.dbc.holdingsitems.content.response.ResponseHoldingEntity;
 import dk.dbc.holdingsitems.content_dto.CompleteBibliographic;
 import dk.dbc.holdingsitems.jpa.BibliographicItemEntity;
 import dk.dbc.holdingsitems.jpa.IssueEntity;
+import dk.dbc.holdingsitems.jpa.ItemEntity;
 import dk.dbc.holdingsitems.jpa.Status;
 import dk.dbc.holdingsitems.jpa.SupersedesEntity;
 import org.junit.Test;
@@ -20,6 +21,8 @@ import javax.ws.rs.core.Response;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Arrays;
+import java.util.EnumSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -601,9 +604,41 @@ public class ContentTest extends JpaBase {
         });
     }
 
-    @Test(timeout = 2_000L)
+    // TODO WRITE TEST and then move it somewhere meaningful if possible...
+    @Test()
     public void testGetHoldingsPerStatusByAgency() throws Exception {
-        // TODO WRITE TEST 
+        System.out.println("testGetHoldingsPerStatusByAgency");
+
+        jpa(em -> {
+            System.out.println(" `- load records");
+
+            IssueEntity issue;
+            BibliographicItemEntity bibItem;
+
+            EnumSet<Status> statuses = EnumSet.complementOf(EnumSet.of(Status.DECOMMISSIONED, Status.UNKNOWN));
+            for (Status stat : statuses) {
+                bibItem = BibliographicItemEntity.from(em, 123456, "100000", Instant.now(),
+                                LocalDate.now())
+                        .setTrackingId("trackId")
+                        .setFirstAccessionDate(LocalDate.of(2022, 12, 2))
+                        .setNote("NOTE TEXT");
+
+                issue = issueEntity(bibItem, "issue1");
+                itemEntity(issue, "1", stat);
+                itemEntity(issue, "2", stat);
+                bibItem.save();
+            }
+        });
+
+        jpa(em -> {
+            System.out.println(" - ");
+            ContentResource bean = new ContentResource();
+            bean.em = em;
+
+            Response resp = bean.holdingsPerStatusByAgency(123456, "test-track");
+            assertThat(resp.getStatus(), is(200));
+
+        });
 
     }
 }

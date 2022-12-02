@@ -18,7 +18,7 @@
  */
 package dk.dbc.holdingsitems;
 
-import dk.dbc.holdingsitems.jpa.AgencyHoldingsItemsStatusCountEntity;
+import dk.dbc.holdingsitems.jpa.StatusCountEntity;
 import dk.dbc.holdingsitems.jpa.BibliographicItemEntity;
 import dk.dbc.holdingsitems.jpa.IssueEntity;
 import dk.dbc.holdingsitems.jpa.ItemEntity;
@@ -289,15 +289,18 @@ public class HoldingsItemsDAO {
                 .collect(Collectors.groupingBy(ItemEntity::getStatus, Collectors.counting()));
     }
 
-    //TODO ? add db query SELECT status, COUNT(*) FROM item WHERE agencyid={agencyId} GROUP BY STATUS
-    public AgencyHoldingsItemsStatusCountEntity getStatusCountsByAgency(int agency) throws HoldingsItemsException {
+    //TODO throws ClassCastException ...
+    public StatusCountEntity getStatusCountsByAgency(int agency, String trackingId) throws HoldingsItemsException {
         return em.createQuery("SELECT i.status, COUNT(i) " +
                         "FROM ItemEntity i " +
                         "WHERE i.agencyId = :agencyId " +
                         "GROUP BY i.status",
-                        AgencyHoldingsItemsStatusCountEntity.class)
+                        StatusCountEntity.class)
                 .setParameter("agencyId", agency)
                 .getSingleResult();
+
+        // Morten snakkede om at jeg skulle streame resultatet fordi der er tabel-lignende så jeg kan tage hver række
+        // putte dem i et map ...
     }
 
     /**
