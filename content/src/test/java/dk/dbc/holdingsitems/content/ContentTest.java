@@ -585,18 +585,18 @@ public class ContentTest extends JpaBase {
             assertThat("Oldest of the 2", entity.firstAccessionDate, is("2001-02-24"));
             assertThat(entity.note, is(""));
             assertThat(entity.issues, contains(
-                       allOf(field("issueId", is("issue1")),
-                             field("items", containsInAnyOrder(
-                                   allOf(field("itemId", is("3")),
-                                         field("bibliographicRecordId", is(bibId2))),
-                                   allOf(field("itemId", is("4")),
-                                         field("bibliographicRecordId", is(bibId2)))
-                           )))));
+                    allOf(field("issueId", is("issue1")),
+                            field("items", containsInAnyOrder(
+                                    allOf(field("itemId", is("3")),
+                                            field("bibliographicRecordId", is(bibId2))),
+                                    allOf(field("itemId", is("4")),
+                                            field("bibliographicRecordId", is(bibId2)))
+                            )))));
         });
     }
 
-    // TODO WRITE TEST and then move it somewhere meaningful if possible...
-    @Test()
+
+    @Test(timeout = 2_000L)
     public void testGetHoldingsPerStatusByAgency() throws Exception {
         System.out.println("testGetHoldingsPerStatusByAgency");
 
@@ -637,7 +637,7 @@ public class ContentTest extends JpaBase {
 
             StatusCountResponse ent = (StatusCountResponse) obj;
             assertThat(ent.agencyId, is(123456));
-            assertThat(ent.statusCounts.size(), is(8));
+            assertThat(ent.statusCounts.size(), is(7));
             assertThat(ent.statusCounts.get(Status.ON_ORDER), is(2L));
             assertThat(ent.statusCounts.get(Status.NOT_FOR_LOAN), is(2L));
             assertThat(ent.statusCounts.get(Status.ON_LOAN), is(2L));
@@ -645,7 +645,6 @@ public class ContentTest extends JpaBase {
             assertThat(ent.statusCounts.get(Status.LOST), is(2L));
             assertThat(ent.statusCounts.get(Status.DISCARDED), is(2L));
             assertThat(ent.statusCounts.get(Status.ONLINE), is(2L));
-            assertThat(ent.statusCounts.get(Status.UNKNOWN), is(2L));
         });
     }
 }
