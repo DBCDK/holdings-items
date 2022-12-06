@@ -1,18 +1,19 @@
 package dk.dbc.holdingsitems.content.response;
 
+import dk.dbc.holdingsitems.jpa.Status;
+
 import java.util.Map;
 
 /**
- * Class to represent object to return to endpoint
+ * Class to represent object to return to endpoint at status per agency query
  */
 public class StatusCountResponse {
 
-    public int agencyId;
-    public final Map<String, Long> statusCounts;
+    public final Map<Status, Long> statusCounts;
     public final String trackingId;
+    public int agencyId;
 
-
-    public StatusCountResponse(int agencyId, Map<String, Long> statusCountsByAgency, String trackingId) {
+    public StatusCountResponse(int agencyId, Map<Status, Long> statusCountsByAgency, String trackingId) {
         this.agencyId = agencyId;
         this.statusCounts = statusCountsByAgency;
         this.trackingId = trackingId;

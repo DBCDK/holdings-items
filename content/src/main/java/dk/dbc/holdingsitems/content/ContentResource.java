@@ -67,34 +67,6 @@ public class ContentResource {
             .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
             .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 
-    // TODO WIP
-    @GET
-    @Path("holdings-per-status/{agencyId}")
-    @Produces({MediaType.APPLICATION_JSON})
-    @Timed
-    public Response holdingsPerStatusByAgency(@PathParam("agencyId") Integer agencyId,
-                                              @QueryParam("trackingId") @LogAs("trackingId") @GenerateTrackingId String trackingId) {
-
-        if (agencyId == null || agencyId < 0) {
-            log.error("holdings-per-status called with no agency");
-            return Response.status(Response.Status.BAD_REQUEST).build();
-        }
-
-        try (LogWith l = LogWith.track(trackingId)) {
-            l.agencyId(agencyId);
-
-            HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, trackingId);
-            try {
-                StatusCountEntity resp = dao.getStatusCountsByAgency(agencyId, trackingId);
-                return Response.ok(new StatusCountResponse(resp.getAgencyId(), resp.getStatusCounts(), resp.getTrackingId())).build();
-            } catch (HoldingsItemsException e) {
-                log.error("Exception requesting for agencyId: {}: {}", agencyId, e.getMessage());
-                log.debug("Exception requesting for agencyId: {}: ", agencyId, e);
-                return Response.serverError().build();
-            }
-        }
-    }
-
     @GET
     @Path("agencies-with-holdings/{bibliographicRecordId}")
     @Produces({MediaType.APPLICATION_JSON})
@@ -118,6 +90,33 @@ public class ContentResource {
             } catch (HoldingsItemsException e) {
                 log.error("Exception requesting for bibliographicRecordId: {}: {}", bibliographicRecordId, e.getMessage());
                 log.debug("Exception requesting for bibliographicRecordId: {}: ", bibliographicRecordId, e);
+                return Response.serverError().build();
+            }
+        }
+    }
+
+    @GET
+    @Path("holdings-per-status/{agencyId}")
+    @Produces({MediaType.APPLICATION_JSON})
+    @Timed
+    public Response holdingsPerStatusByAgency(@PathParam("agencyId") Integer agencyId,
+                                              @QueryParam("trackingId") @LogAs("trackingId") @GenerateTrackingId String trackingId) {
+
+        if (agencyId == null || agencyId < 0) {
+            log.error("holdings-per-status called with no agency");
+            return Response.status(Response.Status.BAD_REQUEST).build();
+        }
+
+        try (LogWith l = LogWith.track(trackingId)) {
+            l.agencyId(agencyId);
+
+            HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, trackingId);
+            try {
+                StatusCountEntity resp = dao.getStatusCountsByAgency(agencyId, trackingId);
+                return Response.ok(new StatusCountResponse(resp.getAgencyId(), resp.getStatusCounts(), resp.getTrackingId())).build();
+            } catch (HoldingsItemsException e) {
+                log.error("Exception requesting for agencyId: {}: {}", agencyId, e.getMessage());
+                log.debug("Exception requesting for agencyId: {}: ", agencyId, e);
                 return Response.serverError().build();
             }
         }
@@ -249,7 +248,7 @@ public class ContentResource {
             List<Object[]> laesekompasObjects = dao.getAgencyBranchStringsForBibliographicRecordId(bibliographicRecordId);
             List<LaesekompasHoldingsEntity> laesekompasHoldingsEntities =
                     laesekompasObjects.stream()
-                            .map(oa -> LaesekompasHoldingsEntity.fromDatabaseObjects(oa))
+                            .map(LaesekompasHoldingsEntity::fromDatabaseObjects)
                             .filter(lke -> lke != null && lke.status != Status.DECOMMISSIONED && !lke.branch.isEmpty())
                             .collect(toList());
             res.put(bibliographicRecordId, laesekompasHoldingsEntities);

@@ -1,19 +1,10 @@
 package dk.dbc.holdingsitems.content;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import dk.dbc.holdingsitems.content.response.AgenciesWithHoldingsResponse;
-import dk.dbc.holdingsitems.content.response.ContentServiceBranchResponse;
-import dk.dbc.holdingsitems.content.response.ContentServiceItemResponse;
-import dk.dbc.holdingsitems.content.response.ContentServiceLaesekompasResponse;
-import dk.dbc.holdingsitems.content.response.ContentServicePidResponse;
-import dk.dbc.holdingsitems.content.response.LaesekompasHoldingsEntity;
-import dk.dbc.holdingsitems.content.response.ResponseHoldingEntity;
+import dk.dbc.holdingsitems.content.response.*;
 import dk.dbc.holdingsitems.content_dto.CompleteBibliographic;
-import dk.dbc.holdingsitems.jpa.BibliographicItemEntity;
-import dk.dbc.holdingsitems.jpa.IssueEntity;
-import dk.dbc.holdingsitems.jpa.ItemEntity;
+import dk.dbc.holdingsitems.jpa.*;
 import dk.dbc.holdingsitems.jpa.Status;
-import dk.dbc.holdingsitems.jpa.SupersedesEntity;
 import org.junit.Test;
 
 import javax.persistence.EntityManager;
@@ -610,12 +601,14 @@ public class ContentTest extends JpaBase {
         System.out.println("testGetHoldingsPerStatusByAgency");
 
         jpa(em -> {
-            System.out.println(" `- load records");
+            System.out.println(" `- load record");
 
             IssueEntity issue;
             BibliographicItemEntity bibItem;
 
+            // create test a test-record with several statuses for one agency
             EnumSet<Status> statuses = EnumSet.complementOf(EnumSet.of(Status.DECOMMISSIONED, Status.UNKNOWN));
+            int itemId = 0;
             for (Status stat : statuses) {
                 bibItem = BibliographicItemEntity.from(em, 123456, "100000", Instant.now(),
                                 LocalDate.now())
@@ -624,21 +617,35 @@ public class ContentTest extends JpaBase {
                         .setNote("NOTE TEXT");
 
                 issue = issueEntity(bibItem, "issue1");
-                itemEntity(issue, "1", stat);
-                itemEntity(issue, "2", stat);
+                itemEntity(issue, "itemId-" + itemId++, stat);
+                itemEntity(issue, "itemId-" + itemId++, stat);
                 bibItem.save();
             }
         });
 
         jpa(em -> {
-            System.out.println(" - ");
+            System.out.println(" - get total holdings of each status for one agency");
             ContentResource bean = new ContentResource();
             bean.em = em;
 
             Response resp = bean.holdingsPerStatusByAgency(123456, "test-track");
             assertThat(resp.getStatus(), is(200));
+            assertTrue(resp.hasEntity());
 
+            Object obj = resp.getEntity();
+            assertEquals(String.valueOf(obj.getClass()), (String.valueOf(StatusCountResponse.class)));
+
+            StatusCountResponse ent = (StatusCountResponse) obj;
+            assertThat(ent.agencyId, is(123456));
+            assertThat(ent.statusCounts.size(), is(8));
+            assertThat(ent.statusCounts.get(Status.ON_ORDER), is(2L));
+            assertThat(ent.statusCounts.get(Status.NOT_FOR_LOAN), is(2L));
+            assertThat(ent.statusCounts.get(Status.ON_LOAN), is(2L));
+            assertThat(ent.statusCounts.get(Status.ON_SHELF), is(2L));
+            assertThat(ent.statusCounts.get(Status.LOST), is(2L));
+            assertThat(ent.statusCounts.get(Status.DISCARDED), is(2L));
+            assertThat(ent.statusCounts.get(Status.ONLINE), is(2L));
+            assertThat(ent.statusCounts.get(Status.UNKNOWN), is(2L));
         });
-
     }
 }

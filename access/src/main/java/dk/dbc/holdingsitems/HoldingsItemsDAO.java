@@ -31,17 +31,11 @@ import java.sql.Connection;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- *
  * @author DBC {@literal <dbc.dk>}
  */
 public class HoldingsItemsDAO {
@@ -118,6 +112,7 @@ public class HoldingsItemsDAO {
      * @param bibliographicRecordId a bibliographicrecordId
      * @return a list of agency/branch strings
      */
+    @SuppressWarnings("unchecked")
     public List<Object[]> getAgencyBranchStringsForBibliographicRecordId(String bibliographicRecordId) {
         return em.createQuery("SELECT h.agencyId, h.bibliographicRecordId, h.branch, h.status" +
                               " FROM ItemEntity h" +
@@ -282,25 +277,34 @@ public class HoldingsItemsDAO {
      * @param bibliographicRecordId key
      * @param agencyId              key
      * @return key-value pairs with status and number of that status
-     * @throws HoldingsItemsException in case of a database error
      */
     public Map<Status, Long> getStatusFor(String bibliographicRecordId, int agencyId) throws HoldingsItemsException {
         return streamItemsFromAgencyAndBibliographicRecordId(agencyId, bibliographicRecordId)
                 .collect(Collectors.groupingBy(ItemEntity::getStatus, Collectors.counting()));
     }
 
-    //TODO throws ClassCastException ...
+    /**
+     * @param agency agency id of owner
+     * @param trackingId optional tracking id for debugging
+     * @return object to hold response from query
+     * @throws HoldingsItemsException in case of database error
+     */
+    @SuppressWarnings("unchecked")
     public StatusCountEntity getStatusCountsByAgency(int agency, String trackingId) throws HoldingsItemsException {
-        return em.createQuery("SELECT i.status, COUNT(i) " +
-                        "FROM ItemEntity i " +
-                        "WHERE i.agencyId = :agencyId " +
-                        "GROUP BY i.status",
-                        StatusCountEntity.class)
-                .setParameter("agencyId", agency)
-                .getSingleResult();
+        List<Object[]> res = (List<Object[]>) em.createQuery(
+                                                        "SELECT i.status, COUNT(i) " +
+                                                                " FROM ItemEntity i " +
+                                                                " WHERE i.agencyId = :agencyId " +
+                                                                " GROUP BY i.status")
+                                                .setParameter("agencyId", agency)
+                                                .getResultList();
 
-        // Morten snakkede om at jeg skulle streame resultatet fordi der er tabel-lignende så jeg kan tage hver række
-        // putte dem i et map ...
+        Map<Status, Long> statusCounts = new HashMap<>();
+        for (Object[] counts : res) {
+            statusCounts.put((Status) counts[0], (Long) counts[1]);
+        }
+
+        return new StatusCountEntity(agency, statusCounts, trackingId);
     }
 
     /**
