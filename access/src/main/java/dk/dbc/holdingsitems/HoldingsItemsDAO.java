@@ -18,27 +18,14 @@
  */
 package dk.dbc.holdingsitems;
 
-import dk.dbc.holdingsitems.jpa.StatusCountEntity;
-import dk.dbc.holdingsitems.jpa.BibliographicItemEntity;
-import dk.dbc.holdingsitems.jpa.IssueEntity;
-import dk.dbc.holdingsitems.jpa.ItemEntity;
-import dk.dbc.holdingsitems.jpa.Status;
-import dk.dbc.holdingsitems.jpa.SupersedesEntity;
-import dk.dbc.holdingsitems.jpa.VersionSort;
+import dk.dbc.holdingsitems.jpa.*;
 
 import javax.persistence.EntityManager;
 import java.sql.Connection;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -46,9 +33,9 @@ import java.util.stream.Stream;
  * @author DBC {@literal <dbc.dk>}
  */
 public class HoldingsItemsDAO {
-    Set<Status> DEAD_ITEMS = EnumSet.of(Status.DISCARDED, Status.LOST);
     private final EntityManager em;
     private final String trackingId;
+    Set<Status> DEAD_ITEMS = EnumSet.of(Status.DISCARDED, Status.LOST);
 
     /**
      * Constructor
@@ -104,12 +91,12 @@ public class HoldingsItemsDAO {
      */
     public Set<String> getBibliographicIds(int agencyId) {
         return new HashSet<>(em.createQuery("SELECT h.bibliographicRecordId" +
-                                            " FROM ItemEntity h" +
-                                            " WHERE h.agencyId = :agencyId" +
-                                            " GROUP BY h.agencyId, h.bibliographicRecordId",
-                                            String.class)
-                .setParameter("agencyId", agencyId)
-                .getResultList());
+                                               " FROM ItemEntity h" +
+                                               " WHERE h.agencyId = :agencyId" +
+                                               " GROUP BY h.agencyId, h.bibliographicRecordId",
+                                       String.class)
+                               .setParameter("agencyId", agencyId)
+                               .getResultList());
     }
 
     /**
@@ -122,11 +109,11 @@ public class HoldingsItemsDAO {
     @SuppressWarnings("unchecked")
     public List<Object[]> getAgencyBranchStringsForBibliographicRecordId(String bibliographicRecordId) {
         return em.createQuery("SELECT h.agencyId, h.bibliographicRecordId, h.branch, h.status" +
-                              " FROM ItemEntity h" +
-                              " WHERE h.bibliographicRecordId = :bibliographicRecordId" +
-                              " AND h.branch != ''")
-                .setParameter("bibliographicRecordId", bibliographicRecordId)
-                .getResultList();
+                         " FROM ItemEntity h" +
+                         " WHERE h.bibliographicRecordId = :bibliographicRecordId" +
+                         " AND h.branch != ''")
+                 .setParameter("bibliographicRecordId", bibliographicRecordId)
+                 .getResultList();
     }
 
     /**
@@ -139,11 +126,11 @@ public class HoldingsItemsDAO {
      */
     public Set<String> getBibliographicIdsIncludingDecommissioned(int agencyId) {
         return new HashSet<>(em.createQuery("SELECT h.bibliographicRecordId" +
-                                            " FROM BibliographicItemEntity h" +
-                                            " WHERE h.agencyId = :agencyId",
-                                            String.class)
-                .setParameter("agencyId", agencyId)
-                .getResultList());
+                                               " FROM BibliographicItemEntity h" +
+                                               " WHERE h.agencyId = :agencyId",
+                                       String.class)
+                               .setParameter("agencyId", agencyId)
+                               .getResultList());
     }
 
     public List<String> getHoldingItems(int agencyId) {
@@ -152,9 +139,9 @@ public class HoldingsItemsDAO {
                 "LEFT JOIN SupersedesEntity s ON i.bibliographicRecordId = s.superseded " +
                 "WHERE i.agencyId=:agencyId AND i.status NOT IN :list";
         return em.createQuery(query, String.class)
-                .setParameter("agencyId", agencyId)
-                .setParameter("list", DEAD_ITEMS)
-                .getResultList();
+                 .setParameter("agencyId", agencyId)
+                 .setParameter("list", DEAD_ITEMS)
+                 .getResultList();
     }
 
     /**
@@ -187,13 +174,13 @@ public class HoldingsItemsDAO {
     public Set<ItemEntity> getItemsFromAgencyIdAndItemId(int agencyId, String itemId) {
         List<ItemEntity> itemList =
                 em.createQuery("SELECT h" +
-                               " FROM ItemEntity h" +
-                               " WHERE h.agencyId = :agencyId" +
-                               "  AND h.itemId = :itemId",
-                               ItemEntity.class)
-                        .setParameter("agencyId", agencyId)
-                        .setParameter("itemId", itemId)
-                        .getResultList();
+                                  " FROM ItemEntity h" +
+                                  " WHERE h.agencyId = :agencyId" +
+                                  "  AND h.itemId = :itemId",
+                          ItemEntity.class)
+                  .setParameter("agencyId", agencyId)
+                  .setParameter("itemId", itemId)
+                  .getResultList();
         return new HashSet<>(itemList);
     }
 
@@ -205,7 +192,8 @@ public class HoldingsItemsDAO {
      * @param bibliographicRecordId record id to search for
      * @return a collection of ItemEntity objects that match the parameters.
      */
-    public Set<ItemEntity> getItemsFromBranchIdAndBibliographicRecordId(int agencyId, String branchId, String bibliographicRecordId) {
+    public Set<ItemEntity> getItemsFromBranchIdAndBibliographicRecordId(int agencyId, String branchId,
+                                                                        String bibliographicRecordId) {
         return streamItemsFromAgencyAndBibliographicRecordId(agencyId, bibliographicRecordId)
                 .filter(item -> branchId.equals(item.getBranchId()))
                 .collect(Collectors.toSet());
@@ -263,13 +251,13 @@ public class HoldingsItemsDAO {
      */
     public Set<Integer> getAgenciesThatHasHoldingsFor(String bibliographicRecordId) throws HoldingsItemsException {
         return em.createQuery(
-                "SELECT h.agencyId FROM ItemEntity h" +
-                " WHERE h.bibliographicRecordId = :bibId" +
-                " GROUP BY h.agencyId",
-                Integer.class)
-                .setParameter("bibId", bibliographicRecordId)
-                .getResultStream()
-                .collect(Collectors.toSet());
+                         "SELECT h.agencyId FROM ItemEntity h" +
+                                 " WHERE h.bibliographicRecordId = :bibId" +
+                                 " GROUP BY h.agencyId",
+                         Integer.class)
+                 .setParameter("bibId", bibliographicRecordId)
+                 .getResultStream()
+                 .collect(Collectors.toSet());
     }
 
     /**
@@ -282,10 +270,12 @@ public class HoldingsItemsDAO {
      * @param modified              modified timestamp
      * @throws HoldingsItemsException in case of a database error
      */
-    public void updateBibliographicItemNote(String note, int agencyId, String bibliographicRecordId, Instant modified) throws HoldingsItemsException {
-        BibliographicItemEntity item = BibliographicItemEntity.from(em, agencyId, bibliographicRecordId, modified, null);
+    public void updateBibliographicItemNote(String note, int agencyId, String bibliographicRecordId,
+                                            Instant modified) throws HoldingsItemsException {
+        BibliographicItemEntity item =
+                BibliographicItemEntity.from(em, agencyId, bibliographicRecordId, modified, null);
         if (item.isNew() ||
-            !item.getModified().isAfter(modified))
+                !item.getModified().isAfter(modified))
             item.setNote(note);
     }
 
@@ -303,7 +293,7 @@ public class HoldingsItemsDAO {
     }
 
     /**
-     * @param agency agency id of owner
+     * @param agency     agency id of owner
      * @param trackingId optional tracking id for debugging
      * @return object to hold response from query
      * @throws HoldingsItemsException in case of database error
@@ -335,13 +325,16 @@ public class HoldingsItemsDAO {
      * @throws HoldingsItemsException in case of a database error
      */
     public boolean hasLiveHoldings(String bibliographicRecordId, int agencyId) throws HoldingsItemsException {
-        return streamItemsFromBibliographicEntity(BibliographicItemEntity.fromUnLocked(em, agencyId, bibliographicRecordId))
+        return streamItemsFromBibliographicEntity(
+                BibliographicItemEntity.fromUnLocked(em, agencyId, bibliographicRecordId))
                 .findAny()
                 .isPresent();
     }
 
-    private Stream<ItemEntity> streamItemsFromAgencyAndBibliographicRecordId(int agencyId, String bibliographicRecordId) {
-        return streamItemsFromBibliographicEntity(BibliographicItemEntity.detachedWithSuperseded(em, agencyId, bibliographicRecordId));
+    private Stream<ItemEntity> streamItemsFromAgencyAndBibliographicRecordId(int agencyId,
+                                                                             String bibliographicRecordId) {
+        return streamItemsFromBibliographicEntity(
+                BibliographicItemEntity.detachedWithSuperseded(em, agencyId, bibliographicRecordId));
     }
 
     private Stream<ItemEntity> streamItemsFromBibliographicEntity(BibliographicItemEntity entity) {
@@ -350,9 +343,9 @@ public class HoldingsItemsDAO {
         } else {
             VersionSort versionSort = new VersionSort();
             return entity.stream()
-                    .sorted(Comparator.comparing(IssueEntity::getIssueId, versionSort))
-                    .flatMap(IssueEntity::stream)
-                    .sorted(Comparator.comparing(ItemEntity::getItemId, versionSort));
+                         .sorted(Comparator.comparing(IssueEntity::getIssueId, versionSort))
+                         .flatMap(IssueEntity::stream)
+                         .sorted(Comparator.comparing(ItemEntity::getItemId, versionSort));
         }
     }
 
