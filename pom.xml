@@ -6,7 +6,7 @@
     <repositories>
         <repository>
             <id>mavenrepo.dbc.dk</id>
-            <url>http://mavenrepo.dbc.dk/content/groups/public</url>
+            <url>https://mavenrepo.dbc.dk/content/groups/public</url>
         </repository>
     </repositories>
 
@@ -47,6 +47,7 @@
         <module>kafka-bridge</module>
         <module>purge-tool</module>
         <module>content</module>
+        <module>content-connector</module>
     </modules>
 
     <build>
@@ -196,7 +197,7 @@
         <repository>
             <id>mavenrepo.dbc.dk</id>
             <name>DBC Maven Repository</name>
-            <url>http://mavenrepo.dbc.dk/content/repositories/snapshots</url>
+            <url>https://mavenrepo.dbc.dk/content/repositories/snapshots</url>
         </repository>
     </distributionManagement>
 

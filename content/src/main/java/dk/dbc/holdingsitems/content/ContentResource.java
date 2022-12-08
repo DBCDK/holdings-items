@@ -13,11 +13,12 @@ import dk.dbc.holdingsitems.content.response.StatusCountResponse;
 import dk.dbc.holdingsitems.content_dto.CompleteBibliographic;
 import dk.dbc.holdingsitems.content.response.CompleteItemFull;
 import dk.dbc.holdingsitems.content.response.ContentServiceBranchResponse;
-import dk.dbc.holdingsitems.content.response.ContentServiceLaesekompasResponse;
 import dk.dbc.holdingsitems.content.response.ContentServiceItemResponse;
+import dk.dbc.holdingsitems.content.response.ContentServiceLaesekompasResponse;
 import dk.dbc.holdingsitems.content.response.ContentServicePidResponse;
 import dk.dbc.holdingsitems.content.response.IndexHtml;
 import dk.dbc.holdingsitems.content.response.LaesekompasHoldingsEntity;
+
 import dk.dbc.holdingsitems.jpa.StatusCountEntity;
 import dk.dbc.holdingsitems.jpa.BibliographicItemDetached;
 import dk.dbc.holdingsitems.jpa.BibliographicItemEntity;
@@ -25,7 +26,7 @@ import dk.dbc.holdingsitems.jpa.ItemEntity;
 import dk.dbc.holdingsitems.jpa.Status;
 import dk.dbc.holdingsitems.jpa.SupersedesEntity;
 import dk.dbc.log.LogWith;
-import java.util.Collection;
+import org.eclipse.microprofile.metrics.annotation.Timed;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,17 +37,20 @@ import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.StreamingOutput;
+import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import javax.ws.rs.PathParam;
-import org.eclipse.microprofile.metrics.annotation.Timed;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
@@ -113,13 +117,32 @@ public class ContentResource {
             HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, trackingId);
             try {
                 StatusCountEntity resp = dao.getStatusCountsByAgency(agencyId, trackingId);
-                return Response.ok(new StatusCountResponse(resp.getAgencyId(), resp.getStatusCounts(), resp.getTrackingId())).build();
+                return Response.ok(
+                                       new StatusCountResponse(resp.getAgencyId(), resp.getStatusCounts(), resp.getTrackingId()))
+                               .build();
             } catch (HoldingsItemsException e) {
                 log.error("Exception requesting for agencyId: {}: {}", agencyId, e.getMessage());
                 log.debug("Exception requesting for agencyId: {}: ", agencyId, e);
                 return Response.serverError().build();
             }
         }
+    }
+
+    @GET
+    @Path("holdings-by-agency-id/{agencyId}")
+    @Produces(MediaType.TEXT_PLAIN)
+    public Response getHoldingsItems(@PathParam("agencyId") int agencyId,
+                                     @QueryParam("trackingId") @LogAs("trackingId") @GenerateTrackingId String trackingId) {
+
+        HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, trackingId);
+        Collection<String> holdingItems = dao.getHoldingItems(agencyId);
+        StreamingOutput streamingOutput = outputStream -> {
+            PrintStream stream = new PrintStream(outputStream, false, StandardCharsets.UTF_8);
+            for (String holdingItem : holdingItems) {
+                stream.println(holdingItem);
+            }
+        };
+        return Response.ok(streamingOutput).build();
     }
 
     @GET
