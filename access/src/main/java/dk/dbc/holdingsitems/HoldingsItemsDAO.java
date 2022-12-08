@@ -295,6 +295,7 @@ public class HoldingsItemsDAO {
      * @param bibliographicRecordId key
      * @param agencyId              key
      * @return key-value pairs with status and number of that status
+     * @throws HoldingsItemsException upon database error
      */
     public Map<Status, Long> getStatusFor(String bibliographicRecordId, int agencyId) throws HoldingsItemsException {
         return streamItemsFromAgencyAndBibliographicRecordId(agencyId, bibliographicRecordId)
