@@ -1,18 +1,10 @@
 package dk.dbc.holdingsitems.content;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import dk.dbc.holdingsitems.content.response.AgenciesWithHoldingsResponse;
-import dk.dbc.holdingsitems.content.response.ContentServiceBranchResponse;
-import dk.dbc.holdingsitems.content.response.ContentServiceItemResponse;
-import dk.dbc.holdingsitems.content.response.ContentServiceLaesekompasResponse;
-import dk.dbc.holdingsitems.content.response.ContentServicePidResponse;
-import dk.dbc.holdingsitems.content.response.LaesekompasHoldingsEntity;
-import dk.dbc.holdingsitems.content.response.ResponseHoldingEntity;
+import dk.dbc.holdingsitems.content.response.*;
 import dk.dbc.holdingsitems.content_dto.CompleteBibliographic;
-import dk.dbc.holdingsitems.jpa.BibliographicItemEntity;
-import dk.dbc.holdingsitems.jpa.IssueEntity;
+import dk.dbc.holdingsitems.jpa.*;
 import dk.dbc.holdingsitems.jpa.Status;
-import dk.dbc.holdingsitems.jpa.SupersedesEntity;
 import org.junit.Test;
 
 import javax.persistence.EntityManager;
@@ -20,6 +12,8 @@ import javax.ws.rs.core.Response;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Arrays;
+import java.util.EnumSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -591,14 +585,66 @@ public class ContentTest extends JpaBase {
             assertThat("Oldest of the 2", entity.firstAccessionDate, is("2001-02-24"));
             assertThat(entity.note, is(""));
             assertThat(entity.issues, contains(
-                       allOf(field("issueId", is("issue1")),
-                             field("items", containsInAnyOrder(
-                                   allOf(field("itemId", is("3")),
-                                         field("bibliographicRecordId", is(bibId2))),
-                                   allOf(field("itemId", is("4")),
-                                         field("bibliographicRecordId", is(bibId2)))
-                           )))));
+                    allOf(field("issueId", is("issue1")),
+                            field("items", containsInAnyOrder(
+                                    allOf(field("itemId", is("3")),
+                                            field("bibliographicRecordId", is(bibId2))),
+                                    allOf(field("itemId", is("4")),
+                                            field("bibliographicRecordId", is(bibId2)))
+                            )))));
         });
     }
 
+
+    @Test(timeout = 2_000L)
+    public void testGetHoldingsPerStatusByAgency() throws Exception {
+        System.out.println("testGetHoldingsPerStatusByAgency");
+
+        jpa(em -> {
+            System.out.println(" `- load record");
+
+            IssueEntity issue;
+            BibliographicItemEntity bibItem;
+
+            // create test a test-record with several statuses for one agency
+            EnumSet<Status> statuses = EnumSet.complementOf(EnumSet.of(Status.DECOMMISSIONED, Status.UNKNOWN));
+            int itemId = 0;
+            for (Status stat : statuses) {
+                bibItem = BibliographicItemEntity.from(em, 123456, "100000", Instant.now(),
+                                LocalDate.now())
+                        .setTrackingId("trackId")
+                        .setFirstAccessionDate(LocalDate.of(2022, 12, 2))
+                        .setNote("NOTE TEXT");
+
+                issue = issueEntity(bibItem, "issue1");
+                itemEntity(issue, "itemId-" + itemId++, stat);
+                itemEntity(issue, "itemId-" + itemId++, stat);
+                bibItem.save();
+            }
+        });
+
+        jpa(em -> {
+            System.out.println(" - get total holdings of each status for one agency");
+            ContentResource bean = new ContentResource();
+            bean.em = em;
+
+            Response resp = bean.holdingsPerStatusByAgency(123456, "test-track");
+            assertThat(resp.getStatus(), is(200));
+            assertTrue(resp.hasEntity());
+
+            Object obj = resp.getEntity();
+            assertEquals(String.valueOf(obj.getClass()), (String.valueOf(StatusCountResponse.class)));
+
+            StatusCountResponse ent = (StatusCountResponse) obj;
+            assertThat(ent.agencyId, is(123456));
+            assertThat(ent.statusCounts.size(), is(7));
+            assertThat(ent.statusCounts.get(Status.ON_ORDER), is(2L));
+            assertThat(ent.statusCounts.get(Status.NOT_FOR_LOAN), is(2L));
+            assertThat(ent.statusCounts.get(Status.ON_LOAN), is(2L));
+            assertThat(ent.statusCounts.get(Status.ON_SHELF), is(2L));
+            assertThat(ent.statusCounts.get(Status.LOST), is(2L));
+            assertThat(ent.statusCounts.get(Status.DISCARDED), is(2L));
+            assertThat(ent.statusCounts.get(Status.ONLINE), is(2L));
+        });
+    }
 }
