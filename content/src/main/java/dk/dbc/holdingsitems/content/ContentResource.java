@@ -19,7 +19,7 @@ import dk.dbc.holdingsitems.content.response.ContentServicePidResponse;
 import dk.dbc.holdingsitems.content.response.IndexHtml;
 import dk.dbc.holdingsitems.content.response.LaesekompasHoldingsEntity;
 
-import dk.dbc.holdingsitems.jpa.StatusCountEntity;
+import dk.dbc.holdingsitems.TotalStatusCountsForAgency;
 import dk.dbc.holdingsitems.jpa.BibliographicItemDetached;
 import dk.dbc.holdingsitems.jpa.BibliographicItemEntity;
 import dk.dbc.holdingsitems.jpa.ItemEntity;
@@ -116,7 +116,7 @@ public class ContentResource {
 
             HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, trackingId);
             try {
-                StatusCountEntity resp = dao.getStatusCountsByAgency(agencyId, trackingId);
+                TotalStatusCountsForAgency resp = dao.getStatusCountsByAgency(agencyId, trackingId);
                 return Response.ok(
                                        new StatusCountResponse(resp.getAgencyId(), resp.getStatusCounts(), resp.getTrackingId()))
                                .build();

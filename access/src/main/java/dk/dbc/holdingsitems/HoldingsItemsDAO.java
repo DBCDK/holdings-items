@@ -25,7 +25,14 @@ import java.sql.Connection;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.*;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -299,7 +306,7 @@ public class HoldingsItemsDAO {
      * @throws HoldingsItemsException in case of database error
      */
     @SuppressWarnings("unchecked")
-    public StatusCountEntity getStatusCountsByAgency(int agency, String trackingId) throws HoldingsItemsException {
+    public TotalStatusCountsForAgency getStatusCountsByAgency(int agency, String trackingId) throws HoldingsItemsException {
         List<Object[]> res = (List<Object[]>) em.createQuery(
                                                         "SELECT i.status, COUNT(i) " +
                                                                 " FROM ItemEntity i " +
@@ -313,7 +320,7 @@ public class HoldingsItemsDAO {
             statusCounts.put((Status) counts[0], (Long) counts[1]);
         }
 
-        return new StatusCountEntity(agency, statusCounts, trackingId);
+        return new TotalStatusCountsForAgency(agency, statusCounts, trackingId);
     }
 
     /**

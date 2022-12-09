@@ -11,7 +11,7 @@ public class StatusCountResponse {
 
     public final Map<Status, Long> statusCounts;
     public final String trackingId;
-    public int agencyId;
+    public final int agencyId;
 
     public StatusCountResponse(int agencyId, Map<Status, Long> statusCountsByAgency, String trackingId) {
         this.agencyId = agencyId;

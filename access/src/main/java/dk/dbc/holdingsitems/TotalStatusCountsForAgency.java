@@ -1,4 +1,6 @@
-package dk.dbc.holdingsitems.jpa;
+package dk.dbc.holdingsitems;
+
+import dk.dbc.holdingsitems.jpa.Status;
 
 import java.io.Serializable;
 import java.util.Map;
@@ -7,7 +9,7 @@ import java.util.Map;
  * Class to represent the resulting table when asking for an agencys total count holdings-items grouped by status
  * Not 100% sure this class is needed or if it isn't just unnecessary overhead ...
  */
-public class StatusCountEntity implements Serializable {
+public class TotalStatusCountsForAgency implements Serializable {
 
     // same as in all other entity classes
     private static final long serialVersionUID = 1089023457634768914L;
@@ -16,7 +18,7 @@ public class StatusCountEntity implements Serializable {
     private final int agencyId;
     private final Map<Status, Long> statusCounts;
 
-    public StatusCountEntity(int agency, Map<Status, Long> statusCounts, String trackingId) {
+    public TotalStatusCountsForAgency(int agency, Map<Status, Long> statusCounts, String trackingId) {
         this.trackingId = trackingId;
         this.agencyId = agency;
         this.statusCounts = statusCounts;
@@ -36,7 +38,7 @@ public class StatusCountEntity implements Serializable {
 
     @Override
     public String toString() {
-        return "StatusCountEntity{" +
+        return "TotalStatusCountsForAgency{" +
                 "statusCounts=" + statusCounts +
                 "}";
     }
