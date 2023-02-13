@@ -7,13 +7,12 @@ import dk.dbc.holdingsitems.jpa.*;
 import dk.dbc.holdingsitems.jpa.Status;
 import org.junit.Test;
 
-import javax.persistence.EntityManager;
-import javax.ws.rs.core.Response;
+import jakarta.persistence.EntityManager;
+import jakarta.ws.rs.core.Response;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.EnumSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;

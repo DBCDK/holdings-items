@@ -85,7 +85,7 @@
         </dependency>
 
         <!-- Order of javaee-api / eclipselink is important -->
-        <dependency>
+<!--        <dependency>
             <groupId>org.eclipse.persistence</groupId>
             <artifactId>javax.persistence</artifactId>
             <version>2.2.1</version>
@@ -101,7 +101,7 @@
                     <artifactId>jakarta.persistence</artifactId>
                 </exclusion>
             </exclusions>        
-        </dependency>
+        </dependency>-->
 
         <dependency>
             <groupId>dk.dbc</groupId>

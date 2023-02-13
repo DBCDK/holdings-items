@@ -317,8 +317,9 @@ public abstract class UpdateRequest {
     protected void addItemToCollection(IssueEntity issue, HoldingsItem holdingsItem, Instant modified) {
         try (LogWith logWith = new LogWith()) {
             String itemId = holdingsItem.getItemId();
+            StatusType status = holdingsItem.getStatus();
             logWith.with("itemId", itemId);
-            log.info("Adding item: {}", itemId);
+            log.info("Adding item: {}, status {}", itemId, status);
             ItemEntity item = issue.item(itemId, modified);
             item.setTrackingId(getTrakingId());
             XMLGregorianCalendar accessionDate = holdingsItem.getAccessionDate();
@@ -329,7 +330,6 @@ public abstract class UpdateRequest {
             if (lastLoanDate != null) {
                 item.setLastLoanDate(toDate(lastLoanDate, false));
             }
-            StatusType status = holdingsItem.getStatus();
             if (status == null) {
                 throw new FailedUpdateInternalException("Status is required for all items");
             }

@@ -18,16 +18,15 @@
  */
 package dk.dbc.holdingsitems.update;
 
-import com.sun.xml.ws.developer.SchemaValidation;
 import dk.dbc.oss.ns.holdingsitemsupdate.CompleteHoldingsItemsUpdateRequest;
 import dk.dbc.oss.ns.holdingsitemsupdate.HoldingsItemsUpdateRequest;
 import dk.dbc.oss.ns.holdingsitemsupdate.HoldingsItemsUpdateResult;
 import dk.dbc.oss.ns.holdingsitemsupdate.HoldingsItemsUpdateStatusEnum;
 import dk.dbc.oss.ns.holdingsitemsupdate.OnlineHoldingsItemsUpdateRequest;
-import javax.annotation.Resource;
-import javax.inject.Inject;
-import javax.jws.WebService;
-import javax.xml.ws.WebServiceContext;
+import jakarta.annotation.Resource;
+import jakarta.inject.Inject;
+import jakarta.jws.WebService;
+import jakarta.xml.ws.WebServiceContext;
 import org.eclipse.microprofile.metrics.annotation.Timed;
 
 /**
@@ -39,7 +38,7 @@ import org.eclipse.microprofile.metrics.annotation.Timed;
             endpointInterface = "dk.dbc.oss.ns.holdingsitemsupdate.HoldingsItemsUpdatePortType",
             targetNamespace = "http://oss.dbc.dk/ns/holdingsItemsUpdate",
             wsdlLocation = "WEB-INF/wsdl/holdingsItemsUpdate.wsdl")
-@SchemaValidation(handler = WsdlValidationHandler.class, inbound = true, outbound = false)
+
 public class UpdateWebservice {
 
     @Inject

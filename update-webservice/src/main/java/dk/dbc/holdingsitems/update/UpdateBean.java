@@ -54,15 +54,14 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
-import javax.annotation.PostConstruct;
-import javax.ejb.Stateless;
-import javax.inject.Inject;
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBException;
-import javax.xml.ws.WebServiceContext;
-import javax.xml.ws.handler.MessageContext;
+import jakarta.annotation.PostConstruct;
+import jakarta.ejb.Stateless;
+import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import jakarta.xml.bind.JAXBContext;
+import jakarta.xml.bind.JAXBException;
+import jakarta.xml.ws.WebServiceContext;
 import org.eclipse.microprofile.metrics.Counter;
 import org.eclipse.microprofile.metrics.MetricRegistry;
 import org.eclipse.microprofile.metrics.Timer;
@@ -469,14 +468,14 @@ public class UpdateBean {
      */
     private HoldingsItemsUpdateResult handleRequest(UpdateRequest req) {
         requestCounter.inc();
-        try {
-            soapValidation();
-        } catch (SAXParseException ex) {
-            requestInvalidCounter.inc();
-            log.error("Soap Error: " + ex.getMessage());
-            log.debug("Soap Error:", ex);
-            return buildReponse(HoldingsItemsUpdateStatusEnum.FAILED_UPDATE_INTERNAL_ERROR, "Soap Error: " + ex.getMessage());
-        }
+//        try {
+//            soapValidation();
+//        } catch (SAXParseException ex) {
+//            requestInvalidCounter.inc();
+//            log.error("Soap Error: " + ex.getMessage());
+//            log.debug("Soap Error:", ex);
+//            return buildReponse(HoldingsItemsUpdateStatusEnum.FAILED_UPDATE_INTERNAL_ERROR, "Soap Error: " + ex.getMessage());
+//        }
         try {
             HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, req.getTrakingId());
             req.setDao(dao);
@@ -528,18 +527,6 @@ public class UpdateBean {
         res.setHoldingsItemsUpdateStatus(code);
         res.setHoldingsItemsUpdateStatusMessage(message);
         return res;
-    }
-
-    /**
-     * Check for stored XML errors from soap parsing
-     *
-     * @throws SAXParseException in case of errors
-     */
-    private void soapValidation() throws SAXParseException {
-        MessageContext mc = wsc.getMessageContext();
-        soapError((SAXParseException) mc.get(WsdlValidationHandler.WARNING), "warning", false);
-        soapError((SAXParseException) mc.get(WsdlValidationHandler.ERROR), "error", true);
-        soapError((SAXParseException) mc.get(WsdlValidationHandler.FATAL), "fatal", true);
     }
 
     /**

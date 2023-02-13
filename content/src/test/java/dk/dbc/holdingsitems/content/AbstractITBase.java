@@ -4,7 +4,7 @@ import com.github.dockerjava.api.model.ContainerNetwork;
 import dk.dbc.commons.testcontainers.postgres.DBCPostgreSQLContainer;
 import java.net.URI;
 import java.time.Duration;
-import javax.ws.rs.core.UriBuilder;
+import jakarta.ws.rs.core.UriBuilder;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;

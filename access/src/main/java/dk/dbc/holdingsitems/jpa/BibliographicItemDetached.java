@@ -13,7 +13,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import javax.persistence.EntityManager;
+import jakarta.persistence.EntityManager;
 
 import static dk.dbc.holdingsitems.jpa.BibliographicItemEntity.fromUnLocked;
 import static java.util.stream.Collectors.toList;
