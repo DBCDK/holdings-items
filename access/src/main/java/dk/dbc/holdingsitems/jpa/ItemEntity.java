@@ -312,21 +312,27 @@ public class ItemEntity implements Serializable {
     }
 
     public CompleteItem toCompleteItem() {
-        CompleteItem that = new CompleteItem();
+        return toCompleteItem(new CompleteItem());
+    }
+
+    public <T extends CompleteItem> T toCompleteItem(T that) {
         that.itemId = getItemId();
         that.branchId = getBranchId();
         that.branch = getBranch();
         that.department = getDepartment();
-        that.lastLoanDate = String.valueOf(getLastLoanDate());
-        that.loanRestriction = String.valueOf(getLoanRestriction());
         that.location = getLocation();
         that.subLocation = getSubLocation();
         that.circulationRule = getCirculationRule();
-        that.loanRestriction = String.valueOf(getLoanRestriction());
-        that.accessionDate = String.valueOf(getAccessionDate());
-        that.status = String.valueOf(getStatus());
+        that.loanRestriction = valueOfOrNull(getLoanRestriction());
+        that.accessionDate = valueOfOrNull(getAccessionDate());
+        that.lastLoanDate = valueOfOrNull(getLastLoanDate());
+        that.status = valueOfOrNull(getStatus());
         that.bibliographicRecordId = getBibliographicRecordId();
         return that;
+    }
+
+    private static String valueOfOrNull(Object obj) {
+        return obj == null ? null : String.valueOf(obj);
     }
 
     // only PRIMARY KEY fields for hash-code
