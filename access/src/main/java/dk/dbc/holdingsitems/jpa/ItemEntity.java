@@ -320,14 +320,13 @@ public class ItemEntity implements Serializable {
         that.branchId = getBranchId();
         that.branch = getBranch();
         that.department = getDepartment();
-        that.lastLoanDate =  valueOfOrNull(getLastLoanDate());
-        that.loanRestriction =  valueOfOrNull(getLoanRestriction());
         that.location = getLocation();
         that.subLocation = getSubLocation();
         that.circulationRule = getCirculationRule();
-        that.loanRestriction =  valueOfOrNull(getLoanRestriction());
-        that.accessionDate =  valueOfOrNull(getAccessionDate());
-        that.status =  valueOfOrNull(getStatus());
+        that.loanRestriction = valueOfOrNull(getLoanRestriction());
+        that.accessionDate = valueOfOrNull(getAccessionDate());
+        that.lastLoanDate = valueOfOrNull(getLastLoanDate());
+        that.status = valueOfOrNull(getStatus());
         that.bibliographicRecordId = getBibliographicRecordId();
         return that;
     }
