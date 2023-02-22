@@ -41,20 +41,7 @@ public class CompleteItemFull extends CompleteItem {
     }
 
     public static CompleteItemFull from(ItemEntity item) {
-        CompleteItemFull that = new CompleteItemFull();
-
-        that.itemId = item.getItemId();
-        that.branchId = item.getBranchId();
-        that.branch = item.getBranch();
-        that.department = item.getDepartment();
-        that.loanRestriction = item.getLoanRestriction().toString();
-        that.location = item.getLocation();
-        that.subLocation = item.getSubLocation();
-        that.circulationRule = item.getCirculationRule();
-        that.loanRestriction = item.getLoanRestriction().toString();
-        that.accessionDate = item.getAccessionDate().toString();
-        that.status = item.getStatus().toString();
-        that.bibliographicRecordId = item.getBibliographicRecordId();
+        CompleteItemFull that = item.toCompleteItem(new CompleteItemFull());
 
         IssueEntity issue = item.getOwner();
         BibliographicItemEntity bibl = issue.getOwner();
