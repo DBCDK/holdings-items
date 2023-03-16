@@ -20,6 +20,7 @@ package dk.dbc.holdingsitems.purge;
 
 import dk.dbc.holdingsitems.HoldingsItemsDAO;
 import java.time.Instant;
+import java.util.Set;
 import org.junit.Test;
 
 import static org.hamcrest.CoreMatchers.*;
@@ -54,7 +55,7 @@ public class PurgeIT extends JpaBase {
                     return true;
                 }
             };
-            purge.process();
+            purge.process(Set.of("12345678"));
         });
 
         verify(unchanged);
@@ -89,7 +90,7 @@ public class PurgeIT extends JpaBase {
                     return true;
                 }
             };
-            purge.process();
+            purge.process(Set.of("12345678"));
         });
 
         verify(unchanged);

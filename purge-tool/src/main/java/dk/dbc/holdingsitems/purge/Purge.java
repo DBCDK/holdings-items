@@ -24,9 +24,11 @@ import dk.dbc.holdingsitems.HoldingsItemsException;
 import dk.dbc.holdingsitems.jpa.BibliographicItemEntity;
 import dk.dbc.holdingsitems.jpa.IssueEntity;
 import dk.dbc.holdingsitems.jpa.ItemEntity;
+import dk.dbc.holdingsitems.jpa.SupersedesEntity;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -80,19 +82,18 @@ public class Purge {
     /**
      * Process the purge
      *
+     * @param bibliographicRecordIds
      * @throws HoldingsItemsException if DAO threw error
      * @throws SQLException           in case of rollback or commit error
      * @throws IOException            when waiting for human interaction
      */
-    public void process() throws HoldingsItemsException, SQLException, IOException {
+    public void process(Set<String> bibliographicRecordIds) throws HoldingsItemsException, SQLException, IOException {
         log.debug("Process");
 
         long start = System.currentTimeMillis();
 
-        Set<String> bibliographicIds = dao.getBibliographicIds(agencyId);
-        int recordsCount = bibliographicIds.size();
+        int recordsCount = bibliographicRecordIds.size();
         int purgeCount = 0;
-        log.info("Found {} Bibliographic Ids for agency {}", recordsCount, agencyId);
 
         // Confirm agency to purge
         System.out.printf("Agency: %s, Name: '%s'%n", agencyId, agencyName);
@@ -105,7 +106,7 @@ public class Purge {
         log.debug("Purging {}: '{}' with queue supplier: '{}'", agencyId, agencyName, supplier);
         System.out.printf("Purging %s: '%s' with queue supplier: '%s'%n", agencyId, agencyName, supplier);
 
-        purgeCount = purge(bibliographicIds);
+        purgeCount = purge(bibliographicRecordIds);
 
         long end = System.currentTimeMillis();
         long duration = ( end - start ) / 1000;
@@ -142,27 +143,35 @@ public class Purge {
      */
     private int purge(Set<String> bibliographicIds) throws HoldingsItemsException, SQLException {
         log.trace("Purging {} records", bibliographicIds.size());
-        AtomicInteger records = new AtomicInteger(0);
+        int purged = 0;
         try (EnqueueService enqueueService = dao.enqueueService()) {
             for (String bibliographicId : bibliographicIds) {
                 log.trace("Bibliographic Id '{}'", bibliographicId);
                 BibliographicItemEntity bibItem = dao.getRecordCollection(bibliographicId, agencyId, null);
                 if (!dryRun) {
-                    bibItem.stream()
+                    List<ItemEntity> items = bibItem.stream()
                             .flatMap(IssueEntity::stream)
-                            .collect(toList()).stream() // ConcurrentModificationException hack
-                            .forEach(ItemEntity::remove);
+                            .collect(toList());
                     if (removeFirstAcquisitionDate) {
                         em.remove(bibItem);
-                    } else {
+                        em.flush();
+                    } else if (!items.isEmpty()) {
+                        items.stream() // ConcurrentModificationException hack
+                                .forEach(ItemEntity::remove);
                         bibItem.save(); // This removes issues too
+                        em.flush();
                     }
+                    em.detach(bibItem);
+                    SupersedesEntity supersedes = em.find(SupersedesEntity.class, bibliographicId);
+                    if (supersedes != null)
+                        enqueueService.enqueue(supplier, agencyId, supersedes.getSuperseding());
                     enqueueService.enqueue(supplier, agencyId, bibliographicId);
+                    purged++;
                 }
             }
         }
 
-        return records.get();
+        return purged;
     }
 
 }
