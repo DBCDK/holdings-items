@@ -41,9 +41,9 @@ public class PurgeReport {
     /**
      * Print list statistics for agency.E.g.before and after purging
      *
-     * @param agencyId
-     * @param em
-     * @return
+     * @param agencyId Which agencyid to make the report for
+     * @param em       the entitymanager to compute the report in
+     * @return set of bibliographicrecordids for the agency
      * @throws HoldingsItemsException if DAO threw error
      */
     public static HashSet<String> statusReport(int agencyId, EntityManager em) throws HoldingsItemsException {

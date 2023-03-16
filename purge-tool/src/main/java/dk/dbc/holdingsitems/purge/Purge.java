@@ -81,7 +81,7 @@ public class Purge {
     /**
      * Process the purge
      *
-     * @param bibliographicRecordIds
+     * @param bibliographicRecordIds the ids to clean up
      * @throws HoldingsItemsException if DAO threw error
      * @throws SQLException           in case of rollback or commit error
      * @throws IOException            when waiting for human interaction
