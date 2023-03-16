@@ -31,7 +31,6 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Scanner;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 import javax.persistence.EntityManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

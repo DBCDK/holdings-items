@@ -24,13 +24,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
-import javax.persistence.CacheRetrieveMode;
 import javax.persistence.CacheStoreMode;
 import javax.persistence.EntityManager;
-import javax.persistence.LockModeType;
 import org.eclipse.persistence.config.HintValues;
 import org.eclipse.persistence.config.QueryHints;
-import org.eclipse.persistence.jpa.config.QueryHint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,7 +58,7 @@ public class PurgeReport {
                 .setHint(QueryHints.MAINTAIN_CACHE, HintValues.FALSE)
                 .getResultStream()
                 .forEach(os -> {
-                    String bibliographicRecordId = ((String) ( (Object[]) os )[0]);
+                    String bibliographicRecordId = (String) ( (Object[]) os )[0];
                     Status status = Status.parse((String) ( (Object[]) os )[1]);
                     bibIdsWithHoldings.add(bibliographicRecordId);
                     allStatus.computeIfAbsent(status, s -> new AtomicLong(0))
