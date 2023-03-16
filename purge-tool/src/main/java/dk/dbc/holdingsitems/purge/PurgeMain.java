@@ -28,11 +28,11 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashSet;
 import javax.sql.DataSource;
 import org.postgresql.ds.PGSimpleDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 /**
  * Command line to purge an entire agency from holdings-items database
@@ -42,7 +42,7 @@ public class PurgeMain {
     private static final Logger log = LoggerFactory.getLogger(PurgeMain.class);
 
     public static void main(String[] args) throws //OpenAgencyException,
-                                                  IOException {
+            IOException {
         try {
             Arguments commandLine = new Arguments(args);
             if (commandLine.hasVerbose()) {
@@ -63,7 +63,7 @@ public class PurgeMain {
             log.info("DB: {}", db);
 
             String supplier = commandLine.getSupplier();
-            if(supplier == null || supplier.isEmpty()) {
+            if (supplier == null || supplier.isEmpty()) {
                 throw new IllegalArgumentException("No queue-supplier is defined");
             }
             log.info("QueueSupplier: {}", supplier);
@@ -87,16 +87,29 @@ public class PurgeMain {
             JpaByDbUrl jpa = new JpaByDbUrl(db, "purge-tool");
 
             try {
+                HashSet<String> bibliographicRecordIds = jpa.run(em -> {
+                    return PurgeReport.statusReport(agencyId, em);
+                });
+
+                if (bibliographicRecordIds.isEmpty())
+                    return;
+
                 jpa.run(em -> {
-                    HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em);
-                    PurgeReport purgeReport = new PurgeReport(dao, agencyId);
-                    purgeReport.statusReport();
+                    log.debug("Clearing JPA cache");
+                    em.clear();
+                    em.getEntityManagerFactory().getCache().evictAll();
                 });
 
                 jpa.run(em -> {
                     HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, trackingId);
                     Purge purge = new Purge(em, dao, supplier, agencyName, agencyId, removeFirstAcquisitionDate, dryRun);
-                    purge.process();
+                    purge.process(bibliographicRecordIds);
+                });
+
+                jpa.run(em -> {
+                    log.debug("Clearing JPA cache");
+                    em.clear();
+                    em.getEntityManagerFactory().getCache().evictAll();
                 });
 
                 try (Connection connection = dataSource.getConnection()) {
@@ -105,9 +118,7 @@ public class PurgeMain {
                 }
 
                 jpa.run(em -> {
-                    HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em);
-                    PurgeReport purgeReport = new PurgeReport(dao, agencyId);
-                    purgeReport.statusReport();
+                    PurgeReport.statusReport(agencyId, em);
                 });
 
             } catch (SQLException | RuntimeException ex) {
