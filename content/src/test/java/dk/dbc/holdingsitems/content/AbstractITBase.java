@@ -25,6 +25,7 @@ public class AbstractITBase extends JpaBase {
                 .withLogConsumer(new Slf4jLogConsumer(LoggerFactory.getLogger("dk.dbc.PAYARA")))
                 .withEnv("JAVA_MAX_HEAP_SIZE", "1G")
                 .withEnv("HOLDINGS_ITEMS_POSTGRES_URL", pg.getPayaraDockerJdbcUrl())
+                .withEnv("COREPO_SOLR_URL", "zk://not-configured/nowhere")
                 .withEnv("LOG__dk_dbc", "DEBUG")
                 .withExposedPorts(8080)
                 .waitingFor(Wait.forHttp("/health"))

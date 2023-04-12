@@ -22,6 +22,7 @@ public class SolrHoldingsResponse {
         String bibId = doc.getValue(HOLDINGSITEM_BIBLIOGRAPHIC_RECORD_ID);
         if (!bibId.equals(lastBiblId)) {
             seenStatusForThisBibId.clear();
+            lastBiblId = bibId;
         }
         String status = doc.getValue(HOLDINGSITEM_STATUS_FOR_STREAMING);
         if (seenStatusForThisBibId.add(status)) {
