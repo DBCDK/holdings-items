@@ -20,6 +20,7 @@ public class ContentServiceApplication extends Application {
     private static Set<Class<?>> makeClassesSet() {
         return Stream.of(// api/v1
                 ContentResource.class,
+                Solr.class,
                 Status.class,
                 Supersedes.class,
                 // developer
