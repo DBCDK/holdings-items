@@ -19,6 +19,7 @@ import org.apache.solr.client.solrj.io.stream.expr.DefaultStreamFactory;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.client.solrj.util.ClientUtils;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -89,15 +90,22 @@ public class SolrHandler {
         this.solrClient.setDefaultCollection(collection);
     }
 
-    public void loadAdencyHoldings(int agencyId, Consumer<SolrStreamedDoc> consumer) throws IOException {
-        TupleStream stream = streamFactory.constructStream(
-                new StreamExpression("search")
-                        .withParameter(collection)
-                        .withParameter(new StreamExpressionNamedParameter("qt", "/export"))
-                        .withParameter(new StreamExpressionNamedParameter("appId", "holdings-items-content-service"))
-                        .withParameter(new StreamExpressionNamedParameter("q", "holdingsitem.agencyId:" + agencyId))
-                        .withParameter(new StreamExpressionNamedParameter("fl", FIELDS))
-                        .withParameter(new StreamExpressionNamedParameter("sort", SOLR_SORT_BY_ID)));
+    public void loadAgencyHoldings(int agencyId, Consumer<SolrStreamedDoc> consumer) throws IOException {
+        streamRequest("holdingsitem.agencyId:" + agencyId, consumer);
+    }
+
+    public void loadPidHoldings(int agencyId, String pid, Consumer<SolrStreamedDoc> consumer) throws IOException {
+        streamRequest("holdingsitem.agencyId:" + agencyId + " AND rec.repositoryId:" + ClientUtils.escapeQueryChars(pid), consumer);
+    }
+
+    private void streamRequest(String q, Consumer<SolrStreamedDoc> consumer) throws IOException {
+        TupleStream stream = streamFactory.constructStream(new StreamExpression("search")
+                .withParameter(collection)
+                .withParameter(new StreamExpressionNamedParameter("qt", "/export"))
+                .withParameter(new StreamExpressionNamedParameter("appId", "holdings-items-content-service"))
+                .withParameter(new StreamExpressionNamedParameter("q", q))
+                .withParameter(new StreamExpressionNamedParameter("fl", FIELDS))
+                .withParameter(new StreamExpressionNamedParameter("sort", SOLR_SORT_BY_ID)));
         stream.setStreamContext(streamContext());
 
         log.debug("Requesting solr documents");
