@@ -1,14 +1,18 @@
 package dk.dbc.holdingsitems.content;
 
+import dk.dbc.commons.mdc.GenerateTrackingId;
+import dk.dbc.commons.mdc.LogAs;
 import dk.dbc.holdingsitems.content.solr.SolrHoldingsResponse;
 import dk.dbc.holdingsitems.content.solr.SolrHandler;
+import dk.dbc.holdingsitems.content.solr.SolrPidResponse;
 import java.io.IOException;
+import java.util.List;
 import javax.ejb.Stateless;
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import org.eclipse.microprofile.metrics.annotation.Timed;
@@ -25,14 +29,50 @@ public class Solr {
     SolrHandler solrHandler;
 
     @GET
-    @Path("all-holdings/{agencyId : \\d+}")
+    @Path("all-holdings")
     @Produces({MediaType.APPLICATION_JSON})
     @Timed
-    public Response getStatus(@PathParam("agencyId") int agencyId) {
+    public Response getStatus(@QueryParam("agencyId") Integer agencyId,
+                              @QueryParam("trackingId") @LogAs("trackingId") @GenerateTrackingId String trackingId) {
+        if (agencyId == null || agencyId == 0) {
+            log.error("all-holdings called with no agency");
+            return Response.status(Response.Status.BAD_REQUEST).build();
+        }
+        log.debug("solr/all-holdings called with agencyId: {}, trackingId: {}", agencyId, trackingId);
+
         try {
-            log.info("Solr endpoint called for agencyId: {}", agencyId);
-            SolrHoldingsResponse response = new SolrHoldingsResponse();
-            solrHandler.loadAdencyHoldings(agencyId, response::consume);
+            SolrHoldingsResponse response = new SolrHoldingsResponse(trackingId);
+            solrHandler.loadAgencyHoldings(agencyId, response::consume);
+            return Response.ok(response).build();
+        } catch (IOException ex) {
+            log.error("Error fetching data from SolR: {}", ex.getMessage());
+            log.debug("Error fetching data from SolR: ", ex);
+            return Response.serverError().build();
+        }
+    }
+
+    @GET
+    @Path("status-by-pid")
+    @Produces({MediaType.APPLICATION_JSON})
+    @Timed
+    public Response getHoldingsByPid(@QueryParam("agencyId") Integer agencyId,
+                                     @QueryParam("pid") List<String> pids,
+                                     @QueryParam("trackingId") @LogAs("trackingId") @GenerateTrackingId String trackingId) {
+        if (agencyId == null || agencyId == 0) {
+            log.error("status-by-pid called with no agency");
+            return Response.status(Response.Status.BAD_REQUEST).build();
+        }
+        if (pids == null || pids.isEmpty()) {
+            log.error("status-by-pid called with no pids");
+            return Response.status(Response.Status.BAD_REQUEST).build();
+        }
+        log.debug("solr/status-by-pid called with agencyId: {}, pids: {}, trackingId: {}", agencyId, pids, trackingId);
+
+        try {
+            SolrPidResponse response = new SolrPidResponse(trackingId);
+            for (String pid : pids) {
+                solrHandler.loadPidHoldings(agencyId, pid, response.consumerFor(pid));
+            }
             return Response.ok(response).build();
         } catch (IOException ex) {
             log.error("Error fetching data from SolR: {}", ex.getMessage());

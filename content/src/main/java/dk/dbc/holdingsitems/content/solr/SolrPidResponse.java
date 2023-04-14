@@ -1,5 +1,6 @@
 package dk.dbc.holdingsitems.content.solr;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -10,6 +11,7 @@ import static dk.dbc.holdingsitems.content.solr.SolrFields.*;
  *
  * @author Morten Bøgeskov (mb@dbc.dk)
  */
+@SuppressFBWarnings("URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD")
 public class SolrPidResponse {
 
     public String trackingId;
