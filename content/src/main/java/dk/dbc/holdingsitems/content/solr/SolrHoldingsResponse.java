@@ -12,11 +12,16 @@ import static dk.dbc.holdingsitems.content.solr.SolrFields.*;
  */
 public class SolrHoldingsResponse {
 
+    private final String trackingId;
     private String lastBiblId;
 
     private final HashSet<String> seenStatusForThisBibId = new HashSet<>();
     private final HashMap<String, Integer> bibWithStatus = new HashMap<>();
     private final HashMap<String, Integer> itemWithStatus = new HashMap<>();
+
+    public SolrHoldingsResponse(String trackingId) {
+        this.trackingId = trackingId;
+    }
 
     public void consume(SolrStreamedDoc doc) {
         String bibId = doc.getValue(HOLDINGSITEM_BIBLIOGRAPHIC_RECORD_ID);
@@ -41,7 +46,9 @@ public class SolrHoldingsResponse {
         return itemWithStatus;
     }
 
-
+    public String getTrackingId() {
+        return trackingId;
+    }
 
     @Override
     public String toString() {
