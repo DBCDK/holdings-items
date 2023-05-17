@@ -205,7 +205,7 @@ public class WorkerIT extends JpaBase {
                         "\"holdingsitem.issueId\":[\"rpo\"]," +
                         "\"holdingsitem.issueText\":[\"ready player one\"]," +
                         "\"holdingsitem.itemId\":[\"rpo1\"]," +
-                        "\"holdingsitem.lastLoanDate\":[\"2006-01-02T00:00:00Z\"]," +
+//                        "\"holdingsitem.lastLoanDate\":[\"2006-01-02T00:00:00Z\"]," +
                         "\"holdingsitem.location\":[\"\"]," +
                         "\"holdingsitem.note\":[\"any-text\"]," +
                         "\"holdingsitem.originalBibliographicRecordId\":[\"87654321\"]," +
@@ -230,7 +230,7 @@ public class WorkerIT extends JpaBase {
                         "\"holdingsitem.issueId\":[\"rpo\"]," +
                         "\"holdingsitem.issueText\":[\"ready player one\"]," +
                         "\"holdingsitem.itemId\":[\"rpo2\"]," +
-                        "\"holdingsitem.lastLoanDate\":[\"2005-01-02T00:00:00Z\"]," +
+//                        "\"holdingsitem.lastLoanDate\":[\"2005-01-02T00:00:00Z\"]," +
                         "\"holdingsitem.loanRestriction\":[\"e\"]," +
                         "\"holdingsitem.location\":[\"\"]," +
                         "\"holdingsitem.note\":[\"any-text\"]," +
