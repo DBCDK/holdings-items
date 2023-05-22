@@ -18,11 +18,10 @@ public class ItemGrouping {
 
     private static final Logger log = LoggerFactory.getLogger(ItemGrouping.class);
 
-    private static final Set<String> REPEATABLE_FIELDS = Set.of(
+    private static final Set<String> MULTI_VALUE_FIELDS = Set.of(
             SolrFields.BIBLIOGRAPHIC_RECORD_ID.getFieldName(),
             SolrFields.BRANCH.getFieldName(),
             SolrFields.ITEM_ID.getFieldName(),
-            SolrFields.LAST_LOAN_DATE.getFieldName(),
             SolrFields.TRACKING_ID.getFieldName());
 
     private final Map<Map<String, Set<String>>, Map<String, Set<String>>> map;
@@ -33,12 +32,12 @@ public class ItemGrouping {
     }
 
     public void add(ItemMerge item) {
-        Map<String, Set<String>> key = item.mapOf(not(REPEATABLE_FIELDS::contains));
+        Map<String, Set<String>> key = item.mapOf(not(MULTI_VALUE_FIELDS::contains));
         // When created all non-repeateble fields are duplicated into the value
-        Map<String, Set<String>> repeatedFields = map.computeIfAbsent(key, HashMap<String, Set<String>>::new);
+        Map<String, Set<String>> multiValueFields = map.computeIfAbsent(key, HashMap<String, Set<String>>::new);
         // All repeatable fields are merged into the non-repeatable (and previously merged repeatable)
-        Map<String, Set<String>> value = item.mapOf(REPEATABLE_FIELDS::contains);
-        value.forEach((k, v) -> repeatedFields.computeIfAbsent(k, x -> new HashSet<>()).addAll(v));
+        Map<String, Set<String>> value = item.mapOf(MULTI_VALUE_FIELDS::contains);
+        value.forEach((k, v) -> multiValueFields.computeIfAbsent(k, x -> new HashSet<>()).addAll(v));
         counter++;
     }
 
