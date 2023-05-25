@@ -39,11 +39,10 @@ import dk.dbc.oss.ns.holdingsitemsupdate.OnlineBibliographicItem;
 import dk.dbc.oss.ns.holdingsitemsupdate.StatusType;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -52,12 +51,10 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import javax.xml.datatype.XMLGregorianCalendar;
 import org.eclipse.microprofile.metrics.Timer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.time.ZoneOffset.UTC;
 import static java.util.stream.Collectors.toList;
 
 /**
@@ -217,11 +214,11 @@ public abstract class UpdateRequest {
             if (issue.isNew() || !issue.getModified().isAfter(modified)) {
                 copyValue(holding::getIssueText, issue::setIssueText);
 
-                XMLGregorianCalendar expectedDeliveryDate = holding.getExpectedDeliveryDate();
+                LocalDate expectedDeliveryDate = holding.getExpectedDeliveryDate();
                 if (expectedDeliveryDate == null) {
                     issue.setExpectedDelivery(null);
                 } else {
-                    issue.setExpectedDelivery(toDate(expectedDeliveryDate, true));
+                    issue.setExpectedDelivery(notInThePast(expectedDeliveryDate));
                 }
                 issue.setReadyForLoan(holding.getReadyForLoan().intValueExact())
                         .setModified(modified)
@@ -321,13 +318,13 @@ public abstract class UpdateRequest {
             log.info("Adding item: {}", itemId);
             ItemEntity item = issue.item(itemId, modified);
             item.setTrackingId(getTrakingId());
-            XMLGregorianCalendar accessionDate = holdingsItem.getAccessionDate();
+            LocalDate accessionDate = holdingsItem.getAccessionDate();
             if (accessionDate != null) {
-                item.setAccessionDate(toDate(accessionDate, false));
+                item.setAccessionDate(accessionDate);
             }
-            XMLGregorianCalendar lastLoanDate = holdingsItem.getLastLoanDate();
+            LocalDate lastLoanDate = holdingsItem.getLastLoanDate();
             if (lastLoanDate != null) {
-                item.setLastLoanDate(toDate(lastLoanDate, false));
+                item.setLastLoanDate(lastLoanDate);
             }
             StatusType status = holdingsItem.getStatus();
             if (status == null) {
@@ -384,31 +381,23 @@ public abstract class UpdateRequest {
      * @return sql type timestamp in UTC
      */
     protected Instant parseTimestamp(ModificationTimeStamp timestamp) {
-        return timestamp
-                .getModificationDateTime()
-                .toGregorianCalendar()
+        return timestamp.getModificationDateTime()
+                .atZone(ZoneId.systemDefault())
                 .toInstant()
                 .plusMillis(timestamp.getModificationMilliSeconds());
     }
 
     /**
-     * Construct a date form a XML element
+     * Validate date
      *
-     * @param date            XML element date
-     * @param failIfInThePast raise InvalidDeliveryDateException if date is in
-     *                        the past
+     * @param date XML element date
      * @return Java date object
      */
-    protected LocalDate toDate(XMLGregorianCalendar date, boolean failIfInThePast) {
-        GregorianCalendar gregorianCalendar = date.toGregorianCalendar();
-        Instant instant = gregorianCalendar.toInstant().plusMillis(gregorianCalendar.getTimeZone().getRawOffset()).truncatedTo(ChronoUnit.DAYS);
-        if (failIfInThePast) {
-            Instant today = Instant.now().truncatedTo(ChronoUnit.DAYS);
-            if (instant.isBefore(today)) {
-                throw new InvalidDeliveryDateException("expected delivery date in the past");
-            }
+    protected LocalDate notInThePast(LocalDate date) {
+        if (date.isBefore(LocalDate.now())) {
+            throw new InvalidDeliveryDateException("expected delivery date in the past");
         }
-        return LocalDateTime.ofInstant(instant, UTC).toLocalDate();
+        return date;
     }
 
     /**

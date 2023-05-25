@@ -11,10 +11,163 @@
     <artifactId>holdings-items-ws-transport</artifactId>
     <packaging>jar</packaging>
 
+
+    <properties>
+        <basicjaxb-plugins.version>2.1.0</basicjaxb-plugins.version>
+    </properties>
+
     <build>
         <plugins>
 
             <plugin>
+                <groupId>com.sun.xml.ws</groupId>
+                <artifactId>jaxws-maven-plugin</artifactId>
+                <version>4.0.1</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.patrodyne.jvnet</groupId>
+                        <artifactId>hisrc-basicjaxb-plugins</artifactId>
+                        <version>2.1.0</version>
+                    </dependency>
+                    <!-- These two dependencies are needed to run the hisrc-basicjaxb plugin -->
+                    <dependency>
+                        <groupId>org.slf4j</groupId>
+                        <artifactId>slf4j-simple</artifactId>
+                        <version>${slf4j.version}</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>commons-logging</groupId>
+                        <artifactId>commons-logging</artifactId>
+                        <version>1.2</version>
+                    </dependency>
+                </dependencies>
+                <configuration>
+                    <sourceDestDir>${project.build.directory}/generated-sources/jaxws-wsimport</sourceDestDir>
+                    <xnocompile>true</xnocompile>
+                    <verbose>true</verbose>
+                    <extension>true</extension>
+                    <vmArgs>
+                        <vmArg>-Djavax.xml.accessExternalDTD=all</vmArg>
+                        <vmArg>-Djavax.xml.accessExternalStylesheet=all</vmArg>
+                        <vmArg>-Djavax.xml.accessExternalSchema=all</vmArg>
+                    </vmArgs>
+                    <xjcArgs>
+                        <xjcArg>-Xequals</xjcArg>
+                        <xjcArg>-XtoString</xjcArg>
+                        <xjcArg>-XtoString-toStringStrategyClass=dk.dbc.helper.ToStringStrategy</xjcArg>
+                        <xjcArg>-XhashCode</xjcArg>
+<!--                        <xjcArg>-b</xjcArg>
+                        <xjcArg>${basedir}/src/main/wsdl/bindings.xjb</xjcArg>-->
+                    </xjcArgs>
+                    <bindingFiles>
+                        <bindingFile>${basedir}/src/main/wsdl/bindings.xjb</bindingFile>
+                    </bindingFiles>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>wsimport-generate-openagency</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>wsimport</goal>
+                        </goals>
+                        <configuration>
+                            <wsdlLocation>WEB-INF/wsdl/holdingsItemsUpdate.wsdl</wsdlLocation>
+                            <wsdlDirectory>src/main/wsdl</wsdlDirectory>
+                            <wsdlFiles>
+                                <wsdlFile>holdingsItemsUpdate.wsdl</wsdlFile>
+                            </wsdlFiles>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+
+            <!--            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>jaxb2-maven-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>wsdl</id>
+                        <goals>
+                            <goal>xjc</goal>
+                        </goals>
+                        <configuration>
+                            <sourceType>wsdl</sourceType>
+                            <sources>
+                                <source>src/main/wsdl/holdingsItemsUpdate.wsdl</source>
+                            </sources>
+                            <packageName>dk.dbc</packageName>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>xjc</id>
+                        <goals>
+                            <goal>xjc</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>src/main/wsdl/holdingsItemsUpdate.xsd</source>
+                            </sources>
+                            <clearOutputDir>false</clearOutputDir>
+                        </configuration>
+                    </execution>
+                </executions>
+                <configuration>
+                    <arguments>
+                        <argument>-Xequals</argument>
+                        <argument>-XtoString</argument>
+                        <argument>-XtoString-toStringStrategyClass=dk.dbc.helper.ToStringStrategy</argument>
+                        <argument>-XhashCode</argument>
+                    </arguments>
+                    <xjbSources>
+                        <xjbSource>src/main/wsdl/bindings.xjb</xjbSource>
+                    </xjbSources>
+
+                </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.glassfish.jaxb</groupId>
+                        <artifactId>jaxb-xjc</artifactId>
+                        <version>4.0.2</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>jakarta.activation</groupId>
+                        <artifactId>jakarta.activation-api</artifactId>
+                        <version>2.1.1</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>jakarta.xml.bind</groupId>
+                        <artifactId>jakarta.xml.bind-api</artifactId>
+                        <version>4.0.0</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>com.sun.xml.bind</groupId>
+                        <artifactId>jaxb-impl</artifactId>
+                        <version>4.0.2</version>
+                    </dependency>
+
+                    <dependency>
+                        <groupId>org.patrodyne.jvnet</groupId>
+                        <artifactId>hisrc-basicjaxb-plugins</artifactId>
+                        <version>${basicjaxb-plugins.version}</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.slf4j</groupId>
+                        <artifactId>slf4j-simple</artifactId>
+                        <version>${slf4j.version}</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>commons-logging</groupId>
+                        <artifactId>commons-logging</artifactId>
+                        <version>1.2</version>
+                    </dependency>
+
+                </dependencies>
+            </plugin>-->
+
+
+            <!--            <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>jaxws-maven-plugin</artifactId>
                 <version>2.6</version>
@@ -54,7 +207,7 @@
                         <vmArg>-Djavax.xml.accessExternalSchema=all</vmArg>
                     </vmArgs>               
                 </configuration>
-            </plugin>
+            </plugin>-->
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -90,6 +243,22 @@
     </build>
 
     <dependencies>
+        <dependency>
+            <groupId>org.patrodyne.jvnet</groupId>
+            <artifactId>hisrc-basicjaxb-runtime</artifactId>
+            <version>${basicjaxb-plugins.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>commons-io</groupId>
+                    <artifactId>commons-io</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.glassfish.jaxb</groupId>
+                    <artifactId>jaxb-runtime</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
         <dependency>
             <groupId>jakarta.xml.ws</groupId>
             <artifactId>jakarta.xml.ws-api</artifactId>

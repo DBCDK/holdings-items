@@ -1,7 +1,7 @@
 package dk.dbc.holdingsitems.content.response;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 
 @SuppressFBWarnings("URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD")
 public class StatusResponse {

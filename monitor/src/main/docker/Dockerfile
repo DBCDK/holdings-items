@@ -1,6 +1,6 @@
-FROM docker-dbc.artifacts.dbccloud.dk/payara5-micro:latest
+FROM docker-dbc.artifacts.dbccloud.dk/payara6-micro:latest
 
-COPY target/docker/*.jar /opt/payara5/jars/
+COPY target/docker/*.jar /opt/payara6/jars/
 
 ENV APPLICATION_NAME=HoldingsItemsMonitor \
     MAX_POOL_SIZE=2

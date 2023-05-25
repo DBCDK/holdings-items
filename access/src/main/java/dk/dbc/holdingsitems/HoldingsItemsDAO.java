@@ -20,7 +20,7 @@ package dk.dbc.holdingsitems;
 
 import dk.dbc.holdingsitems.jpa.*;
 
-import javax.persistence.EntityManager;
+import jakarta.persistence.EntityManager;
 import java.sql.Connection;
 import java.time.Instant;
 import java.time.LocalDateTime;

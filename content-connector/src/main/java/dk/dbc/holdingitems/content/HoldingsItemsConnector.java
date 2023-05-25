@@ -2,13 +2,9 @@
  * Copyright Dansk Bibliotekscenter a/s. Licensed under GNU GPL v3
  *  See license text at https://opensource.dbc.dk/licenses/gpl-3.0
  */
-
 package dk.dbc.holdingitems.content;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import dk.dbc.commons.metricshandler.CounterMetric;
-import dk.dbc.commons.metricshandler.MetricsHandlerBean;
-import dk.dbc.commons.metricshandler.SimpleTimerMetric;
 import dk.dbc.httpclient.FailSafeHttpClient;
 import dk.dbc.httpclient.HttpClient;
 import dk.dbc.httpclient.HttpGet;
@@ -19,14 +15,14 @@ import org.eclipse.microprofile.metrics.MetricType;
 import org.eclipse.microprofile.metrics.MetricUnits;
 import org.eclipse.microprofile.metrics.Tag;
 
-import javax.annotation.PostConstruct;
-import javax.ejb.Stateless;
-import javax.inject.Inject;
-import javax.ws.rs.InternalServerErrorException;
-import javax.ws.rs.ProcessingException;
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.core.Response;
+import jakarta.annotation.PostConstruct;
+import jakarta.ejb.Stateless;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.InternalServerErrorException;
+import jakarta.ws.rs.ProcessingException;
+import jakarta.ws.rs.client.Client;
+import jakarta.ws.rs.client.ClientBuilder;
+import jakarta.ws.rs.core.Response;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -36,17 +32,21 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import org.eclipse.microprofile.metrics.MetricRegistry;
 
-import static javax.ws.rs.core.Response.Status;
-import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
-import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
+import static jakarta.ws.rs.core.Response.Status;
+import static jakarta.ws.rs.core.Response.Status.BAD_REQUEST;
+import static jakarta.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 
 /**
  * EJB to provide access to the HoldingsItems database.
  */
 @Stateless
 public class HoldingsItemsConnector {
+
     public static final Tag METHOD_TAG = new Tag("method", "getAgenciesThatHasHoldingsForId");
     private static final Set<Integer> NO_RETRY_RESPONSES = Set.of(INTERNAL_SERVER_ERROR.getStatusCode(), BAD_REQUEST.getStatusCode());
     private static final RetryPolicy<Response> RETRY_POLICY = new RetryPolicy<Response>()
@@ -56,7 +56,7 @@ public class HoldingsItemsConnector {
             .withMaxRetries(2);
 
     @Inject
-    MetricsHandlerBean metricsHandlerBean;
+    MetricRegistry mr;
 
     @Inject
     @ConfigProperty(name = "HOLDING_ITEMS_CONTENT_SERVICE_URL")
@@ -72,19 +72,13 @@ public class HoldingsItemsConnector {
 
     private HttpClient httpClient;
 
-    private static final HoldingsItemsErrorCounterMetrics holdingsItemsErrorCounterMetrics =
-            new HoldingsItemsErrorCounterMetrics(Metadata.builder()
-                    .withName("update_holdingsitems_error_counter")
-                    .withDescription("Number of errors caught in various holdingsitems calls")
-                    .withType(MetricType.COUNTER)
-                    .withUnit("requests").build());
+    private Consumer<Tag[]> holdingsItemsErrorCounterMetrics;
 
-    private static final HoldingsItemsTimingMetrics holdingsItemsTimingMetrics =
-            new HoldingsItemsTimingMetrics(Metadata.builder()
-                    .withName("update_holdingsitems_timer")
-                    .withDescription("Duration of various various holdingsitems calls")
-                    .withUnit(MetricUnits.MILLISECONDS)
-                    .withType(MetricType.SIMPLE_TIMER).build());
+    private BiConsumer<Duration, Tag[]> holdingsItemsTimingMetrics;
+
+    private static Tag[] tags(Tag... tags) {
+        return tags;
+    }
 
     protected static final String ERROR_TYPE = "errortype";
 
@@ -92,8 +86,8 @@ public class HoldingsItemsConnector {
     public HoldingsItemsConnector() {
     }
 
-    public HoldingsItemsConnector(MetricsHandlerBean metricsHandlerBean, String holdingsServiceUrl) {
-        this.metricsHandlerBean = metricsHandlerBean;
+    public HoldingsItemsConnector(MetricRegistry mr, String holdingsServiceUrl) {
+        this.mr = mr;
         this.holdingsServiceUrl = holdingsServiceUrl;
         connectTimeout = Duration.ofSeconds(1);
         readTimeout = Duration.ofSeconds(1);
@@ -107,6 +101,28 @@ public class HoldingsItemsConnector {
                 .readTimeout(readTimeout.toMillis(), TimeUnit.MILLISECONDS)
                 .build();
         httpClient = FailSafeHttpClient.create(client, RETRY_POLICY);
+        if (mr != null) {
+            Metadata counterMetadata = Metadata.builder()
+                    .withName("update_holdingsitems_error_counter")
+                    .withDescription("Number of errors caught in various holdingsitems calls")
+                    .withType(MetricType.COUNTER)
+                    .withUnit("requests")
+                    .build();
+            holdingsItemsErrorCounterMetrics = (tags) -> mr.counter(counterMetadata, tags).inc();
+
+            Metadata timerMetadata = Metadata.builder()
+                    .withName("update_holdingsitems_timer")
+                    .withDescription("Duration of various various holdingsitems calls")
+                    .withUnit(MetricUnits.MILLISECONDS)
+                    .withType(MetricType.SIMPLE_TIMER)
+                    .build();
+            holdingsItemsTimingMetrics = (duration, tags) -> mr.timer(timerMetadata, tags).update(duration);
+        } else {
+            holdingsItemsErrorCounterMetrics = (tag) -> {
+            };
+            holdingsItemsTimingMetrics = (duration, tags) -> {
+            };
+        }
     }
 
     public Set<String> getHoldings(int agencyId) {
@@ -116,7 +132,7 @@ public class HoldingsItemsConnector {
             } else if (response.getStatus() >= 400) {
                 throw new InternalServerErrorException("Failed to fetch holdings for agency : " + agencyId + ", reason: " + response.getStatusInfo().toEnum());
             }
-            try(BufferedReader reader = new BufferedReader(new InputStreamReader(response.readEntity(InputStream.class), StandardCharsets.UTF_8))) {
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(response.readEntity(InputStream.class), StandardCharsets.UTF_8))) {
                 return reader.lines().collect(Collectors.toSet());
             } catch (IOException e) {
                 throw new ProcessingException("Failed to fetch holdings for agency " + agencyId, e);
@@ -135,15 +151,16 @@ public class HoldingsItemsConnector {
             HoldingsResponse holdingsResponse = response.readEntity(HoldingsResponse.class);
             return holdingsResponse.agencies;
         } catch (RuntimeException e) {
-            metricsHandlerBean.increment(holdingsItemsErrorCounterMetrics, METHOD_TAG, new Tag(ERROR_TYPE, e.getMessage().toLowerCase()));
+            holdingsItemsErrorCounterMetrics.accept(tags(METHOD_TAG, new Tag(ERROR_TYPE, e.getMessage().toLowerCase())));
             throw e;
         } finally {
-            metricsHandlerBean.update(holdingsItemsTimingMetrics, Duration.between(start, Instant.now()), METHOD_TAG);
+            holdingsItemsTimingMetrics.accept(Duration.between(start, Instant.now()), tags(METHOD_TAG));
         }
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class HoldingsResponse {
+
         private Set<Integer> agencies;
         private String trackingId;
 
@@ -161,33 +178,6 @@ public class HoldingsItemsConnector {
 
         public void setTrackingId(String trackingId) {
             this.trackingId = trackingId;
-        }
-    }
-
-    private static final class HoldingsItemsErrorCounterMetrics implements CounterMetric {
-        private final Metadata metadata;
-
-        public HoldingsItemsErrorCounterMetrics(Metadata metadata) {
-            this.metadata = validateMetadata(metadata);
-        }
-
-        @Override
-        public Metadata getMetadata() {
-            return metadata;
-        }
-    }
-
-
-    private static final class HoldingsItemsTimingMetrics implements SimpleTimerMetric {
-        private final Metadata metadata;
-
-        public HoldingsItemsTimingMetrics(Metadata metadata) {
-            this.metadata = validateMetadata(metadata);
-        }
-
-        @Override
-        public Metadata getMetadata() {
-            return metadata;
         }
     }
 }
