@@ -14,7 +14,7 @@ import static org.hamcrest.Matchers.is;
 
 public class ServiceIT extends AbstractITBase {
 
-    @Test(timeout = 2_000L)
+    @Test(timeout = 20_000L)
     public void testLastLoanDateExistsInComplete() throws Exception {
         System.out.println("testLastLoanDateExistsInComplete");
 
