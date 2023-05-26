@@ -1,7 +1,6 @@
 package dk.dbc.holdingsitems.content;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Stream;
 import jakarta.ws.rs.ApplicationPath;
@@ -35,10 +34,5 @@ public class ContentServiceApplication extends Application {
     @SuppressFBWarnings(value = "EI_EXPOSE_REP")
     public Set<Class<?>> getClasses() {
         return CLASSES;
-    }
-
-    @Override
-    public Set<Object> getSingletons() {
-        return new HashSet<>(super.getSingletons());
     }
 }

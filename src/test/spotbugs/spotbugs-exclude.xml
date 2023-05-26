@@ -10,6 +10,9 @@
     <Bug code="EI2" />
   </Match>
   <Match>
+    <Bug code="Eq" />
+  </Match>
+  <Match>
     <Bug code="RCN" />
   </Match>
 </FindBugsFilter>

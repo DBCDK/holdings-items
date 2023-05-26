@@ -21,6 +21,7 @@ package dk.dbc.holdingsitems.purge;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import dk.dbc.vipcore.marshallers.FindLibraryResponse;
 import dk.dbc.vipcore.marshallers.PickupAgency;
 import java.io.IOException;
@@ -40,10 +41,10 @@ import org.glassfish.jersey.client.JerseyClientBuilder;
 public class VipCoreConnector {
 
     private static final String UNKNOWN = "<unknown>";
-    private static final ObjectMapper O = new ObjectMapper()
+    private static final ObjectMapper O = JsonMapper.builder()
             .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
+            .build()
             .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
-
     private final Client client;
     private final UriBuilder baseUri;
 

@@ -25,7 +25,6 @@ import dk.dbc.oss.ns.holdingsitemsupdate.HoldingsItemsUpdateResult;
 import dk.dbc.oss.ns.holdingsitemsupdate.HoldingsItemsUpdateStatusEnum;
 import dk.dbc.oss.ns.holdingsitemsupdate.OnlineHoldingsItemsUpdateRequest;
 import jakarta.annotation.Resource;
-import jakarta.ejb.Stateless;
 import jakarta.inject.Inject;
 import jakarta.jws.WebService;
 import jakarta.xml.ws.WebServiceContext;

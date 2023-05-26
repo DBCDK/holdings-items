@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import dk.dbc.commons.mdc.GenerateTrackingId;
 import dk.dbc.commons.mdc.LogAs;
 import dk.dbc.holdingsitems.HoldingsItemsDAO;
@@ -67,8 +68,9 @@ public class ContentResource {
 
     @Inject
     public IndexHtml indexHtml;
-    private static final ObjectMapper O = new ObjectMapper()
+    private static final ObjectMapper O = JsonMapper.builder()
             .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
+            .build()
             .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 
     @GET
