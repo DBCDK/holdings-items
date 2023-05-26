@@ -37,7 +37,6 @@ import dk.dbc.oss.ns.holdingsitemsupdate.HoldingsItem;
 import dk.dbc.oss.ns.holdingsitemsupdate.ModificationTimeStamp;
 import dk.dbc.oss.ns.holdingsitemsupdate.OnlineBibliographicItem;
 import dk.dbc.oss.ns.holdingsitemsupdate.StatusType;
-import jakarta.ws.rs.core.Response.StatusType;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
