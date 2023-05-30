@@ -1,7 +1,7 @@
-FROM docker-dbc.artifacts.dbccloud.dk/payara5-full:latest
+FROM docker-dbc.artifacts.dbccloud.dk/payara6-full:latest
 MAINTAINER os-team
 
-COPY target/docker/*.jar /opt/payara5/jars/
+COPY target/docker/*.jar /opt/payara6/jars/
 
 ENV MAX_POOL_SIZE=32
 

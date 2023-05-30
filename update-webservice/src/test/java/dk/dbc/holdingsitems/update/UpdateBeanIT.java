@@ -38,7 +38,6 @@ import dk.dbc.oss.ns.holdingsitemsupdate.ModificationTimeStamp;
 import dk.dbc.oss.ns.holdingsitemsupdate.OnlineBibliographicItem;
 import dk.dbc.oss.ns.holdingsitemsupdate.OnlineHoldingsItemsUpdateRequest;
 import dk.dbc.oss.ns.holdingsitemsupdate.StatusType;
-import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -51,12 +50,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-import javax.persistence.EntityManager;
-import javax.xml.datatype.DatatypeConfigurationException;
-import javax.xml.datatype.DatatypeFactory;
-import javax.xml.datatype.XMLGregorianCalendar;
-import javax.xml.ws.WebServiceContext;
-import javax.xml.ws.handler.MessageContext;
+import jakarta.persistence.EntityManager;
+import jakarta.xml.ws.WebServiceContext;
+import jakarta.xml.ws.handler.MessageContext;
+import java.time.LocalDate;
 import org.eclipse.microprofile.metrics.Counter;
 import org.eclipse.microprofile.metrics.Timer;
 import org.junit.Test;
@@ -488,7 +485,7 @@ public class UpdateBeanIT extends JpaBase {
         }
     }
 
-    public HoldingsItemsUpdateRequest updateReq1() throws DatatypeConfigurationException {
+    public HoldingsItemsUpdateRequest updateReq1() {
         return holdingsItemsUpdateRequest(
                 101010, null, "track-update-1",
                 bibliographicItem(
@@ -504,7 +501,7 @@ public class UpdateBeanIT extends JpaBase {
                 ));
     }
 
-    public HoldingsItemsUpdateRequest updateReq2() throws DatatypeConfigurationException {
+    public HoldingsItemsUpdateRequest updateReq2() {
         return holdingsItemsUpdateRequest(
                 101010, null, "track-update-2",
                 bibliographicItem(
@@ -524,19 +521,19 @@ public class UpdateBeanIT extends JpaBase {
         );
     }
 
-    private OnlineHoldingsItemsUpdateRequest onlineReqCreate() throws DatatypeConfigurationException {
+    private OnlineHoldingsItemsUpdateRequest onlineReqCreate() {
         return onlineHoldingsItemsUpdateRequest(
                 101010, null, "track-online-1",
                 onlineBibliographicItem("12345678", modified("2017-09-07T09:10:00.765Z"), true));
     }
 
-    private OnlineHoldingsItemsUpdateRequest onlineReqDelete() throws DatatypeConfigurationException {
+    private OnlineHoldingsItemsUpdateRequest onlineReqDelete() {
         return onlineHoldingsItemsUpdateRequest(
                 101010, null, "track-online-2",
                 onlineBibliographicItem("12345678", modified("2017-09-07T09:10:21.765Z"), false));
     }
 
-    private CompleteHoldingsItemsUpdateRequest completeReq1() throws DatatypeConfigurationException {
+    private CompleteHoldingsItemsUpdateRequest completeReq1() {
         return completeHoldingsItemsUpdateRequest(
                 101010, null, "track-complete-1",
                 completeBibliographicItem(
@@ -546,7 +543,7 @@ public class UpdateBeanIT extends JpaBase {
                                      StatusType.ON_LOAN, date("2017-01-01")))));
     }
 
-    private CompleteHoldingsItemsUpdateRequest completeReq2() throws DatatypeConfigurationException {
+    private CompleteHoldingsItemsUpdateRequest completeReq2() {
         return completeHoldingsItemsUpdateRequest(
                 101010, null, "track-complete-1",
                 completeBibliographicItem(
@@ -559,7 +556,7 @@ public class UpdateBeanIT extends JpaBase {
                                      StatusType.ON_LOAN, date("2017-01-01")))));
     }
 
-    private CompleteHoldingsItemsUpdateRequest completeReq3() throws DatatypeConfigurationException {
+    private CompleteHoldingsItemsUpdateRequest completeReq3() {
         return completeHoldingsItemsUpdateRequest(
                 101010, null, "track-complete-1",
                 completeBibliographicItem(
@@ -572,14 +569,14 @@ public class UpdateBeanIT extends JpaBase {
                                      StatusType.ON_LOAN, date("2017-01-01")))));
     }
 
-    private CompleteHoldingsItemsUpdateRequest completeReqEmpty() throws DatatypeConfigurationException {
+    private CompleteHoldingsItemsUpdateRequest completeReqEmpty() {
         return completeHoldingsItemsUpdateRequest(
                 101010, null, "track-complete-empty", completeBibliographicItem(
                         "12345678", modified("2017-09-07T09:09:04.001Z"), "Other Note"));
 
     }
 
-    public HoldingsItemsUpdateRequest updateReqNote1() throws DatatypeConfigurationException {
+    public HoldingsItemsUpdateRequest updateReqNote1() {
         return holdingsItemsUpdateRequest(
                 101010, null, "track-update-1",
                 bibliographicItem(
@@ -590,7 +587,7 @@ public class UpdateBeanIT extends JpaBase {
                 ));
     }
 
-    public HoldingsItemsUpdateRequest updateReqNote2() throws DatatypeConfigurationException {
+    public HoldingsItemsUpdateRequest updateReqNote2() {
         return holdingsItemsUpdateRequest(
                 101010, null, "track-update-2",
                 bibliographicItem(
@@ -638,7 +635,7 @@ public class UpdateBeanIT extends JpaBase {
     }
 
     private void clearQueue() throws SQLException {
-        try (Connection connection = PG.createConnection() ;
+        try (Connection connection = PG.createConnection();
              Statement stmt = connection.createStatement()) {
             stmt.executeUpdate("TRUNCATE queue");
         }
@@ -646,8 +643,8 @@ public class UpdateBeanIT extends JpaBase {
 
     private HashMap<String, Set<String>> getQueue() throws SQLException {
         HashMap<String, Set<String>> result = new HashMap<>();
-        try (Connection connection = PG.createConnection() ;
-             PreparedStatement stmt = connection.prepareStatement("SELECT consumer, agencyId, bibliographicRecordId, stateChange FROM queue") ;
+        try (Connection connection = PG.createConnection();
+             PreparedStatement stmt = connection.prepareStatement("SELECT consumer, agencyId, bibliographicRecordId, stateChange FROM queue");
              ResultSet resultSet = stmt.executeQuery()) {
             while (resultSet.next()) {
                 result.computeIfAbsent(resultSet.getString(1), s -> new HashSet<>())
@@ -719,7 +716,7 @@ public class UpdateBeanIT extends JpaBase {
         return bibl;
     }
 
-    private Holding holding(String issueId, String issueText, XMLGregorianCalendar expectedDeliveryDate, int readyForLoan, HoldingsItem... items) {
+    private Holding holding(String issueId, String issueText, LocalDate expectedDeliveryDate, int readyForLoan, HoldingsItem... items) {
         Holding hold = new Holding();
         hold.setIssueId(issueId);
         hold.setIssueText(issueText);
@@ -729,7 +726,7 @@ public class UpdateBeanIT extends JpaBase {
         return hold;
     }
 
-    private HoldingsItem item(String itemId, String branch, String branchId, String department, String location, String subLocation, String circulationRule, StatusType status, XMLGregorianCalendar accessionDate) {
+    private HoldingsItem item(String itemId, String branch, String branchId, String department, String location, String subLocation, String circulationRule, StatusType status, LocalDate accessionDate) {
         HoldingsItem item = new HoldingsItem();
         item.setItemId(itemId);
         item.setBranch(branch);
@@ -743,23 +740,20 @@ public class UpdateBeanIT extends JpaBase {
         return item;
     }
 
-    private XMLGregorianCalendar date(String date) throws DatatypeConfigurationException {
-        return DatatypeFactory.newInstance().newXMLGregorianCalendar(date + "T00:00:00.000Z");
+    private LocalDate date(String date) {
+        return LocalDate.parse(date);
     }
 
-    private ModificationTimeStamp modified(String time) throws DatatypeConfigurationException {
+    private ModificationTimeStamp modified(String time) {
         ModificationTimeStamp mod = new ModificationTimeStamp();
-        XMLGregorianCalendar xmlCalendar = DatatypeFactory.newInstance().newXMLGregorianCalendar(time);
-        int millis = xmlCalendar.getFractionalSecond().multiply(new BigDecimal(1000)).intValue();
-        xmlCalendar.setFractionalSecond(BigDecimal.ZERO);
-        mod.setModificationDateTime(xmlCalendar);
-        mod.setModificationMilliSeconds(millis);
+        mod.setModificationDateTime(Instant.parse(time));
+        mod.setModificationMilliSeconds(0);
         return mod;
     }
 
     private int countAllIssues() throws SQLException {
-        try (Connection db = PG.createConnection() ;
-             PreparedStatement stmt = db.prepareStatement("SELECT COUNT(*) FROM issue") ;
+        try (Connection db = PG.createConnection();
+             PreparedStatement stmt = db.prepareStatement("SELECT COUNT(*) FROM issue");
              ResultSet resultSet = stmt.executeQuery()) {
             if (resultSet.next()) {
                 return resultSet.getInt(1);
@@ -769,8 +763,8 @@ public class UpdateBeanIT extends JpaBase {
     }
 
     private int countAllItems() throws SQLException {
-        try (Connection db = PG.createConnection() ;
-             PreparedStatement stmt = db.prepareStatement("SELECT COUNT(*) FROM item") ;
+        try (Connection db = PG.createConnection();
+             PreparedStatement stmt = db.prepareStatement("SELECT COUNT(*) FROM item");
              ResultSet resultSet = stmt.executeQuery()) {
             if (resultSet.next()) {
                 return resultSet.getInt(1);
@@ -780,7 +774,7 @@ public class UpdateBeanIT extends JpaBase {
     }
 
     private int countItems(StatusType type) throws SQLException {
-        try (Connection db = PG.createConnection() ;
+        try (Connection db = PG.createConnection();
              PreparedStatement stmt = db.prepareStatement("SELECT COUNT(*) FROM item WHERE status=?")) {
             stmt.setString(1, type.value());
             try (ResultSet resultSet = stmt.executeQuery()) {
@@ -793,7 +787,7 @@ public class UpdateBeanIT extends JpaBase {
     }
 
     private HashMap<String, String> checkRow(int agencyId, String bibliographicRecordId, String issueId, String itemId) throws SQLException {
-        try (Connection db = PG.createConnection() ;
+        try (Connection db = PG.createConnection();
              PreparedStatement stmt = db.prepareStatement(
                      "SELECT " +
                      "c.agencyid, " +

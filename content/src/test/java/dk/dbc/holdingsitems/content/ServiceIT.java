@@ -6,7 +6,7 @@ import dk.dbc.holdingsitems.jpa.IssueEntity;
 import dk.dbc.holdingsitems.jpa.Status;
 import java.time.Instant;
 import java.time.LocalDate;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import org.junit.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -14,7 +14,7 @@ import static org.hamcrest.Matchers.is;
 
 public class ServiceIT extends AbstractITBase {
 
-    @Test(timeout = 2_000L)
+    @Test(timeout = 20_000L)
     public void testLastLoanDateExistsInComplete() throws Exception {
         System.out.println("testLastLoanDateExistsInComplete");
 

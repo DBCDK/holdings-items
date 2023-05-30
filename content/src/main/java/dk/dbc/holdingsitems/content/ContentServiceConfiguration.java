@@ -1,8 +1,8 @@
 package dk.dbc.holdingsitems.content;
 
-import javax.ejb.Singleton;
-import javax.ejb.Startup;
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.ejb.Singleton;
+import jakarta.ejb.Startup;
+import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
 @Startup

@@ -13,7 +13,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.HashSet;
-import javax.persistence.EntityManager;
+import jakarta.persistence.EntityManager;
 import org.junit.Test;
 
 import static org.hamcrest.Matchers.*;

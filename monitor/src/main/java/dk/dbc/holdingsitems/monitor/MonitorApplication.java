@@ -20,8 +20,8 @@ package dk.dbc.holdingsitems.monitor;
 
 import java.util.HashMap;
 import java.util.Map;
-import javax.ws.rs.ApplicationPath;
-import javax.ws.rs.core.Application;
+import jakarta.ws.rs.ApplicationPath;
+import jakarta.ws.rs.core.Application;
 
 /**
  *
