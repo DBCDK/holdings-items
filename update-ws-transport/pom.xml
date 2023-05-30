@@ -56,8 +56,6 @@
                         <xjcArg>-XtoString</xjcArg>
                         <xjcArg>-XtoString-toStringStrategyClass=dk.dbc.helper.ToStringStrategy</xjcArg>
                         <xjcArg>-XhashCode</xjcArg>
-<!--                        <xjcArg>-b</xjcArg>
-                        <xjcArg>${basedir}/src/main/wsdl/bindings.xjb</xjcArg>-->
                     </xjcArgs>
                     <bindingFiles>
                         <bindingFile>${basedir}/src/main/wsdl/bindings.xjb</bindingFile>
@@ -81,137 +79,26 @@
                 </executions>
             </plugin>
 
-
-            <!--            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>jaxb2-maven-plugin</artifactId>
-                <version>3.1.0</version>
-                <executions>
-                    <execution>
-                        <id>wsdl</id>
-                        <goals>
-                            <goal>xjc</goal>
-                        </goals>
-                        <configuration>
-                            <sourceType>wsdl</sourceType>
-                            <sources>
-                                <source>src/main/wsdl/holdingsItemsUpdate.wsdl</source>
-                            </sources>
-                            <packageName>dk.dbc</packageName>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>xjc</id>
-                        <goals>
-                            <goal>xjc</goal>
-                        </goals>
-                        <configuration>
-                            <sources>
-                                <source>src/main/wsdl/holdingsItemsUpdate.xsd</source>
-                            </sources>
-                            <clearOutputDir>false</clearOutputDir>
-                        </configuration>
-                    </execution>
-                </executions>
-                <configuration>
-                    <arguments>
-                        <argument>-Xequals</argument>
-                        <argument>-XtoString</argument>
-                        <argument>-XtoString-toStringStrategyClass=dk.dbc.helper.ToStringStrategy</argument>
-                        <argument>-XhashCode</argument>
-                    </arguments>
-                    <xjbSources>
-                        <xjbSource>src/main/wsdl/bindings.xjb</xjbSource>
-                    </xjbSources>
-
-                </configuration>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.glassfish.jaxb</groupId>
-                        <artifactId>jaxb-xjc</artifactId>
-                        <version>4.0.2</version>
-                    </dependency>
-                    <dependency>
-                        <groupId>jakarta.activation</groupId>
-                        <artifactId>jakarta.activation-api</artifactId>
-                        <version>2.1.1</version>
-                    </dependency>
-                    <dependency>
-                        <groupId>jakarta.xml.bind</groupId>
-                        <artifactId>jakarta.xml.bind-api</artifactId>
-                        <version>4.0.0</version>
-                    </dependency>
-                    <dependency>
-                        <groupId>com.sun.xml.bind</groupId>
-                        <artifactId>jaxb-impl</artifactId>
-                        <version>4.0.2</version>
-                    </dependency>
-
-                    <dependency>
-                        <groupId>org.patrodyne.jvnet</groupId>
-                        <artifactId>hisrc-basicjaxb-plugins</artifactId>
-                        <version>${basicjaxb-plugins.version}</version>
-                    </dependency>
-                    <dependency>
-                        <groupId>org.slf4j</groupId>
-                        <artifactId>slf4j-simple</artifactId>
-                        <version>${slf4j.version}</version>
-                    </dependency>
-                    <dependency>
-                        <groupId>commons-logging</groupId>
-                        <artifactId>commons-logging</artifactId>
-                        <version>1.2</version>
-                    </dependency>
-
-                </dependencies>
-            </plugin>-->
-
-
-            <!--            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>jaxws-maven-plugin</artifactId>
-                <version>2.6</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>wsimport</goal>
-                        </goals>
-                        <configuration>
-                            <wsdlLocation>https://holdingsitemsupdate.addi.dk/holdingsitemsupdate-1.3/HoldingsItemsUpdateServices?wsdl</wsdlLocation>
-                            <wsdlDirectory>src/main/wsdl</wsdlDirectory>
-                            <wsdlFiles>
-                                <wsdlFile>holdingsItemsUpdate.wsdl</wsdlFile>
-                            </wsdlFiles>
-                            <staleFile>${project.build.directory}/jaxws/stale/holdingsItemsUpdate.stale</staleFile>
-                            <inlineSchemas>true</inlineSchemas>
-                            <xjcArgs>-b ${basedir}/src/main/wsdl/bindings.xjb</xjcArgs>
-                        </configuration>
-                        <id>wsimport-generate-holdingsItemsUpdate</id>
-                        <phase>generate-sources</phase>
-                    </execution>
-                </executions>
-                <dependencies>
-                    <dependency>
-                        <groupId>javax.xml</groupId>
-                        <artifactId>webservices-api</artifactId>
-                        <version>2.0.1</version>
-                    </dependency>
-                </dependencies>
-                <configuration>
-                    <sourceDestDir>${project.build.directory}/generated-sources/jaxws-wsimport</sourceDestDir>
-                    <xnocompile>true</xnocompile>
-                    <verbose>true</verbose>
-                    <extension>true</extension>
-                    <catalog>${basedir}/src/jax-ws-catalog.xml</catalog>
-                    <vmArgs>
-                        <vmArg>-Djavax.xml.accessExternalSchema=all</vmArg>
-                    </vmArgs>               
-                </configuration>
-            </plugin>-->
-
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.0.0-M5</version>
+                <configuration>
+                    <redirectTestOutputToFile>false</redirectTestOutputToFile>
+                    <trimStackTrace>false</trimStackTrace>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
 
             <plugin>
@@ -242,6 +129,7 @@
         </plugins>
     </build>
 
+
     <dependencies>
         <dependency>
             <groupId>org.patrodyne.jvnet</groupId>
@@ -271,5 +159,24 @@
             <version>${jakarta-xml-ws.version}</version>
             <scope>provided</scope>
         </dependency>
+
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>hamcrest</artifactId>
+        </dependency>
+
     </dependencies>
 </project>
