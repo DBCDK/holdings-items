@@ -85,11 +85,11 @@ public class ContentResource {
             HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, trackingId);
             try {
                 Set<Integer> agencies = new HashSet<>();
-                agencies.addAll(dao.getAgenciesThatHasHoldingsFor(bibliographicRecordId));
+                agencies.addAll(dao.getAgenciesThatHasHoldingsFor(bibliographicRecordId, Status.DISCARDED));
                 for (String superseded : SupersedesEntity.bySupersedingNoLock(em, bibliographicRecordId)
                         .map(SupersedesEntity::getSuperseded)
                         .collect(toList())) {
-                    agencies.addAll(dao.getAgenciesThatHasHoldingsFor(superseded));
+                    agencies.addAll(dao.getAgenciesThatHasHoldingsFor(superseded, Status.DISCARDED));
                 }
                 AgenciesWithHoldingsResponse resp = new AgenciesWithHoldingsResponse(agencies, trackingId);
                 return Response.ok(resp).build();

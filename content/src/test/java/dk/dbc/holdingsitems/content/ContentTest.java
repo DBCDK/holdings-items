@@ -415,6 +415,7 @@ public class ContentTest extends JpaBase {
 
         int agencyId1 = 100000;
         int agencyId2 = 200000;
+        int agencyId3 = 300000;
         String bibId = "10000000";
 
         jpa(em -> {
@@ -440,12 +441,25 @@ public class ContentTest extends JpaBase {
                     .setTrackingId("track")
                     .setIssueText("#1")
                     .setReadyForLoan(1);
-            itemEntity(issueEntity, "2", Status.ON_SHELF);
+            itemEntity(issueEntity, "2", Status.LOST);
+            bibliographicItemEntity.save();
+        });
+        jpa(em -> {
+            System.out.println(" `- load record 3");
+            BibliographicItemEntity bibliographicItemEntity = BibliographicItemEntity.from(em, agencyId3, bibId, Instant.now(), LocalDate.now())
+                    .setTrackingId("track")
+                    .setFirstAccessionDate(LocalDate.of(2012, 11, 7))
+                    .setNote("NOTE TEXT");
+            IssueEntity issueEntity = issueEntity(bibliographicItemEntity, "none")
+                    .setTrackingId("track")
+                    .setIssueText("#1")
+                    .setReadyForLoan(1);
+            itemEntity(issueEntity, "2", Status.DISCARDED);
             bibliographicItemEntity.save();
         });
 
         jpa(em -> {
-            System.out.println(" `- test record 1 - 404");
+            System.out.println(" `- test");
             ContentResource bean = new ContentResource();
             bean.em = em;
             Response resp = bean.agenciesWithHoldings(bibId, "x");
