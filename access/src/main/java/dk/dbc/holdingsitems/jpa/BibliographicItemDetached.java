@@ -71,6 +71,7 @@ public class BibliographicItemDetached extends BibliographicItemEntity {
         that.bibliographicRecordId = getBibliographicRecordId();
         that.note = getNote();
         that.firstAccessionDate = getFirstAccessionDate().toString();
+        that.modified = getModified().toString();
         that.issues = getIssues().stream()
                 .sorted(Comparator.comparing(IssueDetached::getIssueId, new VersionSort()))
                 .map(IssueDetached::toCompleteIssue)
