@@ -34,12 +34,13 @@ public class CompleteBibliographic {
     public String firstAccessionDate;
     public List<CompleteIssue> issues;
     public String trackingId;
+    public String modified;
 
     public CompleteBibliographic() {
     }
 
     @Override
     public String toString() {
-        return "CompleteBibliographic{" + "agencyId=" + agencyId + ", bibliographicRecordId=" + bibliographicRecordId + ", note=" + note + ", firstAccessionDate=" + firstAccessionDate + ", issues=" + issues + '}';
+        return "CompleteBibliographic{" + "agencyId=" + agencyId + ", bibliographicRecordId=" + bibliographicRecordId + ", note=" + note + ", firstAccessionDate=" + firstAccessionDate + ", modified=" + modified + ", issues=" + issues + '}';
     }
 }
