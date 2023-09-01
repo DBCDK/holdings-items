@@ -149,7 +149,7 @@ pipeline {
                 if ("${env.BRANCH_NAME}" == 'master') {
                     emailext(
                             recipientProviders: [developers(), culprits()],
-                            to: teamEmail,
+                            to: "de-team@dbc.dk",
                             subject: "[Jenkins] ${env.JOB_NAME} #${env.BUILD_NUMBER} back to normal",
                             mimeType: 'text/html; charset=UTF-8',
                             body: "<p>The master is back to normal.</p><p><a href=\"${env.BUILD_URL}\">Build information</a>.</p>",
