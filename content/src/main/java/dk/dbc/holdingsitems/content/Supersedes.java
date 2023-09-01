@@ -26,6 +26,8 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -34,6 +36,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 @Stateless
 @Path("v1/supersedes")
 public class Supersedes {
+
+    private static final Logger log = LoggerFactory.getLogger(Supersedes.class);
 
     @Inject
     EntityManager em;
@@ -47,6 +51,7 @@ public class Supersedes {
     @Produces(MediaType.APPLICATION_JSON)
     public Response get(@PathParam("faust") @LogAs("faust") String faust,
                         @QueryParam("trackingId") @LogAs("TrackingId") @GenerateTrackingId String trackingId) {
+        log.info("get({})", faust);
         List<SupersedesEntity> owned = SupersedesEntity.bySuperseding(em, faust);
         if (owned.isEmpty()) {
             return StatusResponse.notFound(trackingId, "No such record");
@@ -61,6 +66,7 @@ public class Supersedes {
     @Produces(MediaType.APPLICATION_JSON)
     public Response delete(@PathParam("faust") @LogAs("faust") String faust,
                            @QueryParam("trackingId") @LogAs("TrackingId") @GenerateTrackingId String trackingId) {
+        log.info("delete({})", faust);
         List<SupersedesEntity> owned = SupersedesEntity.bySuperseding(em, faust);
         owned.forEach(em::remove);
         try {
@@ -81,6 +87,7 @@ public class Supersedes {
     public Response put(SupersedesRequest request,
                         @PathParam("faust") @LogAs("faust") String faust,
                         @QueryParam("trackingId") @LogAs("TrackingId") @GenerateTrackingId String trackingId) {
+        log.info("put({})", faust);
         if (request.supersedes == null || request.supersedes.isEmpty()) {
             return StatusResponse.error(trackingId, Response.Status.BAD_REQUEST, "Invalid data");
         }

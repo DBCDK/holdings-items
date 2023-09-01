@@ -79,6 +79,7 @@ public class ContentResource {
     @Timed
     public Response agenciesWithHoldings(@PathParam("bibliographicRecordId") String bibliographicRecordId,
                                          @QueryParam("trackingId") @LogAs("trackingId") @GenerateTrackingId String trackingId) {
+        log.info("agenciesWithHoldings({}", bibliographicRecordId);
         try (LogWith l = LogWith.track(trackingId)) {
             l.bibliographicRecordId(bibliographicRecordId);
 
@@ -107,7 +108,7 @@ public class ContentResource {
     @Timed
     public Response holdingsPerStatusByAgency(@PathParam("agencyId") Integer agencyId,
                                               @QueryParam("trackingId") @LogAs("trackingId") @GenerateTrackingId String trackingId) {
-
+        log.info("holdingsPerStatusByAgency({})", agencyId);
         if (agencyId == null || agencyId < 0) {
             log.error("holdings-per-status called with no agency");
             return Response.status(Response.Status.BAD_REQUEST).build();
@@ -120,8 +121,8 @@ public class ContentResource {
             try {
                 TotalStatusCountsForAgency resp = dao.getStatusCountsByAgency(agencyId, trackingId);
                 return Response.ok(
-                                       new StatusCountResponse(resp.getAgencyId(), resp.getStatusCounts(), resp.getTrackingId()))
-                               .build();
+                        new StatusCountResponse(resp.getAgencyId(), resp.getStatusCounts(), resp.getTrackingId()))
+                        .build();
             } catch (HoldingsItemsException e) {
                 log.error("Exception requesting for agencyId: {}: {}", agencyId, e.getMessage());
                 log.debug("Exception requesting for agencyId: {}: ", agencyId, e);
@@ -135,7 +136,7 @@ public class ContentResource {
     @Produces(MediaType.TEXT_PLAIN)
     public Response getHoldingsItems(@PathParam("agencyId") int agencyId,
                                      @QueryParam("trackingId") @LogAs("trackingId") @GenerateTrackingId String trackingId) {
-
+        log.info("getHoldingsItems({})", agencyId);
         HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, trackingId);
         Collection<String> holdingItems = dao.getHoldingItems(agencyId);
         StreamingOutput streamingOutput = outputStream -> {
@@ -155,6 +156,7 @@ public class ContentResource {
             @QueryParam("agency") Integer agencyId,
             @QueryParam("itemId") String itemId,
             @QueryParam("trackingId") @LogAs("trackingId") @GenerateTrackingId String trackingId) {
+        log.info("getItemEntity({}, {})", agencyId, itemId);
         { // argument validation
             if (agencyId == null || agencyId < 0) {
                 log.error("holdings-by-item-id called with no agency");
@@ -181,7 +183,7 @@ public class ContentResource {
                                 @QueryParam("branchId") String branchId,
                                 @QueryParam("pid") List<String> pids,
                                 @QueryParam("trackingId") @LogAs("trackingId") @GenerateTrackingId String trackingId) {
-
+        log.info("getByBranch({}, {}, {})", agencyId, branchId, pids);
         if (agencyId == null || agencyId == 0) {
             log.error("holdings-by-branch called with no agency");
             return Response.status(Response.Status.BAD_REQUEST).build();
@@ -221,6 +223,7 @@ public class ContentResource {
             @QueryParam("agency") Integer agencyId,
             @QueryParam("pid") List<String> pids,
             @QueryParam("trackingId") @LogAs("trackingId") @GenerateTrackingId String trackingId) {
+        log.info("holdings-by-pid({}, {})", agencyId, pids);
         { // argument validation
             if (agencyId == null || agencyId < 0) {
                 log.error("holdings-by-pid called with no agency");
@@ -258,6 +261,8 @@ public class ContentResource {
     public Response getLaesekompasdataForBibliographicRecordIdsPost(
             String bibliographicRecordIds,
             @QueryParam("trackingId") @LogAs("trackingId") @GenerateTrackingId String trackingId) {
+        log.info("laesekompas-data-for-bibliographicrecordids");
+        log.debug("laesekompas-data-for-bibliographicrecordids({})", bibliographicRecordIds);
         List<String> bibRecordIdList = null;
         try {
             bibRecordIdList = O.readValue(bibliographicRecordIds, List.class);
@@ -288,6 +293,7 @@ public class ContentResource {
     public Response getComplete(@PathParam("agencyId") int agencyId,
                                 @PathParam("bibliographicRecordId") String bibliographicRecordId,
                                 @QueryParam("trackingId") @LogAs("trackingId") @GenerateTrackingId String trackingId) {
+        log.info("getComplete({}, {})", agencyId, bibliographicRecordId);
         try (LogWith l = LogWith.track(trackingId)) {
             l.agencyId(agencyId).bibliographicRecordId(bibliographicRecordId);
 
