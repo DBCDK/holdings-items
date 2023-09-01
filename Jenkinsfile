@@ -154,7 +154,7 @@ pipeline {
                             mimeType: 'text/html; charset=UTF-8',
                             body: "<p>The master is back to normal.</p><p><a href=\"${env.BUILD_URL}\">Build information</a>.</p>",
                             attachLog: false)
-                    slackSend(channel: teamSlack,
+                    slackSend(channel: 'de-notifications',
                             color: 'good',
                             message: "${env.JOB_NAME} #${env.BUILD_NUMBER} back to normal: ${env.BUILD_URL}",
                             tokenCredentialId: 'slack-global-integration-token')
