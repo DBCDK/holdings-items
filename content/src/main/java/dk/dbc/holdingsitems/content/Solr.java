@@ -34,6 +34,7 @@ public class Solr {
     @Timed
     public Response getStatus(@QueryParam("agencyId") Integer agencyId,
                               @QueryParam("trackingId") @LogAs("trackingId") @GenerateTrackingId String trackingId) {
+        log.info("all-holdings({})", agencyId);
         if (agencyId == null || agencyId == 0) {
             log.error("all-holdings called with no agency");
             return Response.status(Response.Status.BAD_REQUEST).build();
@@ -55,9 +56,10 @@ public class Solr {
     @Path("status-by-pid")
     @Produces({MediaType.APPLICATION_JSON})
     @Timed
-    public Response getHoldingsByPid(@QueryParam("agencyId") Integer agencyId,
-                                     @QueryParam("pid") List<String> pids,
-                                     @QueryParam("trackingId") @LogAs("trackingId") @GenerateTrackingId String trackingId) {
+    public Response getStatusByPid(@QueryParam("agencyId") Integer agencyId,
+                                   @QueryParam("pid") List<String> pids,
+                                   @QueryParam("trackingId") @LogAs("trackingId") @GenerateTrackingId String trackingId) {
+        log.info("status-by-pid({}, {})", agencyId, pids);
         if (agencyId == null || agencyId == 0) {
             log.error("status-by-pid called with no agency");
             return Response.status(Response.Status.BAD_REQUEST).build();

@@ -85,6 +85,11 @@
         <dependency>
             <groupId>dk.dbc</groupId>
             <artifactId>dbc-commons-mdc</artifactId>
+            <version>2.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>dk.dbc</groupId>
+            <artifactId>dbc-commons-payara-helpers</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
         <dependency>

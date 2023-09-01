@@ -1,5 +1,7 @@
 package dk.dbc.holdingsitems.content;
 
+import dk.dbc.commons.payara.helpers.MDCRequestInfo;
+import dk.dbc.commons.payara.helpers.RequestLogLevel;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -25,6 +27,8 @@ public class ContentServiceApplication extends Application {
                 // developer
                 DeveloperResource.class,
                 // common
+                MDCRequestInfo.class,
+                RequestLogLevel.class,
                 JacksonFeature.class,
                 JacksonObjectMapperProvider.class)
                 .collect(toSet());
