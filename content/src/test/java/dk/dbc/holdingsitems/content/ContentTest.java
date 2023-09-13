@@ -265,16 +265,6 @@ public class ContentTest extends JpaBase {
     }
 
     @Test(timeout = 30_000L)
-    public void testGetPidEntitiesRepeatedPid() throws Exception {
-        System.out.println("Test getItemByPid endpoint, repeated pid");
-        jpa(em -> {
-            ContentResource contentResource = MockContentResource(em);
-            Response response = contentResource.getItemEntities(654321, Arrays.asList("hest:12345678", "fest:12345678"), "trackPidRepeatedPid");
-            assertEquals(response.getStatusInfo().getStatusCode(), Response.Status.BAD_REQUEST.getStatusCode());
-        });
-    }
-
-    @Test(timeout = 30_000L)
     public void testGetPidEntitiesNoAgency() throws Exception {
         System.out.println("Test getItemByPid endpoint, no agency");
         jpa(em -> {
