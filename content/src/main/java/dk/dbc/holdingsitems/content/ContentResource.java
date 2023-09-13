@@ -52,7 +52,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
+import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
@@ -233,24 +235,20 @@ public class ContentResource {
                 log.error("holdings-by-pid: All argument pids must contain at least one colon");
                 return Response.status(Response.Status.BAD_REQUEST).build();
             }
-            List<String> bibliographicRecordIds = pids.stream().map(s -> s.split(":", 2)[1]).collect(toList());
-            HashSet<String> uniqueBibliographicRecordIds = new HashSet<>(bibliographicRecordIds);
-            if (uniqueBibliographicRecordIds.size() < bibliographicRecordIds.size()) {
-                return Response.status(Response.Status.BAD_REQUEST).build();
-            }
         }
         log.debug("holdings-by-pid called with agency {}, pids: {}, trackingId: {}", agencyId, pids, trackingId);
         HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, trackingId);
-        Map<String, String> pidMap = new HashMap<>();
-        for (String p : pids) {
-            pidMap.put(p, p.split(":", 2)[1]);
-        }
-        Map<String, Iterable<ItemEntity>> res = new HashMap<>();
-        for (Map.Entry<String, String> e : pidMap.entrySet()) {
-            Set<ItemEntity> pidItems = dao.getItemsFromAgencyAndBibliographicRecordId(agencyId, e.getValue());
-            res.put(e.getKey(), pidItems);
-        }
-        return Response.ok(new ContentServicePidResponse(trackingId, res)).build();
+        Map<String, String> pidToBibl = pids.stream()
+                .collect(Collectors.toMap(identity(), p -> p.split(":", 2)[1]));
+
+        Map<String, Set<ItemEntity>> biblToItems = pidToBibl.values().stream()
+                .distinct()
+                .collect(Collectors.toMap(identity(), b -> dao.getItemsFromAgencyAndBibliographicRecordId(agencyId, (String) b)));
+
+        Map<String, Set<ItemEntity>> pidToItems = pidToBibl.entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, e -> biblToItems.get(e.getValue())));
+
+        return Response.ok(new ContentServicePidResponse(trackingId, pidToItems)).build();
     }
 
     @POST
