@@ -248,15 +248,6 @@ public class ContentResource {
         Map<String, Set<ItemEntity>> pidToItems = pidToBibl.entrySet().stream()
                 .collect(Collectors.toMap(Map.Entry::getKey, e -> biblToItems.get(e.getValue())));
 
-        Map<String, String> pidMap = new HashMap<>();
-        for (String p : pids) {
-            pidMap.put(p, p.split(":", 2)[1]);
-        }
-        Map<String, Iterable<ItemEntity>> res = new HashMap<>();
-        for (Map.Entry<String, String> e : pidMap.entrySet()) {
-            Set<ItemEntity> pidItems = dao.getItemsFromAgencyAndBibliographicRecordId(agencyId, e.getValue());
-            res.put(e.getKey(), pidItems);
-        }
         return Response.ok(new ContentServicePidResponse(trackingId, pidToItems)).build();
     }
 
