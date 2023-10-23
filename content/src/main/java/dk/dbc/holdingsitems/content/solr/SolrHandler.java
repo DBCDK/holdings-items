@@ -10,6 +10,7 @@ import java.util.regex.Pattern;
 import jakarta.annotation.PostConstruct;
 import jakarta.ejb.Stateless;
 import jakarta.inject.Inject;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -85,9 +86,9 @@ public class SolrHandler {
         }
         List<String> zkHosts = Arrays.asList(zkMatcher.group(ZK_HOSTS).split(","));
 
-        this.solrClient = new CloudSolrClient.Builder(zkHosts, zkChroot)
+        this.solrClient = new CloudHttp2SolrClient.Builder(zkHosts, zkChroot)
+                .withDefaultCollection(collection)
                 .build();
-        this.solrClient.setDefaultCollection(collection);
     }
 
     public void loadAgencyHoldings(int agencyId, Consumer<SolrStreamedDoc> consumer) throws IOException {
