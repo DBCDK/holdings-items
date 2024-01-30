@@ -33,7 +33,7 @@ public class SolrHoldingsResponse {
         if (seenStatusForThisBibId.add(status)) {
             bibWithStatus.merge(status, 1, Integer::sum);
         }
-        itemWithStatus.merge(status, doc.getValues(HOLDINGSITEM_ITEM_ID).size(), Integer::sum);
+        itemWithStatus.merge(status, doc.getValuesOptional(HOLDINGSITEM_ITEM_ID).size(), Integer::sum);
     }
 
     @JsonProperty("bibliographicItems")

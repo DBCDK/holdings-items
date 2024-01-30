@@ -32,4 +32,13 @@ public class SolrStreamedDoc {
             return (Collection) obj;
         return Collections.singleton(String.valueOf(obj));
     }
+
+    public Collection<String> getValuesOptional(SolrFields field) {
+        Object obj = doc.get(field.getFieldName());
+        if (obj == null)
+            return Collections.emptyList();
+        if (obj instanceof Collection)
+            return (Collection) obj;
+        return Collections.singleton(String.valueOf(obj));
+    }
 }
