@@ -1,7 +1,6 @@
 package dk.dbc.holdingsitems.content.solr;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 
