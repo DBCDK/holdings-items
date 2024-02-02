@@ -1,6 +1,7 @@
 package dk.dbc.holdingsitems.content.solr;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 
@@ -33,7 +34,9 @@ public class SolrHoldingsResponse {
         if (seenStatusForThisBibId.add(status)) {
             bibWithStatus.merge(status, 1, Integer::sum);
         }
-        itemWithStatus.merge(status, doc.getValuesOptional(HOLDINGSITEM_ITEM_ID).size(), Integer::sum);
+        Collection<String> values = doc.getValuesOptional(HOLDINGSITEM_ITEM_ID);
+        int valueCount = values.isEmpty() ? 1 : values.size();
+        itemWithStatus.merge(status, valueCount, Integer::sum);
     }
 
     @JsonProperty("bibliographicItems")
