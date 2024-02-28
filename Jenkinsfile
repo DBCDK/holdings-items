@@ -1,4 +1,4 @@
-def workerNode = 'devel10'
+def workerNode = 'devel11'
 def dockerRepository = 'https://docker-de.artifacts.dbccloud.dk'
 
 if (env.BRANCH_NAME == 'master') {
@@ -8,7 +8,7 @@ if (env.BRANCH_NAME == 'master') {
             triggers: [
                 [
                     $class: 'jenkins.triggers.ReverseBuildTrigger',
-                    upstreamProjects: "Docker-payara5-bump-trigger, ../pg-queue/master, ../dbc-commons", threshold: hudson.model.Result.SUCCESS
+                    upstreamProjects: "Docker-payara6-bump-trigger, ../pg-queue/master, ../dbc-commons", threshold: hudson.model.Result.SUCCESS
                 ]
             ]
         ]),

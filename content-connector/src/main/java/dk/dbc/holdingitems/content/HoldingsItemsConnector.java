@@ -8,13 +8,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import dk.dbc.httpclient.FailSafeHttpClient;
 import dk.dbc.httpclient.HttpClient;
 import dk.dbc.httpclient.HttpGet;
-import net.jodah.failsafe.RetryPolicy;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.eclipse.microprofile.metrics.Metadata;
-import org.eclipse.microprofile.metrics.MetricType;
-import org.eclipse.microprofile.metrics.MetricUnits;
-import org.eclipse.microprofile.metrics.Tag;
-
 import jakarta.annotation.PostConstruct;
 import jakarta.ejb.Stateless;
 import jakarta.inject.Inject;
@@ -23,6 +16,13 @@ import jakarta.ws.rs.ProcessingException;
 import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.client.ClientBuilder;
 import jakarta.ws.rs.core.Response;
+import net.jodah.failsafe.RetryPolicy;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.eclipse.microprofile.metrics.Metadata;
+import org.eclipse.microprofile.metrics.MetricRegistry;
+import org.eclipse.microprofile.metrics.MetricUnits;
+import org.eclipse.microprofile.metrics.Tag;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -35,7 +35,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import org.eclipse.microprofile.metrics.MetricRegistry;
 
 import static jakarta.ws.rs.core.Response.Status;
 import static jakarta.ws.rs.core.Response.Status.BAD_REQUEST;
@@ -105,7 +104,6 @@ public class HoldingsItemsConnector {
             Metadata counterMetadata = Metadata.builder()
                     .withName("update_holdingsitems_error_counter")
                     .withDescription("Number of errors caught in various holdingsitems calls")
-                    .withType(MetricType.COUNTER)
                     .withUnit("requests")
                     .build();
             holdingsItemsErrorCounterMetrics = (tags) -> mr.counter(counterMetadata, tags).inc();
@@ -114,7 +112,6 @@ public class HoldingsItemsConnector {
                     .withName("update_holdingsitems_timer")
                     .withDescription("Duration of various various holdingsitems calls")
                     .withUnit(MetricUnits.MILLISECONDS)
-                    .withType(MetricType.SIMPLE_TIMER)
                     .build();
             holdingsItemsTimingMetrics = (duration, tags) -> mr.timer(timerMetadata, tags).update(duration);
         } else {
