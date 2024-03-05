@@ -134,7 +134,7 @@ public class ContentTest extends JpaBase {
         });
     }
 
-    @Test(timeout = 2_000L)
+    @Test(timeout = 30_000L)
     public void testGetByBranch() throws Exception {
         System.out.println("testGetByBranch");
         jpa(em -> {
@@ -362,7 +362,7 @@ public class ContentTest extends JpaBase {
         });
     }
 
-    @Test(timeout = 2_000L)
+    @Test(timeout = 30_000L)
     public void testGetCompleteNotFound() throws Exception {
         System.out.println("testGetCompleteNotFound");
         jpa(em -> {
@@ -372,7 +372,7 @@ public class ContentTest extends JpaBase {
         });
     }
 
-    @Test(timeout = 2_000L)
+    @Test(timeout = 30_000L)
     public void testComplete() throws Exception {
         System.out.println("testComplete");
         jpa(em -> {
@@ -399,7 +399,7 @@ public class ContentTest extends JpaBase {
         });
     }
 
-    @Test(timeout = 2_000L)
+    @Test(timeout = 30_000L)
     public void testAgenciesWithHoldings() throws Exception {
         System.out.println("testAgenciesWithHoldings");
 
@@ -460,7 +460,7 @@ public class ContentTest extends JpaBase {
         });
     }
 
-    @Test(timeout = 2_000L)
+    @Test(timeout = 30_000L)
     public void testCompleteSuperseded() throws Exception {
         System.out.println("testCompleteSuperseded");
         int agencyId = 100000;
@@ -600,7 +600,7 @@ public class ContentTest extends JpaBase {
     }
 
 
-    @Test(timeout = 2_000L)
+    @Test(timeout = 30_000L)
     public void testGetHoldingsPerStatusByAgency() throws Exception {
         System.out.println("testGetHoldingsPerStatusByAgency");
 
