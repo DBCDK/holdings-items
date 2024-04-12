@@ -98,9 +98,13 @@ public class WorkerIT extends JpaBase {
         GenericContainer container = new GenericContainer("holdings-items-content-service" + dockerImagePostfix)
                 .withLogConsumer(new Slf4jLogConsumer(LoggerFactory.getLogger("dk.dbc.PAYARA")))
                 .withEnv("JAVA_MAX_HEAP_SIZE", "1G")
+                .withEnv("DEVELOPER_MODE", "true")
                 .withEnv("HOLDINGS_ITEMS_POSTGRES_URL", pg.getPayaraDockerJdbcUrl())
                 .withEnv("COREPO_SOLR_URL", "zk://not-configured/nowhere")
                 .withEnv("LOG__dk_dbc", "DEBUG")
+                .withEnv("DISABLE_AUTHENTICATION", "true")
+                .withEnv("IDP_RIGHTS", "HOLDINGSUPDATE,READ")
+                .withEnv("IDP_URL", "http://localhost/idpservice/api/v1/")
                 .withExposedPorts(8080)
                 .waitingFor(Wait.forHttp("/health"))
                 .withStartupTimeout(Duration.ofMinutes(3));

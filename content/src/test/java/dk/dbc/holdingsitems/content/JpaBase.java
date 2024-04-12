@@ -44,7 +44,6 @@ public class JpaBase extends AbstractJpaAndRestTestBase {
         }
     }
 
-
     public static IssueEntity issueEntity(BibliographicItemEntity bibliographicItemEntity, String issueId) {
         IssueEntity issueEntity = bibliographicItemEntity.issue(issueId, Instant.now());
         issueEntity.setTrackingId("track");

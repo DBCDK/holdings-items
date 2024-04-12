@@ -11,6 +11,7 @@
 
     <logger name="dk.dbc" level="DEBUG"/>
     <logger name="dk.dbc.pgqueue" level="INFO"/>
+    <logger name="dk.dbc.PG" level="ERROR"/>
 
     <root level="INFO">
         <appender-ref ref="STDOUT" />

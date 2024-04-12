@@ -21,6 +21,7 @@ public class ContentServiceApplication extends Application {
             Solr.class,
             Status.class,
             Supersedes.class,
+            UpdateV1.class,
             // developer
             DeveloperResource.class,
             // common
