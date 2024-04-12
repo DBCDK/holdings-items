@@ -48,6 +48,7 @@
         <module>purge-tool</module>
         <module>content</module>
         <module>content-connector</module>
+        <module>update-facade</module>
     </modules>
 
     <build>
