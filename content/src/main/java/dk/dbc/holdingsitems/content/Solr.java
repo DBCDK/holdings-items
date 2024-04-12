@@ -1,7 +1,7 @@
 package dk.dbc.holdingsitems.content;
 
-import dk.dbc.commons.mdc.GenerateTrackingId;
-import dk.dbc.commons.mdc.LogAs;
+import dk.dbc.commons.payara.helpers.GenerateTrackingId;
+import dk.dbc.commons.payara.helpers.LogAs;
 import dk.dbc.holdingsitems.content.solr.SolrHoldingsResponse;
 import dk.dbc.holdingsitems.content.solr.SolrHandler;
 import dk.dbc.holdingsitems.content.solr.SolrPidResponse;
