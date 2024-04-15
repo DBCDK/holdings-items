@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:hol="http://oss.dbc.dk/ns/holdingsItemsUpdate">
+    <soapenv:Header/>
+    <soapenv:Body>
+        <hol:completeHoldingsItemsUpdate>
+            <hol:completeHoldingsItemsUpdateRequest>
+                <!-- optional -->
+                <hol:authentication>
+                    <hol:groupIdAut></hol:groupIdAut>
+                    <hol:passwordAut></hol:passwordAut>
+                    <hol:userIdAut></hol:userIdAut>
+                </hol:authentication>
+                <hol:agencyId>123456</hol:agencyId>
+                <!--0 to 100 repetitions:-->
+                <hol:completeBibliographicItem>
+                    <hol:bibliographicRecordId>0a00</hol:bibliographicRecordId>
+                    <!-- <hol:note> ? </hol:note> -->
+                    <hol:modificationTimeStamp>
+                        <hol:modificationDateTime>%{ts}%</hol:modificationDateTime>
+                        <hol:modificationMilliSeconds>0</hol:modificationMilliSeconds>
+                    </hol:modificationTimeStamp>
+                    <!--0 to 100 repetitions:-->
+                    <hol:holding>
+                        <hol:expectedDeliveryDate>%{date(+5d)}%</hol:expectedDeliveryDate>
+                        <hol:readyForLoan> ? </hol:readyForLoan>
+                        <hol:issueId> ? </hol:issueId>
+                        <hol:issueText> ? </hol:issueText>
+                        <hol:holdingsItem>
+                            <hol:itemId> ? </hol:itemId>
+                            <hol:branchId> ? </hol:branchId>
+                            <hol:branch> ? </hol:branch>
+                            <hol:department> ? </hol:department>
+                            <hol:location> ? </hol:location>
+                            <hol:subLocation> ? </hol:subLocation>
+                            <hol:circulationRule> ? </hol:circulationRule>
+                            <!-- optional -->
+                            <hol:loanRestriction>|a|b|c|d|e|f|g</hol:loanRestriction>
+                            <hol:status>NotForLoan|OnOrder|OnShelf|OnLoan|Lost|Discarded|Decommissioned</hol:status>
+                            <hol:accessionDate>2014-06-26</hol:accessionDate>
+                            <hol:lastLoanDate>2010-01-02</hol:lastLoanDate>
+                        </hol:holdingsItem>
+                    </hol:holding>
+                </hol:completeBibliographicItem>
+                <!--Optional:-->
+                <hol:trackingId>?</hol:trackingId>
+            </hol:completeHoldingsItemsUpdateRequest>
+        </hol:completeHoldingsItemsUpdate>
+    </soapenv:Body>
+</soapenv:Envelope>

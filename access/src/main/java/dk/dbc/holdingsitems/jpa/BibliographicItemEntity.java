@@ -82,7 +82,7 @@ public class BibliographicItemEntity implements Serializable {
     @Column(nullable = false)
     protected String trackingId;
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "owner", orphanRemoval = true, cascade = {CascadeType.MERGE, CascadeType.PERSIST})
+    @OneToMany(fetch = FetchType.EAGER, mappedBy = "owner", orphanRemoval = true, cascade = {CascadeType.MERGE, CascadeType.PERSIST})
     protected Set<IssueEntity> issues;
 
     @Transient

@@ -94,7 +94,7 @@ pipeline {
                     def label = imageLabel()
                     if (currentBuild.resultIsBetterOrEqualTo('SUCCESS')) {
                         docker.withRegistry(dockerRepository, 'docker') {
-                            for(def image : ["holdings-items-content-service", "holdings-items-kafka-bridge", "holdings-items-monitor", "holdings-items-postgres", "holdings-items-postgres-content", "holdings-items-purge-tool", "holdings-items-solr-indexer", "holdings-items-update-webservice"]) {
+                            for(def image : ["holdings-items-content-service", "holdings-items-kafka-bridge", "holdings-items-monitor", "holdings-items-postgres", "holdings-items-postgres-content", "holdings-items-purge-tool", "holdings-items-solr-indexer", "holdings-items-update-facade", "holdings-items-update-webservice"]) {
                                 def app = docker.image("${image}-${version}:${label}")
                                 app.push()
                                 if (env.BRANCH_NAME == "master") {
@@ -136,7 +136,7 @@ pipeline {
                     dir("deploy") {
                         sh "set-new-version databases/holdings-items-db.yml ${env.GITLAB_PRIVATE_TOKEN} metascrum/dit-gitops-secrets ${DOCKER_PUSH_TAG} -b master"
                         sh "set-new-version services/search/holdings-items-content-service.yml ${env.GITLAB_PRIVATE_TOKEN} metascrum/dit-gitops-secrets ${DOCKER_PUSH_TAG} -b master"
-                        sh "set-new-version migrator/holdings-items-update-1-2.yml ${env.GITLAB_PRIVATE_TOKEN} metascrum/dit-gitops-secrets ${DOCKER_PUSH_TAG} -b master"
+                        sh "set-new-version services/search/holdings-items-update-facade.yml ${env.GITLAB_PRIVATE_TOKEN} metascrum/dit-gitops-secrets ${DOCKER_PUSH_TAG} -b master"
                     }
                 }
             }

@@ -17,16 +17,20 @@ import org.testcontainers.containers.wait.strategy.Wait;
 public class AbstractITBase extends JpaBase {
 
     private static final GenericContainer PAYARA = makeService(PG);
-    static final UriBuilder API_URI = UriBuilder.fromUri(URI.create("http://" + containerIp(PAYARA) + ":8080")).path("/api");
+    public static final UriBuilder API_URI = UriBuilder.fromUri(URI.create("http://" + containerIp(PAYARA) + ":8080")).path("/api");
 
     private static GenericContainer makeService(DBCPostgreSQLContainer pg) {
         String dockerImagePostfix = System.getProperty("docker.image.postfix", "-current:latest");
         GenericContainer container = new GenericContainer("holdings-items-content-service" + dockerImagePostfix)
                 .withLogConsumer(new Slf4jLogConsumer(LoggerFactory.getLogger("dk.dbc.PAYARA")))
                 .withEnv("JAVA_MAX_HEAP_SIZE", "1G")
+                .withEnv("DEVELOPER_MODE", "true")
                 .withEnv("HOLDINGS_ITEMS_POSTGRES_URL", pg.getPayaraDockerJdbcUrl())
                 .withEnv("COREPO_SOLR_URL", "zk://not-configured/nowhere")
                 .withEnv("LOG__dk_dbc", "DEBUG")
+                .withEnv("DISABLE_AUTHENTICATION", "true")
+                .withEnv("IDP_RIGHTS", "HOLDINGSUPDATE,READ")
+                .withEnv("IDP_URL", "http://localhost/idpservice/api/v1/")
                 .withExposedPorts(8080)
                 .waitingFor(Wait.forHttp("/health"))
                 .withStartupTimeout(Duration.ofMinutes(3));

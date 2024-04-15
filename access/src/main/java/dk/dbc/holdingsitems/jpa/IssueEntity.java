@@ -108,7 +108,7 @@ public class IssueEntity implements Serializable {
     @Column(nullable = false)
     protected String trackingId;
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "owner", orphanRemoval = true, cascade = {CascadeType.MERGE, CascadeType.PERSIST})
+    @OneToMany(fetch = FetchType.EAGER, mappedBy = "owner", orphanRemoval = true, cascade = {CascadeType.MERGE, CascadeType.PERSIST})
     protected Set<ItemEntity> items;
 
     @MapsId("collection") // Refers to pk(IssueKey).collection
