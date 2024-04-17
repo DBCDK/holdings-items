@@ -38,7 +38,7 @@ public class UpdateV1 {
     @Path("completeHoldingsItemsUpdate")
     @Timed
     public Response completeHoldingsItemsUpdate(CompleteHoldingsItemsUpdateRequest req) {
-        log.debug("req = {}", req);
+        log.info("Complete {}", req);
         String trackingId = req.getTrackingId();
         if (trackingId == null) {
             trackingId = UUID.randomUUID().toString();
@@ -64,7 +64,7 @@ public class UpdateV1 {
     @Path("holdingsItemsUpdate")
     @Timed
     public Response holdingsItemsUpdate(HoldingsItemsUpdateRequest req) {
-        log.debug("req = {}", req);
+        log.info("Update: {}", req);
         String trackingId = req.getTrackingId();
         if (trackingId == null) {
             trackingId = UUID.randomUUID().toString();
@@ -90,7 +90,7 @@ public class UpdateV1 {
     @Path("onlineHoldingsItemsUpdate")
     @Timed
     public Response onlineHoldingsItemsUpdate(OnlineHoldingsItemsUpdateRequest req) {
-        log.debug("req = {}", req);
+        log.info("Online: {}", req);
         String trackingId = req.getTrackingId();
         if (trackingId == null) {
             trackingId = UUID.randomUUID().toString();
