@@ -3,6 +3,7 @@ package dk.dbc.holdingsitems.facade;
 import dk.dbc.soap.facade.service.AbstractSoapServiceWithRestClient;
 import dk.dbc.soap.facade.service.AbstractSoapServletWithRestClient;
 import dk.dbc.soap.facade.service.SoapMain;
+import io.micrometer.prometheus.PrometheusMeterRegistry;
 import picocli.CommandLine;
 
 public class HoldingsItemsFacade extends AbstractSoapServiceWithRestClient {
@@ -14,8 +15,8 @@ public class HoldingsItemsFacade extends AbstractSoapServiceWithRestClient {
     public String target;
 
     @Override
-    public AbstractSoapServletWithRestClient getServlet() throws Exception {
-        return new HoldingItemsUpdateServlet(this);
+    public AbstractSoapServletWithRestClient getServlet(PrometheusMeterRegistry registry) throws Exception {
+        return new HoldingItemsUpdateServlet(this, registry);
     }
 
     public static void main(String[] args) {

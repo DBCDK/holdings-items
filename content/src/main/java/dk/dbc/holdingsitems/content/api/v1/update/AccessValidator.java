@@ -119,7 +119,7 @@ public class AccessValidator {
                     response.getRights().stream()
                             .anyMatch(r -> r.getProductName().equalsIgnoreCase(productName) &&
                                              r.getName().equalsIgnoreCase(name))) {
-                    int actualAgencyId = Integer.valueOf(auth.getGroupIdAut());
+                    int actualAgencyId = Integer.parseInt(auth.getGroupIdAut());
                     if (actualAgencyId != expectedAgencyId)
                         throw new UpdateException(HoldingsItemsUpdateStatusEnum.FAILED_INVALID_AGENCY, "Authenticated agencyId mismatched updated agencyId");
                 } else {
