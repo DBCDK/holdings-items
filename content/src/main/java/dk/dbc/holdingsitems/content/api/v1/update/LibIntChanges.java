@@ -24,17 +24,21 @@ public class LibIntChanges {
 
     public LibIntChanges(BibliographicItemEntity entity) {
         this.entity = entity;
-        this.oldStatus = entity.stream()
+        Map<String, ItemEntity> allItems = entity.stream()
                 .flatMap(IssueEntity::stream)
+                .collect(Collectors.toMap(ItemEntity::getItemId, i -> i, (l, r) -> l.getModified().isBefore(r.getModified()) ? l : r));
+        this.oldStatus = allItems.values().stream()
                 .collect(Collectors.toMap(ItemEntity::getItemId, ItemEntity::getStatus));
     }
 
     public String report(boolean complete) {
-        Map<String, Status> newStatus = entity.stream()
+
+        Map<String, ItemEntity> allItems = entity.stream()
                 .flatMap(IssueEntity::stream)
+                .collect(Collectors.toMap(ItemEntity::getItemId, i -> i, (l, r) -> l.getModified().isBefore(r.getModified()) ? l : r));
+        Map<String, Status> newStatus = allItems.values().stream()
                 .collect(Collectors.toMap(ItemEntity::getItemId, ItemEntity::getStatus));
-        Map<String, Instant> modified = entity.stream()
-                .flatMap(IssueEntity::stream)
+        Map<String, Instant> modified = allItems.values().stream()
                 .collect(Collectors.toMap(ItemEntity::getItemId, ItemEntity::getModified));
 
         ObjectNode json = O.createObjectNode()
