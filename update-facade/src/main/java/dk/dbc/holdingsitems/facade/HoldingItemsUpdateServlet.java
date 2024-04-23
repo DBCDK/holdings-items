@@ -30,6 +30,10 @@ public class HoldingItemsUpdateServlet extends AbstractSoapServletWithRestClient
     private final Counter requests;
     private final Counter badOperation;
     private final Counter failures;
+    private final Counter soapFailures;
+    private final Counter completeFailures;
+    private final Counter updateFailures;
+    private final Counter onlineFailures;
 
     public HoldingItemsUpdateServlet(HoldingsItemsFacade config, PrometheusMeterRegistry registry) throws JAXBException {
         super(config, "holdingsItemsUpdate.wsdl");
@@ -40,6 +44,10 @@ public class HoldingItemsUpdateServlet extends AbstractSoapServletWithRestClient
         this.requests = registry.counter("requests");
         this.badOperation = registry.counter("bad-operation");
         this.failures = registry.counter("failures");
+        this.soapFailures = registry.counter("soap-failures");
+        this.completeFailures = registry.counter("complete-failures");
+        this.updateFailures = registry.counter("update-failures");
+        this.onlineFailures = registry.counter("online-failures");
 
     }
 
@@ -51,30 +59,46 @@ public class HoldingItemsUpdateServlet extends AbstractSoapServletWithRestClient
                 return completeTimer.recordCallable(() -> {
                     Object req = unmarshall(element, CompleteHoldingsItemsUpdate.class)
                             .getCompleteHoldingsItemsUpdateRequest();
-                    return client.target(baseUri.resolve(operation))
+                    HoldingsItemsUpdateResponse resp = client.target(baseUri.resolve(operation))
                             .request(MediaType.APPLICATION_JSON_TYPE)
                             .header(HttpHeader.X_FORWARDED_FOR.asString(), remoteIp)
                             .post(Entity.json(req), HoldingsItemsUpdateResponse.class);
+                    if (resp.getHoldingsItemsUpdateResult().getHoldingsItemsUpdateStatus() != HoldingsItemsUpdateStatusEnum.OK) {
+                        failures.increment();
+                        completeFailures.increment();
+                    }
+                    return resp;
                 });
             case "holdingsItemsUpdate":
                 return updateTimer.recordCallable(() -> {
                     Object req = unmarshall(element, HoldingsItemsUpdate.class)
                             .getHoldingsItemsUpdateRequest();
-                    return client.target(baseUri.resolve(operation))
+                    HoldingsItemsUpdateResponse resp = client.target(baseUri.resolve(operation))
                             .request(MediaType.APPLICATION_JSON_TYPE)
                             .header(HttpHeader.X_FORWARDED_FOR.asString(), remoteIp)
                             .post(Entity.json(req), HoldingsItemsUpdateResponse.class);
+                    if (resp.getHoldingsItemsUpdateResult().getHoldingsItemsUpdateStatus() != HoldingsItemsUpdateStatusEnum.OK) {
+                        failures.increment();
+                        updateFailures.increment();
+                    }
+                    return resp;
                 });
             case "onlineHoldingsItemsUpdate":
                 return onlineTimer.recordCallable(() -> {
                     Object req = unmarshall(element, OnlineHoldingsItemsUpdate.class)
                             .getOnlineHoldingsItemsUpdateRequest();
-                    return client.target(baseUri.resolve(operation))
+                    HoldingsItemsUpdateResponse resp = client.target(baseUri.resolve(operation))
                             .request(MediaType.APPLICATION_JSON_TYPE)
                             .header(HttpHeader.X_FORWARDED_FOR.asString(), remoteIp)
                             .post(Entity.json(req), HoldingsItemsUpdateResponse.class);
+                    if (resp.getHoldingsItemsUpdateResult().getHoldingsItemsUpdateStatus() != HoldingsItemsUpdateStatusEnum.OK) {
+                        failures.increment();
+                        onlineFailures.increment();
+                    }
+                    return resp;
                 });
             default:
+                failures.increment();
                 badOperation.increment();
                 throw new UnsupportedOperationException("Operation not implemented");
         }
@@ -82,6 +106,7 @@ public class HoldingItemsUpdateServlet extends AbstractSoapServletWithRestClient
 
     @Override
     protected Object processError(String operation, String error, String remoteIp) throws Exception {
+        soapFailures.increment();
         failures.increment();
         log.warn("Got a faulty request to: {}, reason: {}", operation, error);
         HoldingsItemsUpdateResponse resp = new HoldingsItemsUpdateResponse();
