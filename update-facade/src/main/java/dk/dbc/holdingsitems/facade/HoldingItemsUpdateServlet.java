@@ -20,6 +20,9 @@ import java.net.URI;
 import jakarta.ws.rs.client.Entity;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.xml.bind.JAXBException;
+import java.util.EnumMap;
+import java.util.EnumSet;
+import java.util.Locale;
 import java.util.stream.Collectors;
 import org.eclipse.jetty.http.HttpHeader;
 import org.slf4j.Logger;
@@ -41,6 +44,7 @@ public class HoldingItemsUpdateServlet extends AbstractSoapServletWithRestClient
     private final Counter completeFailures;
     private final Counter updateFailures;
     private final Counter onlineFailures;
+    private final EnumMap<HoldingsItemsUpdateStatusEnum, Counter> errors;
 
     public HoldingItemsUpdateServlet(HoldingsItemsFacade config, PrometheusMeterRegistry registry) throws JAXBException {
         super(config, "holdingsItemsUpdate.wsdl");
@@ -55,6 +59,10 @@ public class HoldingItemsUpdateServlet extends AbstractSoapServletWithRestClient
         this.completeFailures = registry.counter("complete-failures");
         this.updateFailures = registry.counter("update-failures");
         this.onlineFailures = registry.counter("online-failures");
+        this.errors = EnumSet.complementOf(EnumSet.of(HoldingsItemsUpdateStatusEnum.OK))
+                .stream()
+                .collect(Collectors.toMap(k -> k, k -> registry.counter("errors", "type", k.toString().toLowerCase(Locale.ROOT)),
+                                          (l, r) -> r, () -> new EnumMap<HoldingsItemsUpdateStatusEnum, Counter>(HoldingsItemsUpdateStatusEnum.class)));
     }
 
     @Override
@@ -77,6 +85,7 @@ public class HoldingItemsUpdateServlet extends AbstractSoapServletWithRestClient
                         log.debug("Request:\n{}", dealyedLog(element, SharedInstances::toXMLStringOrError));
                         failures.increment();
                         completeFailures.increment();
+                        errors.get(resp.getHoldingsItemsUpdateResult().getHoldingsItemsUpdateStatus()).increment();
                     }
                     return resp;
                 });
@@ -96,6 +105,7 @@ public class HoldingItemsUpdateServlet extends AbstractSoapServletWithRestClient
                         log.debug("Request:\n{}", dealyedLog(element, SharedInstances::toXMLStringOrError));
                         failures.increment();
                         updateFailures.increment();
+                        errors.get(resp.getHoldingsItemsUpdateResult().getHoldingsItemsUpdateStatus()).increment();
                     }
                     return resp;
                 });
@@ -115,6 +125,7 @@ public class HoldingItemsUpdateServlet extends AbstractSoapServletWithRestClient
                         log.debug("Request:\n{}", dealyedLog(element, SharedInstances::toXMLStringOrError));
                         failures.increment();
                         onlineFailures.increment();
+                        errors.get(resp.getHoldingsItemsUpdateResult().getHoldingsItemsUpdateStatus()).increment();
                     }
                     return resp;
                 });
