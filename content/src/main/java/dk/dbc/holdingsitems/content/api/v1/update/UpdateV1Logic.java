@@ -171,7 +171,7 @@ public class UpdateV1Logic {
                     IssueEntity issue = root.issue(holding.getIssueId(), modified);
                     updateIssue(holding, issue, modified, trackingId);
                     for (HoldingsItem holdingsItem : holding.getHoldingsItem()) {
-                        if (hasNewerItem(root, holdingsItem.getItemId(), modified))
+                        if (hasNewerItem(root, holding.getIssueId(), holdingsItem.getItemId(), modified))
                             continue;
                         ItemEntity item = issue.item(holdingsItem.getItemId(), modified);
                         switch (holdingsItem.getStatus()) {
@@ -278,32 +278,43 @@ public class UpdateV1Logic {
         return changed;
     }
 
-    private boolean hasNewerItem(BibliographicItemEntity root, String itemId, Instant modified) {
-        List<ItemEntity> allItems = root.stream()
+    private boolean hasNewerItem(BibliographicItemEntity root, String issueId, String itemId, Instant modified) {
+        Iterator<ItemEntity> iterator = root.stream()
                 .flatMap(IssueEntity::stream)
                 .filter(i -> i.getStatus() != Status.ONLINE)
                 .filter(i -> itemId.equals(i.getItemId()))
                 .sorted(Comparator.comparing(ItemEntity::getModified).reversed())
-                .collect(Collectors.toList());
-        if (!allItems.isEmpty()) {
-            Iterator<ItemEntity> iterator = allItems.iterator();
-            ItemEntity first = iterator.next();
-            while (iterator.hasNext()) {
-                ItemEntity removableItem = iterator.next();
-                IssueEntity removableIssue = root.issue(removableItem.getIssueId(), modified);
-                removableIssue.removeItem(removableItem);
-                if (removableIssue.isEmpty()) {
-                    root.removeIssue(removableIssue);
-                }
+                .iterator();
+        // has no items with that id
+        if (!iterator.hasNext())
+            return false;
+        ItemEntity first = iterator.next();
+        boolean firstIsOlder = first.getModified().isBefore(modified);
+
+        // remove all extra (db cleanup)
+        while (iterator.hasNext()) {
+            ItemEntity removableItem = iterator.next();
+            if (firstIsOlder && removableItem.getIssueId().equals(issueId)) // Keep this to be modified
+                continue;
+            IssueEntity removableIssue = root.issue(removableItem.getIssueId(), modified);
+            removableIssue.removeItem(removableItem);
+            if (removableIssue.isEmpty()) {
+                root.removeIssue(removableIssue);
             }
-            if (first.getModified().isAfter(modified))
-                return true;
+        }
+
+        if (!firstIsOlder)
+            return true;
+
+        // remove if it is old and not the one we want to modify
+        if (!first.getIssueId().equals(issueId)) {
             IssueEntity removableIssue = root.issue(first.getIssueId(), modified);
             removableIssue.removeItem(first);
             if (removableIssue.isEmpty()) {
                 root.removeIssue(removableIssue);
             }
         }
+
         return false;
     }
 
