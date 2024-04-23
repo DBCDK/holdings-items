@@ -12,6 +12,7 @@ import dk.dbc.oss.ns.holdingsitemsupdate.OnlineBibliographicItem;
 import dk.dbc.oss.ns.holdingsitemsupdate.OnlineHoldingsItemsUpdate;
 import dk.dbc.oss.ns.holdingsitemsupdate.OnlineHoldingsItemsUpdateRequest;
 import dk.dbc.soap.facade.service.AbstractSoapServletWithRestClient;
+import dk.dbc.soap.facade.service.SharedInstances;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.prometheus.PrometheusMeterRegistry;
@@ -54,7 +55,6 @@ public class HoldingItemsUpdateServlet extends AbstractSoapServletWithRestClient
         this.completeFailures = registry.counter("complete-failures");
         this.updateFailures = registry.counter("update-failures");
         this.onlineFailures = registry.counter("online-failures");
-
     }
 
     @Override
@@ -74,6 +74,7 @@ public class HoldingItemsUpdateServlet extends AbstractSoapServletWithRestClient
                                  req.getAgencyId(), req.getCompleteBibliographicItem().getBibliographicRecordId(),
                                  resp.getHoldingsItemsUpdateResult().getHoldingsItemsUpdateStatus(),
                                  resp.getHoldingsItemsUpdateResult().getHoldingsItemsUpdateStatusMessage());
+                        log.debug("Request:\n{}", dealyedLog(element, SharedInstances::toXMLStringOrError));
                         failures.increment();
                         completeFailures.increment();
                     }
@@ -92,6 +93,7 @@ public class HoldingItemsUpdateServlet extends AbstractSoapServletWithRestClient
                                  req.getAgencyId(), req.getBibliographicItem().stream().map(BibliographicItem::getBibliographicRecordId).collect(Collectors.joining(",")),
                                  resp.getHoldingsItemsUpdateResult().getHoldingsItemsUpdateStatus(),
                                  resp.getHoldingsItemsUpdateResult().getHoldingsItemsUpdateStatusMessage());
+                        log.debug("Request:\n{}", dealyedLog(element, SharedInstances::toXMLStringOrError));
                         failures.increment();
                         updateFailures.increment();
                     }
@@ -110,6 +112,7 @@ public class HoldingItemsUpdateServlet extends AbstractSoapServletWithRestClient
                                  req.getAgencyId(), req.getOnlineBibliographicItem().stream().map(OnlineBibliographicItem::getBibliographicRecordId).collect(Collectors.joining(",")),
                                  resp.getHoldingsItemsUpdateResult().getHoldingsItemsUpdateStatus(),
                                  resp.getHoldingsItemsUpdateResult().getHoldingsItemsUpdateStatusMessage());
+                        log.debug("Request:\n{}", dealyedLog(element, SharedInstances::toXMLStringOrError));
                         failures.increment();
                         onlineFailures.increment();
                     }
