@@ -26,6 +26,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -170,6 +171,8 @@ public class UpdateV1Logic {
                     IssueEntity issue = root.issue(holding.getIssueId(), modified);
                     updateIssue(holding, issue, modified, trackingId);
                     for (HoldingsItem holdingsItem : holding.getHoldingsItem()) {
+                        if (hasNewerItem(root, holdingsItem.getItemId(), modified))
+                            continue;
                         ItemEntity item = issue.item(holdingsItem.getItemId(), modified);
                         switch (holdingsItem.getStatus()) {
                             case ONLINE:
@@ -181,6 +184,9 @@ public class UpdateV1Logic {
                                 updateItem(holdingsItem, item, modified, trackingId);
                                 break;
                         }
+                    }
+                    if (issue.isEmpty()) {
+                        root.removeIssue(issue);
                     }
                 }
                 root.save();
@@ -270,6 +276,35 @@ public class UpdateV1Logic {
             item.setTrackingId(trackingId);
         }
         return changed;
+    }
+
+    private boolean hasNewerItem(BibliographicItemEntity root, String itemId, Instant modified) {
+        List<ItemEntity> allItems = root.stream()
+                .flatMap(IssueEntity::stream)
+                .filter(i -> i.getStatus() != Status.ONLINE)
+                .filter(i -> itemId.equals(i.getItemId()))
+                .sorted(Comparator.comparing(ItemEntity::getModified).reversed())
+                .collect(Collectors.toList());
+        if (!allItems.isEmpty()) {
+            Iterator<ItemEntity> iterator = allItems.iterator();
+            ItemEntity first = iterator.next();
+            while (iterator.hasNext()) {
+                ItemEntity removableItem = iterator.next();
+                IssueEntity removableIssue = root.issue(removableItem.getIssueId(), modified);
+                removableIssue.removeItem(removableItem);
+                if (removableIssue.isEmpty()) {
+                    root.removeIssue(removableIssue);
+                }
+            }
+            if (first.getModified().isAfter(modified))
+                return true;
+            IssueEntity removableIssue = root.issue(first.getIssueId(), modified);
+            removableIssue.removeItem(first);
+            if (removableIssue.isEmpty()) {
+                root.removeIssue(removableIssue);
+            }
+        }
+        return false;
     }
 
     private static Status convert(StatusType status) {

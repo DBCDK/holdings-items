@@ -158,6 +158,26 @@ public class UpdateV1Test extends JpaBase {
         });
         testItems(700000, "a", "a/2/i1", "a/1/i2", "a//");
         testQueue("complete/700000/a");
+
+
+        // move item from one issue to another
+        jpa(em -> {
+            bean(em).holdingsItemsUpdate(new HoldingsItemsUpdateRequest()
+                    .useAgencyId(700000)
+                    .useAuthentication(null)
+                    .useTrackingId("fool")
+                    .useBibliographicItem(bibliographic("a")
+                            .useModificationTimeStamp(ts(Instant.now().plus(1, DAYS)))
+                            .useHolding(new Holding()
+                                    .useExpectedDeliveryDate(Instant.now().plus(5, DAYS))
+                                    .useIssueId("x")
+                                    .useIssueText("Volume 1")
+                                    .useReadyForLoan(0L)
+                                    .useHoldingsItem(holdingsItem("i2")
+                                            .useStatus(StatusType.ON_SHELF)))));
+        });
+        testItems(700000, "a", "a/2/i1", "a/x/i2", "a//");
+        testQueue("update/700000/a");
     }
 
     private CompleteBibliographicItem complete(String bibliographicRecordId) {
