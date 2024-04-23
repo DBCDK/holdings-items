@@ -1,11 +1,16 @@
 package dk.dbc.holdingsitems.facade;
 
+import dk.dbc.oss.ns.holdingsitemsupdate.BibliographicItem;
 import dk.dbc.oss.ns.holdingsitemsupdate.CompleteHoldingsItemsUpdate;
+import dk.dbc.oss.ns.holdingsitemsupdate.CompleteHoldingsItemsUpdateRequest;
 import dk.dbc.oss.ns.holdingsitemsupdate.HoldingsItemsUpdate;
+import dk.dbc.oss.ns.holdingsitemsupdate.HoldingsItemsUpdateRequest;
 import dk.dbc.oss.ns.holdingsitemsupdate.HoldingsItemsUpdateResponse;
 import dk.dbc.oss.ns.holdingsitemsupdate.HoldingsItemsUpdateResult;
 import dk.dbc.oss.ns.holdingsitemsupdate.HoldingsItemsUpdateStatusEnum;
+import dk.dbc.oss.ns.holdingsitemsupdate.OnlineBibliographicItem;
 import dk.dbc.oss.ns.holdingsitemsupdate.OnlineHoldingsItemsUpdate;
+import dk.dbc.oss.ns.holdingsitemsupdate.OnlineHoldingsItemsUpdateRequest;
 import dk.dbc.soap.facade.service.AbstractSoapServletWithRestClient;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Timer;
@@ -14,6 +19,7 @@ import java.net.URI;
 import jakarta.ws.rs.client.Entity;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.xml.bind.JAXBException;
+import java.util.stream.Collectors;
 import org.eclipse.jetty.http.HttpHeader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,13 +63,17 @@ public class HoldingItemsUpdateServlet extends AbstractSoapServletWithRestClient
         switch (operation) {
             case "completeHoldingsItemsUpdate":
                 return completeTimer.recordCallable(() -> {
-                    Object req = unmarshall(element, CompleteHoldingsItemsUpdate.class)
+                    CompleteHoldingsItemsUpdateRequest req = unmarshall(element, CompleteHoldingsItemsUpdate.class)
                             .getCompleteHoldingsItemsUpdateRequest();
                     HoldingsItemsUpdateResponse resp = client.target(baseUri.resolve(operation))
                             .request(MediaType.APPLICATION_JSON_TYPE)
                             .header(HttpHeader.X_FORWARDED_FOR.asString(), remoteIp)
                             .post(Entity.json(req), HoldingsItemsUpdateResponse.class);
                     if (resp.getHoldingsItemsUpdateResult().getHoldingsItemsUpdateStatus() != HoldingsItemsUpdateStatusEnum.OK) {
+                        log.warn("completeHoldingsItemsUpdate ({}/{}) returned: {}/{}",
+                                 req.getAgencyId(), req.getCompleteBibliographicItem().getBibliographicRecordId(),
+                                 resp.getHoldingsItemsUpdateResult().getHoldingsItemsUpdateStatus(),
+                                 resp.getHoldingsItemsUpdateResult().getHoldingsItemsUpdateStatusMessage());
                         failures.increment();
                         completeFailures.increment();
                     }
@@ -71,13 +81,17 @@ public class HoldingItemsUpdateServlet extends AbstractSoapServletWithRestClient
                 });
             case "holdingsItemsUpdate":
                 return updateTimer.recordCallable(() -> {
-                    Object req = unmarshall(element, HoldingsItemsUpdate.class)
+                    HoldingsItemsUpdateRequest req = unmarshall(element, HoldingsItemsUpdate.class)
                             .getHoldingsItemsUpdateRequest();
                     HoldingsItemsUpdateResponse resp = client.target(baseUri.resolve(operation))
                             .request(MediaType.APPLICATION_JSON_TYPE)
                             .header(HttpHeader.X_FORWARDED_FOR.asString(), remoteIp)
                             .post(Entity.json(req), HoldingsItemsUpdateResponse.class);
                     if (resp.getHoldingsItemsUpdateResult().getHoldingsItemsUpdateStatus() != HoldingsItemsUpdateStatusEnum.OK) {
+                        log.warn("holdingsItemsUpdate ({}/{}) returned: {}/{}",
+                                 req.getAgencyId(), req.getBibliographicItem().stream().map(BibliographicItem::getBibliographicRecordId).collect(Collectors.joining(",")),
+                                 resp.getHoldingsItemsUpdateResult().getHoldingsItemsUpdateStatus(),
+                                 resp.getHoldingsItemsUpdateResult().getHoldingsItemsUpdateStatusMessage());
                         failures.increment();
                         updateFailures.increment();
                     }
@@ -85,13 +99,17 @@ public class HoldingItemsUpdateServlet extends AbstractSoapServletWithRestClient
                 });
             case "onlineHoldingsItemsUpdate":
                 return onlineTimer.recordCallable(() -> {
-                    Object req = unmarshall(element, OnlineHoldingsItemsUpdate.class)
+                    OnlineHoldingsItemsUpdateRequest req = unmarshall(element, OnlineHoldingsItemsUpdate.class)
                             .getOnlineHoldingsItemsUpdateRequest();
                     HoldingsItemsUpdateResponse resp = client.target(baseUri.resolve(operation))
                             .request(MediaType.APPLICATION_JSON_TYPE)
                             .header(HttpHeader.X_FORWARDED_FOR.asString(), remoteIp)
                             .post(Entity.json(req), HoldingsItemsUpdateResponse.class);
                     if (resp.getHoldingsItemsUpdateResult().getHoldingsItemsUpdateStatus() != HoldingsItemsUpdateStatusEnum.OK) {
+                        log.warn("onlineHoldingsItemsUpdate ({}/{}) returned: {}/{}",
+                                 req.getAgencyId(), req.getOnlineBibliographicItem().stream().map(OnlineBibliographicItem::getBibliographicRecordId).collect(Collectors.joining(",")),
+                                 resp.getHoldingsItemsUpdateResult().getHoldingsItemsUpdateStatus(),
+                                 resp.getHoldingsItemsUpdateResult().getHoldingsItemsUpdateStatusMessage());
                         failures.increment();
                         onlineFailures.increment();
                     }
