@@ -26,6 +26,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -170,6 +171,8 @@ public class UpdateV1Logic {
                     IssueEntity issue = root.issue(holding.getIssueId(), modified);
                     updateIssue(holding, issue, modified, trackingId);
                     for (HoldingsItem holdingsItem : holding.getHoldingsItem()) {
+                        if (hasNewerItem(root, holding.getIssueId(), holdingsItem.getItemId(), modified))
+                            continue;
                         ItemEntity item = issue.item(holdingsItem.getItemId(), modified);
                         switch (holdingsItem.getStatus()) {
                             case ONLINE:
@@ -181,6 +184,9 @@ public class UpdateV1Logic {
                                 updateItem(holdingsItem, item, modified, trackingId);
                                 break;
                         }
+                    }
+                    if (issue.isEmpty()) {
+                        root.removeIssue(issue);
                     }
                 }
                 root.save();
@@ -270,6 +276,46 @@ public class UpdateV1Logic {
             item.setTrackingId(trackingId);
         }
         return changed;
+    }
+
+    private boolean hasNewerItem(BibliographicItemEntity root, String issueId, String itemId, Instant modified) {
+        Iterator<ItemEntity> iterator = root.stream()
+                .flatMap(IssueEntity::stream)
+                .filter(i -> i.getStatus() != Status.ONLINE)
+                .filter(i -> itemId.equals(i.getItemId()))
+                .sorted(Comparator.comparing(ItemEntity::getModified).reversed())
+                .iterator();
+        // has no items with that id
+        if (!iterator.hasNext())
+            return false;
+        ItemEntity first = iterator.next();
+        boolean firstIsOlder = first.getModified().isBefore(modified);
+
+        // remove all extra (db cleanup)
+        while (iterator.hasNext()) {
+            ItemEntity removableItem = iterator.next();
+            if (firstIsOlder && removableItem.getIssueId().equals(issueId)) // Keep this to be modified
+                continue;
+            IssueEntity removableIssue = root.issue(removableItem.getIssueId(), modified);
+            removableIssue.removeItem(removableItem);
+            if (removableIssue.isEmpty()) {
+                root.removeIssue(removableIssue);
+            }
+        }
+
+        if (!firstIsOlder)
+            return true;
+
+        // remove if it is old and not the one we want to modify
+        if (!first.getIssueId().equals(issueId)) {
+            IssueEntity removableIssue = root.issue(first.getIssueId(), modified);
+            removableIssue.removeItem(first);
+            if (removableIssue.isEmpty()) {
+                root.removeIssue(removableIssue);
+            }
+        }
+
+        return false;
     }
 
     private static Status convert(StatusType status) {
