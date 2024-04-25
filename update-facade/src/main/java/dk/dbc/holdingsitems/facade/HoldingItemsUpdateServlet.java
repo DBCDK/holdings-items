@@ -54,9 +54,9 @@ public class HoldingItemsUpdateServlet extends AbstractSoapServletWithRestClient
         super(config, "holdingsItemsUpdate.wsdl");
         this.registry = registry;
         this.baseUri = URI.create(config.target.endsWith("/") ? config.target : config.target + "/");
-        this.completeTimer = registry.timer("complete");
-        this.updateTimer = registry.timer("update");
-        this.onlineTimer = registry.timer("online");
+        this.completeTimer = registry.timer("request_timings", "type", "complete");
+        this.updateTimer = registry.timer("request_timings", "type", "update");
+        this.onlineTimer = registry.timer("request_timings", "type", "online");
         this.requests = registry.counter("requests");
         this.failures = registry.counter("failures");
         this.soapSyntaxError = registry.counter("errors", "type", "soap_request");
