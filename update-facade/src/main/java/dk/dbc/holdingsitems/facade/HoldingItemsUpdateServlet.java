@@ -13,6 +13,7 @@ import dk.dbc.oss.ns.holdingsitemsupdate.OnlineHoldingsItemsUpdate;
 import dk.dbc.oss.ns.holdingsitemsupdate.OnlineHoldingsItemsUpdateRequest;
 import dk.dbc.soap.facade.service.AbstractSoapServletWithRestClient;
 import dk.dbc.soap.facade.service.SharedInstances;
+import dk.dbc.soap.facade.service.TimingRecorder;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.prometheus.PrometheusMeterRegistry;
@@ -40,6 +41,7 @@ public class HoldingItemsUpdateServlet extends AbstractSoapServletWithRestClient
     private final Timer completeTimer;
     private final Timer updateTimer;
     private final Timer onlineTimer;
+    private final Timer badRequestTimer;
     private final Counter requests;
     private final Counter failures;
     private final Counter soapSyntaxError;
@@ -57,6 +59,7 @@ public class HoldingItemsUpdateServlet extends AbstractSoapServletWithRestClient
         this.completeTimer = registry.timer("request_timings", "type", "complete");
         this.updateTimer = registry.timer("request_timings", "type", "update");
         this.onlineTimer = registry.timer("request_timings", "type", "online");
+        this.badRequestTimer = registry.timer("request_timings", "type", "bad_request");
         this.requests = registry.counter("requests");
         this.failures = registry.counter("failures");
         this.soapSyntaxError = registry.counter("errors", "type", "soap_request");
@@ -80,89 +83,89 @@ public class HoldingItemsUpdateServlet extends AbstractSoapServletWithRestClient
     }
 
     @Override
-    protected Object processRequest(String operation, Element element, String remoteIp) throws Exception {
+    protected Object processRequest(String operation, Element element, TimingRecorder timingRecorder, String remoteIp) throws Exception {
         requests.increment();
         switch (operation) {
             case "completeHoldingsItemsUpdate":
-                return completeTimer.recordCallable(() -> {
-                    try {
-                        CompleteHoldingsItemsUpdateRequest req = unmarshall(element, CompleteHoldingsItemsUpdate.class)
-                                .getCompleteHoldingsItemsUpdateRequest();
-                        HoldingsItemsUpdateResponse resp = client.target(baseUri.resolve(operation))
-                                .request(MediaType.APPLICATION_JSON_TYPE)
-                                .header(HttpHeader.X_FORWARDED_FOR.asString(), remoteIp)
-                                .post(Entity.json(req), HoldingsItemsUpdateResponse.class);
-                        if (resp.getHoldingsItemsUpdateResult().getHoldingsItemsUpdateStatus() != HoldingsItemsUpdateStatusEnum.OK) {
-                            log.warn("completeHoldingsItemsUpdate ({}/{}) returned: {}/{}",
-                                     req.getAgencyId(), req.getCompleteBibliographicItem().getBibliographicRecordId(),
-                                     resp.getHoldingsItemsUpdateResult().getHoldingsItemsUpdateStatus(),
-                                     resp.getHoldingsItemsUpdateResult().getHoldingsItemsUpdateStatusMessage());
-                            log.debug("Request:\n{}", dealyedLog(element, SharedInstances::toXMLStringOrError));
-                            failures.increment();
-                            completeFailures.increment();
-                            responseErrors.get(resp.getHoldingsItemsUpdateResult().getHoldingsItemsUpdateStatus()).increment();
-                        }
-                        return resp;
-                    } catch (WebApplicationException ex) {
-                        httpErrors.computeIfAbsent(ex.getResponse().getStatusInfo().toEnum(), this::createHttpErrorCounter)
-                                .increment();
-                        throw ex;
+                timingRecorder.set(completeTimer);
+                try {
+                    CompleteHoldingsItemsUpdateRequest req = unmarshall(element, CompleteHoldingsItemsUpdate.class)
+                            .getCompleteHoldingsItemsUpdateRequest();
+                    HoldingsItemsUpdateResponse resp = client.target(baseUri.resolve(operation))
+                            .request(MediaType.APPLICATION_JSON_TYPE)
+                            .header(HttpHeader.X_FORWARDED_FOR.asString(), remoteIp)
+                            .post(Entity.json(req), HoldingsItemsUpdateResponse.class);
+                    if (resp.getHoldingsItemsUpdateResult().getHoldingsItemsUpdateStatus() != HoldingsItemsUpdateStatusEnum.OK) {
+                        log.warn("completeHoldingsItemsUpdate ({}/{}) from: {} returned: {}/{}",
+                                 req.getAgencyId(), req.getCompleteBibliographicItem().getBibliographicRecordId(),
+                                 remoteIp,
+                                 resp.getHoldingsItemsUpdateResult().getHoldingsItemsUpdateStatus(),
+                                 resp.getHoldingsItemsUpdateResult().getHoldingsItemsUpdateStatusMessage());
+                        log.debug("Request:\n{}", dealyedLog(element, SharedInstances::toXMLStringOrError));
+                        failures.increment();
+                        completeFailures.increment();
+                        responseErrors.get(resp.getHoldingsItemsUpdateResult().getHoldingsItemsUpdateStatus()).increment();
                     }
-                });
+                    return resp;
+                } catch (WebApplicationException ex) {
+                    httpErrors.computeIfAbsent(ex.getResponse().getStatusInfo().toEnum(), this::createHttpErrorCounter)
+                            .increment();
+                    throw ex;
+                }
             case "holdingsItemsUpdate":
-                return updateTimer.recordCallable(() -> {
-                    try {
-
-                        HoldingsItemsUpdateRequest req = unmarshall(element, HoldingsItemsUpdate.class)
-                                .getHoldingsItemsUpdateRequest();
-                        HoldingsItemsUpdateResponse resp = client.target(baseUri.resolve(operation))
-                                .request(MediaType.APPLICATION_JSON_TYPE)
-                                .header(HttpHeader.X_FORWARDED_FOR.asString(), remoteIp)
-                                .post(Entity.json(req), HoldingsItemsUpdateResponse.class);
-                        if (resp.getHoldingsItemsUpdateResult().getHoldingsItemsUpdateStatus() != HoldingsItemsUpdateStatusEnum.OK) {
-                            log.warn("holdingsItemsUpdate ({}/{}) returned: {}/{}",
-                                     req.getAgencyId(), req.getBibliographicItem().stream().map(BibliographicItem::getBibliographicRecordId).collect(Collectors.joining(",")),
-                                     resp.getHoldingsItemsUpdateResult().getHoldingsItemsUpdateStatus(),
-                                     resp.getHoldingsItemsUpdateResult().getHoldingsItemsUpdateStatusMessage());
-                            log.debug("Request:\n{}", dealyedLog(element, SharedInstances::toXMLStringOrError));
-                            failures.increment();
-                            updateFailures.increment();
-                            responseErrors.get(resp.getHoldingsItemsUpdateResult().getHoldingsItemsUpdateStatus()).increment();
-                        }
-                        return resp;
-                    } catch (WebApplicationException ex) {
-                        httpErrors.computeIfAbsent(ex.getResponse().getStatusInfo().toEnum(), this::createHttpErrorCounter)
-                                .increment();
-                        throw ex;
+                timingRecorder.set(updateTimer);
+                try {
+                    HoldingsItemsUpdateRequest req = unmarshall(element, HoldingsItemsUpdate.class)
+                            .getHoldingsItemsUpdateRequest();
+                    HoldingsItemsUpdateResponse resp = client.target(baseUri.resolve(operation))
+                            .request(MediaType.APPLICATION_JSON_TYPE)
+                            .header(HttpHeader.X_FORWARDED_FOR.asString(), remoteIp)
+                            .post(Entity.json(req), HoldingsItemsUpdateResponse.class);
+                    if (resp.getHoldingsItemsUpdateResult().getHoldingsItemsUpdateStatus() != HoldingsItemsUpdateStatusEnum.OK) {
+                        log.warn("holdingsItemsUpdate ({}/{}) from: {} returned: {}/{}",
+                                 req.getAgencyId(), req.getBibliographicItem().stream().map(BibliographicItem::getBibliographicRecordId).collect(Collectors.joining(",")),
+                                 remoteIp,
+                                 resp.getHoldingsItemsUpdateResult().getHoldingsItemsUpdateStatus(),
+                                 resp.getHoldingsItemsUpdateResult().getHoldingsItemsUpdateStatusMessage());
+                        log.debug("Request:\n{}", dealyedLog(element, SharedInstances::toXMLStringOrError));
+                        failures.increment();
+                        updateFailures.increment();
+                        responseErrors.get(resp.getHoldingsItemsUpdateResult().getHoldingsItemsUpdateStatus()).increment();
                     }
-                });
+                    return resp;
+                } catch (WebApplicationException ex) {
+                    httpErrors.computeIfAbsent(ex.getResponse().getStatusInfo().toEnum(), this::createHttpErrorCounter)
+                            .increment();
+                    throw ex;
+                }
             case "onlineHoldingsItemsUpdate":
-                return onlineTimer.recordCallable(() -> {
-                    try {
-                        OnlineHoldingsItemsUpdateRequest req = unmarshall(element, OnlineHoldingsItemsUpdate.class)
-                                .getOnlineHoldingsItemsUpdateRequest();
-                        HoldingsItemsUpdateResponse resp = client.target(baseUri.resolve(operation))
-                                .request(MediaType.APPLICATION_JSON_TYPE)
-                                .header(HttpHeader.X_FORWARDED_FOR.asString(), remoteIp)
-                                .post(Entity.json(req), HoldingsItemsUpdateResponse.class);
-                        if (resp.getHoldingsItemsUpdateResult().getHoldingsItemsUpdateStatus() != HoldingsItemsUpdateStatusEnum.OK) {
-                            log.warn("onlineHoldingsItemsUpdate ({}/{}) returned: {}/{}",
-                                     req.getAgencyId(), req.getOnlineBibliographicItem().stream().map(OnlineBibliographicItem::getBibliographicRecordId).collect(Collectors.joining(",")),
-                                     resp.getHoldingsItemsUpdateResult().getHoldingsItemsUpdateStatus(),
-                                     resp.getHoldingsItemsUpdateResult().getHoldingsItemsUpdateStatusMessage());
-                            log.debug("Request:\n{}", dealyedLog(element, SharedInstances::toXMLStringOrError));
-                            failures.increment();
-                            onlineFailures.increment();
-                            responseErrors.get(resp.getHoldingsItemsUpdateResult().getHoldingsItemsUpdateStatus()).increment();
-                        }
-                        return resp;
-                    } catch (WebApplicationException ex) {
-                        httpErrors.computeIfAbsent(ex.getResponse().getStatusInfo().toEnum(), this::createHttpErrorCounter)
-                                .increment();
-                        throw ex;
+                timingRecorder.set(onlineTimer);
+                try {
+                    OnlineHoldingsItemsUpdateRequest req = unmarshall(element, OnlineHoldingsItemsUpdate.class)
+                            .getOnlineHoldingsItemsUpdateRequest();
+                    HoldingsItemsUpdateResponse resp = client.target(baseUri.resolve(operation))
+                            .request(MediaType.APPLICATION_JSON_TYPE)
+                            .header(HttpHeader.X_FORWARDED_FOR.asString(), remoteIp)
+                            .post(Entity.json(req), HoldingsItemsUpdateResponse.class);
+                    if (resp.getHoldingsItemsUpdateResult().getHoldingsItemsUpdateStatus() != HoldingsItemsUpdateStatusEnum.OK) {
+                        log.warn("onlineHoldingsItemsUpdate ({}/{}) from: {} returned: {}/{}",
+                                 req.getAgencyId(), req.getOnlineBibliographicItem().stream().map(OnlineBibliographicItem::getBibliographicRecordId).collect(Collectors.joining(",")),
+                                 remoteIp,
+                                 resp.getHoldingsItemsUpdateResult().getHoldingsItemsUpdateStatus(),
+                                 resp.getHoldingsItemsUpdateResult().getHoldingsItemsUpdateStatusMessage());
+                        log.debug("Request:\n{}", dealyedLog(element, SharedInstances::toXMLStringOrError));
+                        failures.increment();
+                        onlineFailures.increment();
+                        responseErrors.get(resp.getHoldingsItemsUpdateResult().getHoldingsItemsUpdateStatus()).increment();
                     }
-                });
+                    return resp;
+                } catch (WebApplicationException ex) {
+                    httpErrors.computeIfAbsent(ex.getResponse().getStatusInfo().toEnum(), this::createHttpErrorCounter)
+                            .increment();
+                    throw ex;
+                }
             default:
+                timingRecorder.set(badRequestTimer);
                 failures.increment();
                 badOperation.increment();
                 throw new UnsupportedOperationException("Operation not implemented");
@@ -170,10 +173,11 @@ public class HoldingItemsUpdateServlet extends AbstractSoapServletWithRestClient
     }
 
     @Override
-    protected Object processError(String operation, String error, String remoteIp) throws Exception {
+    protected Object processError(String operation, String error, TimingRecorder timingRecorder, String remoteIp) throws Exception {
+        timingRecorder.set(badRequestTimer);
         soapSyntaxError.increment();
         failures.increment();
-        log.warn("Got a faulty request to: {}, reason: {}", operation, error);
+        log.warn("Got a faulty request to: {} from: {}, reason: {}", operation, remoteIp, error);
         HoldingsItemsUpdateResponse resp = new HoldingsItemsUpdateResponse();
         HoldingsItemsUpdateResult result = new HoldingsItemsUpdateResult();
         result.setHoldingsItemsUpdateStatus(HoldingsItemsUpdateStatusEnum.FAILED_UPDATE_INTERNAL_ERROR);
