@@ -13,7 +13,8 @@ import dk.dbc.oss.ns.holdingsitemsupdate.OnlineHoldingsItemsUpdate;
 import dk.dbc.oss.ns.holdingsitemsupdate.OnlineHoldingsItemsUpdateRequest;
 import dk.dbc.soap.facade.service.AbstractSoapServletWithRestClient;
 import dk.dbc.soap.facade.service.SharedInstances;
-import dk.dbc.soap.facade.service.TimingRecorder;
+import dk.dbc.soap.facade.service.instrumentation.MDCContext;
+import dk.dbc.soap.facade.service.instrumentation.TimingRecorder;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.prometheus.PrometheusMeterRegistry;
@@ -83,7 +84,7 @@ public class HoldingItemsUpdateServlet extends AbstractSoapServletWithRestClient
     }
 
     @Override
-    protected Object processRequest(String operation, Element element, TimingRecorder timingRecorder, String remoteIp) throws Exception {
+    protected Object processRequest(String operation, Element element, TimingRecorder timingRecorder, MDCContext mdc, String remoteIp) throws Exception {
         requests.increment();
         switch (operation) {
             case "completeHoldingsItemsUpdate":
@@ -91,6 +92,8 @@ public class HoldingItemsUpdateServlet extends AbstractSoapServletWithRestClient
                 try {
                     CompleteHoldingsItemsUpdateRequest req = unmarshall(element, CompleteHoldingsItemsUpdate.class)
                             .getCompleteHoldingsItemsUpdateRequest();
+                    if (req.getAuthentication() != null && req.getAuthentication().getGroupIdAut() != null)
+                        mdc.with("agencyId", req.getAuthentication().getGroupIdAut());
                     HoldingsItemsUpdateResponse resp = client.target(baseUri.resolve(operation))
                             .request(MediaType.APPLICATION_JSON_TYPE)
                             .header(HttpHeader.X_FORWARDED_FOR.asString(), remoteIp)
@@ -117,6 +120,8 @@ public class HoldingItemsUpdateServlet extends AbstractSoapServletWithRestClient
                 try {
                     HoldingsItemsUpdateRequest req = unmarshall(element, HoldingsItemsUpdate.class)
                             .getHoldingsItemsUpdateRequest();
+                    if (req.getAuthentication() != null && req.getAuthentication().getGroupIdAut() != null)
+                        mdc.with("agencyId", req.getAuthentication().getGroupIdAut());
                     HoldingsItemsUpdateResponse resp = client.target(baseUri.resolve(operation))
                             .request(MediaType.APPLICATION_JSON_TYPE)
                             .header(HttpHeader.X_FORWARDED_FOR.asString(), remoteIp)
@@ -143,6 +148,8 @@ public class HoldingItemsUpdateServlet extends AbstractSoapServletWithRestClient
                 try {
                     OnlineHoldingsItemsUpdateRequest req = unmarshall(element, OnlineHoldingsItemsUpdate.class)
                             .getOnlineHoldingsItemsUpdateRequest();
+                    if (req.getAuthentication() != null && req.getAuthentication().getGroupIdAut() != null)
+                        mdc.with("agencyId", req.getAuthentication().getGroupIdAut());
                     HoldingsItemsUpdateResponse resp = client.target(baseUri.resolve(operation))
                             .request(MediaType.APPLICATION_JSON_TYPE)
                             .header(HttpHeader.X_FORWARDED_FOR.asString(), remoteIp)
@@ -173,7 +180,7 @@ public class HoldingItemsUpdateServlet extends AbstractSoapServletWithRestClient
     }
 
     @Override
-    protected Object processError(String operation, String error, TimingRecorder timingRecorder, String remoteIp) throws Exception {
+    protected Object processError(String operation, String error, TimingRecorder timingRecorder, MDCContext mdc, String remoteIp) throws Exception {
         timingRecorder.set(badRequestTimer);
         soapSyntaxError.increment();
         failures.increment();
