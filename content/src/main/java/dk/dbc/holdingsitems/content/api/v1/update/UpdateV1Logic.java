@@ -19,9 +19,10 @@ import dk.dbc.oss.ns.holdingsitemsupdate.ModificationTimeStamp;
 import dk.dbc.oss.ns.holdingsitemsupdate.OnlineBibliographicItem;
 import dk.dbc.oss.ns.holdingsitemsupdate.OnlineHoldingsItemsUpdateRequest;
 import dk.dbc.oss.ns.holdingsitemsupdate.StatusType;
+import jakarta.ejb.TransactionAttribute;
+import jakarta.ejb.TransactionAttributeType;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
-import jakarta.transaction.Transactional;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -73,7 +74,7 @@ public class UpdateV1Logic {
     @ConfigProperty(name = "UPDATE_ORIGINAL_SUPPLIER", defaultValue = "UPDATE_ORIGINAL")
     String updateOriginalSupplier;
 
-    @Transactional(Transactional.TxType.REQUIRES_NEW)
+    @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
     public void ensureRoot(int agencyId, String bibliographicRecordId) {
         BibliographicItemEntity entity = BibliographicItemEntity.from(em, agencyId, bibliographicRecordId,
                                                                       Instant.EPOCH, LocalDate.EPOCH);
@@ -83,7 +84,7 @@ public class UpdateV1Logic {
         }
     }
 
-    @Transactional(Transactional.TxType.REQUIRES_NEW)
+    @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
     public void complete(CompleteHoldingsItemsUpdateRequest req) throws HoldingsItemsException, UpdateException {
         String trackingId = req.getTrackingId();
         HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, trackingId);
@@ -145,7 +146,7 @@ public class UpdateV1Logic {
         }
     }
 
-    @Transactional(Transactional.TxType.REQUIRES_NEW)
+    @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
     public void update(HoldingsItemsUpdateRequest req) throws HoldingsItemsException, UpdateException {
         String trackingId = req.getTrackingId();
         HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, trackingId);
@@ -197,7 +198,7 @@ public class UpdateV1Logic {
         }
     }
 
-    @Transactional(Transactional.TxType.REQUIRES_NEW)
+    @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
     public void online(OnlineHoldingsItemsUpdateRequest req) throws HoldingsItemsException {
         String trackingId = req.getTrackingId();
         HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, trackingId);
