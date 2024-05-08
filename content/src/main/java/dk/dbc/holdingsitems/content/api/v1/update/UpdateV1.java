@@ -2,6 +2,7 @@ package dk.dbc.holdingsitems.content.api.v1.update;
 
 import dk.dbc.holdingsitems.HoldingsItemsException;
 import dk.dbc.log.LogWith;
+import dk.dbc.oss.ns.holdingsitemsupdate.Authentication;
 import dk.dbc.oss.ns.holdingsitemsupdate.CompleteHoldingsItemsUpdateRequest;
 import dk.dbc.oss.ns.holdingsitemsupdate.HoldingsItemsUpdateRequest;
 import dk.dbc.oss.ns.holdingsitemsupdate.HoldingsItemsUpdateResponse;
@@ -38,6 +39,8 @@ public class UpdateV1 {
     @Path("completeHoldingsItemsUpdate")
     @Timed
     public Response completeHoldingsItemsUpdate(CompleteHoldingsItemsUpdateRequest req) {
+        Authentication authentication = req.getAuthentication();
+        req.setAuthentication(null);
         log.info("Complete {}", req);
         String trackingId = req.getTrackingId();
         if (trackingId == null) {
@@ -45,7 +48,7 @@ public class UpdateV1 {
             req.setTrackingId(trackingId);
         }
         try (LogWith l = LogWith.track(trackingId)) {
-            accessValidator.validate(req.getAuthentication(), req.getAgencyId());
+            accessValidator.validate(authentication, req.getAgencyId());
             ensureRoot(req.getAgencyId(), req.getCompleteBibliographicItem().getBibliographicRecordId());
             updateLogic.complete(req);
             return updateResponse(HoldingsItemsUpdateStatusEnum.OK, "ok");
@@ -64,6 +67,8 @@ public class UpdateV1 {
     @Path("holdingsItemsUpdate")
     @Timed
     public Response holdingsItemsUpdate(HoldingsItemsUpdateRequest req) {
+        Authentication authentication = req.getAuthentication();
+        req.setAuthentication(null);
         log.info("Update: {}", req);
         String trackingId = req.getTrackingId();
         if (trackingId == null) {
@@ -71,7 +76,7 @@ public class UpdateV1 {
             req.setTrackingId(trackingId);
         }
         try (LogWith l = LogWith.track(trackingId)) {
-            accessValidator.validate(req.getAuthentication(), req.getAgencyId());
+            accessValidator.validate(authentication, req.getAgencyId());
             req.getBibliographicItem().forEach(item -> ensureRoot(req.getAgencyId(), item.getBibliographicRecordId()));
             updateLogic.update(req);
             return updateResponse(HoldingsItemsUpdateStatusEnum.OK, "ok");
@@ -90,6 +95,8 @@ public class UpdateV1 {
     @Path("onlineHoldingsItemsUpdate")
     @Timed
     public Response onlineHoldingsItemsUpdate(OnlineHoldingsItemsUpdateRequest req) {
+        Authentication authentication = req.getAuthentication();
+        req.setAuthentication(null);
         log.info("Online: {}", req);
         String trackingId = req.getTrackingId();
         if (trackingId == null) {
@@ -97,7 +104,7 @@ public class UpdateV1 {
             req.setTrackingId(trackingId);
         }
         try (LogWith l = LogWith.track(trackingId)) {
-            accessValidator.validate(req.getAuthentication(), req.getAgencyId());
+            accessValidator.validate(authentication, req.getAgencyId());
             req.getOnlineBibliographicItem().forEach(item -> ensureRoot(req.getAgencyId(), item.getBibliographicRecordId()));
             updateLogic.online(req);
             return updateResponse(HoldingsItemsUpdateStatusEnum.OK, "ok");
