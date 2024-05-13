@@ -3,11 +3,13 @@ package dk.dbc.holdingsitems.content.api.v1.update;
 import dk.dbc.holdingsitems.HoldingsItemsException;
 import dk.dbc.log.LogWith;
 import dk.dbc.oss.ns.holdingsitemsupdate.Authentication;
+import dk.dbc.oss.ns.holdingsitemsupdate.BibliographicItem;
 import dk.dbc.oss.ns.holdingsitemsupdate.CompleteHoldingsItemsUpdateRequest;
 import dk.dbc.oss.ns.holdingsitemsupdate.HoldingsItemsUpdateRequest;
 import dk.dbc.oss.ns.holdingsitemsupdate.HoldingsItemsUpdateResponse;
 import dk.dbc.oss.ns.holdingsitemsupdate.HoldingsItemsUpdateResult;
 import dk.dbc.oss.ns.holdingsitemsupdate.HoldingsItemsUpdateStatusEnum;
+import dk.dbc.oss.ns.holdingsitemsupdate.OnlineBibliographicItem;
 import dk.dbc.oss.ns.holdingsitemsupdate.OnlineHoldingsItemsUpdateRequest;
 import jakarta.ejb.EJBException;
 import jakarta.inject.Inject;
@@ -18,6 +20,7 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.util.UUID;
+import java.util.stream.Stream;
 import org.eclipse.microprofile.metrics.annotation.Timed;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,7 +52,7 @@ public class UpdateV1 {
         }
         try (LogWith l = LogWith.track(trackingId)) {
             accessValidator.validate(authentication, req.getAgencyId());
-            ensureRoot(req.getAgencyId(), req.getCompleteBibliographicItem().getBibliographicRecordId());
+            ensureRoot(req.getAgencyId(), Stream.of(req.getCompleteBibliographicItem().getBibliographicRecordId()));
             updateLogic.complete(req);
             return updateResponse(HoldingsItemsUpdateStatusEnum.OK, "ok");
         } catch (UpdateException ex) {
@@ -77,7 +80,7 @@ public class UpdateV1 {
         }
         try (LogWith l = LogWith.track(trackingId)) {
             accessValidator.validate(authentication, req.getAgencyId());
-            req.getBibliographicItem().forEach(item -> ensureRoot(req.getAgencyId(), item.getBibliographicRecordId()));
+            ensureRoot(req.getAgencyId(), req.getBibliographicItem().stream().map(BibliographicItem::getBibliographicRecordId));
             updateLogic.update(req);
             return updateResponse(HoldingsItemsUpdateStatusEnum.OK, "ok");
         } catch (UpdateException ex) {
@@ -105,7 +108,7 @@ public class UpdateV1 {
         }
         try (LogWith l = LogWith.track(trackingId)) {
             accessValidator.validate(authentication, req.getAgencyId());
-            req.getOnlineBibliographicItem().forEach(item -> ensureRoot(req.getAgencyId(), item.getBibliographicRecordId()));
+            ensureRoot(req.getAgencyId(), req.getOnlineBibliographicItem().stream().map(OnlineBibliographicItem::getBibliographicRecordId));
             updateLogic.online(req);
             return updateResponse(HoldingsItemsUpdateStatusEnum.OK, "ok");
         } catch (UpdateException ex) {
@@ -132,11 +135,12 @@ public class UpdateV1 {
         return Response.ok(resp).build();
     }
 
-    private void ensureRoot(int agencyId, String bibliographicRecordId) {
+    private void ensureRoot(int agencyId, Stream<String> bibliographicRecordIds) {
         try {
-            updateLogic.ensureRoot(agencyId, bibliographicRecordId);
+            updateLogic.ensureRoot(agencyId, bibliographicRecordIds);
         } catch (EJBException ex) {
-            log.debug("Error ensuring root");
+            log.error("Error wnsuring root: {}", ex.getMessage());
+            log.debug("Error wnsuring root: ", ex);
         }
     }
 }

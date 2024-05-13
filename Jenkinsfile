@@ -40,7 +40,7 @@ pipeline {
                     def label = imageLabel()
 
                     def status = sh returnStatus: true, script:  """
-                        rm -rf \$WORKSPACE/.repo
+                        rm -rf \$WORKSPACE/.repo/dk/dbc
                         mvn -B -Dmaven.repo.local=\$WORKSPACE/.repo dependency:resolve dependency:resolve-plugins >/dev/null 2>&1 || true
                         mvn -B -Dmaven.repo.local=\$WORKSPACE/.repo clean
                         mvn -B -Dmaven.repo.local=\$WORKSPACE/.repo -Ddocker.extra.args="--pull" -Ddocker.image.version=${version} -Ddocker.image.label=${label} --fail-at-end org.jacoco:jacoco-maven-plugin:prepare-agent install -Dsurefire.useFile=false

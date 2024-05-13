@@ -19,9 +19,11 @@ import dk.dbc.oss.ns.holdingsitemsupdate.ModificationTimeStamp;
 import dk.dbc.oss.ns.holdingsitemsupdate.OnlineBibliographicItem;
 import dk.dbc.oss.ns.holdingsitemsupdate.OnlineHoldingsItemsUpdateRequest;
 import dk.dbc.oss.ns.holdingsitemsupdate.StatusType;
+import jakarta.ejb.Stateless;
+import jakarta.ejb.TransactionAttribute;
+import jakarta.ejb.TransactionAttributeType;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
-import jakarta.transaction.Transactional;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -30,6 +32,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +40,7 @@ import org.slf4j.LoggerFactory;
 import static dk.dbc.oss.ns.holdingsitemsupdate.StatusType.DECOMMISSIONED;
 import static dk.dbc.oss.ns.holdingsitemsupdate.StatusType.ONLINE;
 
+@Stateless
 public class UpdateV1Logic {
 
     private static final Logger log = LoggerFactory.getLogger(UpdateV1Logic.class);
@@ -73,17 +77,23 @@ public class UpdateV1Logic {
     @ConfigProperty(name = "UPDATE_ORIGINAL_SUPPLIER", defaultValue = "UPDATE_ORIGINAL")
     String updateOriginalSupplier;
 
-    @Transactional(Transactional.TxType.REQUIRES_NEW)
-    public void ensureRoot(int agencyId, String bibliographicRecordId) {
-        BibliographicItemEntity entity = BibliographicItemEntity.from(em, agencyId, bibliographicRecordId,
-                                                                      Instant.EPOCH, LocalDate.EPOCH);
-        if (entity.isNew()) {
-            entity.setTrackingId("");
-            entity.save();
-        }
+    @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
+    public void ensureRoot(int agencyId, Stream<String> bibliographicRecordIds) {
+        bibliographicRecordIds
+                .unordered()
+                .distinct()
+                .sorted()
+                .forEach(bibliographicRecordId -> {
+                    BibliographicItemEntity entity = BibliographicItemEntity.from(em, agencyId, bibliographicRecordId,
+                                                                                  Instant.EPOCH, LocalDate.EPOCH);
+                    if (entity.isNew()) {
+                        entity.setTrackingId("");
+                        entity.save();
+                    }
+                });
     }
 
-    @Transactional(Transactional.TxType.REQUIRES_NEW)
+    @TransactionAttribute(TransactionAttributeType.REQUIRED)
     public void complete(CompleteHoldingsItemsUpdateRequest req) throws HoldingsItemsException, UpdateException {
         String trackingId = req.getTrackingId();
         HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, trackingId);
@@ -94,6 +104,9 @@ public class UpdateV1Logic {
             Predicate<Instant> canChange = makeCanChange(modified);
             BibliographicItemEntity root = BibliographicItemEntity.from(em, req.getAgencyId(), bibliographic.getBibliographicRecordId(),
                                                                         Instant.EPOCH, LocalDate.EPOCH);
+            if (root.isNew()) {
+                log.warn("Didn't find a root - ensureRoot failed?");
+            }
             LibIntChanges libIntChanges = new LibIntChanges(root);
             if (canChange.test(root.getModified()) || root.isNew()) {
                 root.setModified(modified);
@@ -145,7 +158,7 @@ public class UpdateV1Logic {
         }
     }
 
-    @Transactional(Transactional.TxType.REQUIRES_NEW)
+    @TransactionAttribute(TransactionAttributeType.REQUIRED)
     public void update(HoldingsItemsUpdateRequest req) throws HoldingsItemsException, UpdateException {
         String trackingId = req.getTrackingId();
         HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, trackingId);
@@ -160,6 +173,9 @@ public class UpdateV1Logic {
                 Predicate<Instant> canChange = makeCanChange(modified);
                 BibliographicItemEntity root = BibliographicItemEntity.from(em, req.getAgencyId(), bibliographic.getBibliographicRecordId(),
                                                                             Instant.EPOCH, LocalDate.EPOCH);
+                if (root.isNew()) {
+                    log.warn("Didn't find a root - ensureRoot failed?");
+                }
                 LibIntChanges libIntChanges = new LibIntChanges(root);
                 if (canChange.test(root.getModified()) || root.isNew()) {
                     root.setModified(modified);
@@ -197,7 +213,7 @@ public class UpdateV1Logic {
         }
     }
 
-    @Transactional(Transactional.TxType.REQUIRES_NEW)
+    @TransactionAttribute(TransactionAttributeType.REQUIRED)
     public void online(OnlineHoldingsItemsUpdateRequest req) throws HoldingsItemsException {
         String trackingId = req.getTrackingId();
         HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, trackingId);
@@ -211,6 +227,9 @@ public class UpdateV1Logic {
                 Predicate<Instant> canChange = makeCanChange(modified);
                 BibliographicItemEntity root = BibliographicItemEntity.from(em, req.getAgencyId(), bibliographic.getBibliographicRecordId(),
                                                                             Instant.EPOCH, LocalDate.EPOCH);
+                if (root.isNew()) {
+                    log.warn("Didn't find a root - ensureRoot failed?");
+                }
                 LibIntChanges libIntChanges = new LibIntChanges(root);
                 IssueEntity issue = root.issue("", modified);
 
