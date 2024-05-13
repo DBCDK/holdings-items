@@ -19,9 +19,11 @@ import dk.dbc.oss.ns.holdingsitemsupdate.ModificationTimeStamp;
 import dk.dbc.oss.ns.holdingsitemsupdate.OnlineBibliographicItem;
 import dk.dbc.oss.ns.holdingsitemsupdate.OnlineHoldingsItemsUpdateRequest;
 import dk.dbc.oss.ns.holdingsitemsupdate.StatusType;
+import jakarta.ejb.Stateless;
+import jakarta.ejb.TransactionAttribute;
+import jakarta.ejb.TransactionAttributeType;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
-import jakarta.transaction.Transactional;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -38,6 +40,7 @@ import org.slf4j.LoggerFactory;
 import static dk.dbc.oss.ns.holdingsitemsupdate.StatusType.DECOMMISSIONED;
 import static dk.dbc.oss.ns.holdingsitemsupdate.StatusType.ONLINE;
 
+@Stateless
 public class UpdateV1Logic {
 
     private static final Logger log = LoggerFactory.getLogger(UpdateV1Logic.class);
@@ -74,7 +77,7 @@ public class UpdateV1Logic {
     @ConfigProperty(name = "UPDATE_ORIGINAL_SUPPLIER", defaultValue = "UPDATE_ORIGINAL")
     String updateOriginalSupplier;
 
-    @Transactional(Transactional.TxType.REQUIRES_NEW)
+    @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
     public void ensureRoot(int agencyId, Stream<String> bibliographicRecordIds) {
         bibliographicRecordIds
                 .unordered()
@@ -90,6 +93,7 @@ public class UpdateV1Logic {
                 });
     }
 
+    @TransactionAttribute(TransactionAttributeType.REQUIRED)
     public void complete(CompleteHoldingsItemsUpdateRequest req) throws HoldingsItemsException, UpdateException {
         String trackingId = req.getTrackingId();
         HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, trackingId);
@@ -154,6 +158,7 @@ public class UpdateV1Logic {
         }
     }
 
+    @TransactionAttribute(TransactionAttributeType.REQUIRED)
     public void update(HoldingsItemsUpdateRequest req) throws HoldingsItemsException, UpdateException {
         String trackingId = req.getTrackingId();
         HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, trackingId);
@@ -208,6 +213,7 @@ public class UpdateV1Logic {
         }
     }
 
+    @TransactionAttribute(TransactionAttributeType.REQUIRED)
     public void online(OnlineHoldingsItemsUpdateRequest req) throws HoldingsItemsException {
         String trackingId = req.getTrackingId();
         HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, trackingId);
