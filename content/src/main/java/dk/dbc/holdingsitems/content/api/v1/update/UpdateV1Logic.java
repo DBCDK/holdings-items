@@ -76,14 +76,18 @@ public class UpdateV1Logic {
 
     @Transactional(Transactional.TxType.REQUIRES_NEW)
     public void ensureRoot(int agencyId, Stream<String> bibliographicRecordIds) {
-        bibliographicRecordIds.sorted().forEach(bibliographicRecordId -> {
-            BibliographicItemEntity entity = BibliographicItemEntity.from(em, agencyId, bibliographicRecordId,
-                                                                          Instant.EPOCH, LocalDate.EPOCH);
-            if (entity.isNew()) {
-                entity.setTrackingId("");
-                entity.save();
-            }
-        });
+        bibliographicRecordIds
+                .unordered()
+                .distinct()
+                .sorted()
+                .forEach(bibliographicRecordId -> {
+                    BibliographicItemEntity entity = BibliographicItemEntity.from(em, agencyId, bibliographicRecordId,
+                                                                                  Instant.EPOCH, LocalDate.EPOCH);
+                    if (entity.isNew()) {
+                        entity.setTrackingId("");
+                        entity.save();
+                    }
+                });
     }
 
     public void complete(CompleteHoldingsItemsUpdateRequest req) throws HoldingsItemsException, UpdateException {
