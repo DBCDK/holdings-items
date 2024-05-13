@@ -30,6 +30,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,13 +75,15 @@ public class UpdateV1Logic {
     String updateOriginalSupplier;
 
     @Transactional(Transactional.TxType.REQUIRES_NEW)
-    public void ensureRoot(int agencyId, String bibliographicRecordId) {
-        BibliographicItemEntity entity = BibliographicItemEntity.from(em, agencyId, bibliographicRecordId,
-                                                                      Instant.EPOCH, LocalDate.EPOCH);
-        if (entity.isNew()) {
-            entity.setTrackingId("");
-            entity.save();
-        }
+    public void ensureRoot(int agencyId, Stream<String> bibliographicRecordIds) {
+        bibliographicRecordIds.sorted().forEach(bibliographicRecordId -> {
+            BibliographicItemEntity entity = BibliographicItemEntity.from(em, agencyId, bibliographicRecordId,
+                                                                          Instant.EPOCH, LocalDate.EPOCH);
+            if (entity.isNew()) {
+                entity.setTrackingId("");
+                entity.save();
+            }
+        });
     }
 
     public void complete(CompleteHoldingsItemsUpdateRequest req) throws HoldingsItemsException, UpdateException {
