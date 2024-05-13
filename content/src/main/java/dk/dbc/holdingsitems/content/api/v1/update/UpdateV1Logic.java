@@ -83,7 +83,6 @@ public class UpdateV1Logic {
         }
     }
 
-    @Transactional(Transactional.TxType.REQUIRES_NEW)
     public void complete(CompleteHoldingsItemsUpdateRequest req) throws HoldingsItemsException, UpdateException {
         String trackingId = req.getTrackingId();
         HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, trackingId);
@@ -145,7 +144,6 @@ public class UpdateV1Logic {
         }
     }
 
-    @Transactional(Transactional.TxType.REQUIRES_NEW)
     public void update(HoldingsItemsUpdateRequest req) throws HoldingsItemsException, UpdateException {
         String trackingId = req.getTrackingId();
         HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, trackingId);
@@ -197,7 +195,6 @@ public class UpdateV1Logic {
         }
     }
 
-    @Transactional(Transactional.TxType.REQUIRES_NEW)
     public void online(OnlineHoldingsItemsUpdateRequest req) throws HoldingsItemsException {
         String trackingId = req.getTrackingId();
         HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, trackingId);

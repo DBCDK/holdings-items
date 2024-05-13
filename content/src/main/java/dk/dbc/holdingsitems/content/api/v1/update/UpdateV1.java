@@ -136,7 +136,8 @@ public class UpdateV1 {
         try {
             updateLogic.ensureRoot(agencyId, bibliographicRecordId);
         } catch (EJBException ex) {
-            log.debug("Error ensuring root");
+            log.error("Error wnsuring root: {}", ex.getMessage());
+            log.debug("Error wnsuring root: ", ex);
         }
     }
 }
