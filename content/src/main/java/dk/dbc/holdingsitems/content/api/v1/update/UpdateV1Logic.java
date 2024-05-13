@@ -93,6 +93,9 @@ public class UpdateV1Logic {
             Predicate<Instant> canChange = makeCanChange(modified);
             BibliographicItemEntity root = BibliographicItemEntity.from(em, req.getAgencyId(), bibliographic.getBibliographicRecordId(),
                                                                         Instant.EPOCH, LocalDate.EPOCH);
+            if (root.isNew()) {
+                log.warn("Didn't find a root - ensureRoot failed?");
+            }
             LibIntChanges libIntChanges = new LibIntChanges(root);
             if (canChange.test(root.getModified()) || root.isNew()) {
                 root.setModified(modified);
@@ -158,6 +161,9 @@ public class UpdateV1Logic {
                 Predicate<Instant> canChange = makeCanChange(modified);
                 BibliographicItemEntity root = BibliographicItemEntity.from(em, req.getAgencyId(), bibliographic.getBibliographicRecordId(),
                                                                             Instant.EPOCH, LocalDate.EPOCH);
+                if (root.isNew()) {
+                    log.warn("Didn't find a root - ensureRoot failed?");
+                }
                 LibIntChanges libIntChanges = new LibIntChanges(root);
                 if (canChange.test(root.getModified()) || root.isNew()) {
                     root.setModified(modified);
@@ -208,6 +214,9 @@ public class UpdateV1Logic {
                 Predicate<Instant> canChange = makeCanChange(modified);
                 BibliographicItemEntity root = BibliographicItemEntity.from(em, req.getAgencyId(), bibliographic.getBibliographicRecordId(),
                                                                             Instant.EPOCH, LocalDate.EPOCH);
+                if (root.isNew()) {
+                    log.warn("Didn't find a root - ensureRoot failed?");
+                }
                 LibIntChanges libIntChanges = new LibIntChanges(root);
                 IssueEntity issue = root.issue("", modified);
 
