@@ -239,6 +239,7 @@ public class ContentResource {
         log.debug("holdings-by-pid called with agency {}, pids: {}, trackingId: {}", agencyId, pids, trackingId);
         HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, trackingId);
         Map<String, String> pidToBibl = pids.stream()
+                .distinct()
                 .collect(Collectors.toMap(identity(), p -> p.split(":", 2)[1]));
 
         Map<String, Set<ItemEntity>> biblToItems = pidToBibl.values().stream()
