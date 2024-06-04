@@ -88,6 +88,7 @@ public class UpdateV1Logic {
                                                                                   Instant.EPOCH, LocalDate.EPOCH);
                     if (entity.isNew()) {
                         entity.setTrackingId("");
+                        entity.setFirstAccessionDate(LocalDate.now());
                         entity.save();
                     }
                 });
