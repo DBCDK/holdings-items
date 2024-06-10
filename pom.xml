@@ -38,8 +38,6 @@
     <modules>
         <module>content-dto</module>
         <module>access</module>
-        <module>update-ws-transport</module>
-        <module>update-webservice</module>
         <module>solr-indexer</module>
         <module>monitor</module>
         <module>postgres</module>

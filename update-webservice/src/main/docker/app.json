@@ -1,9 +1,0 @@
-{
-    "appName": "holdings-item-update-webservice",
-    "jdbc": {
-        "jdbc/holdings-items": {
-            "url": "${HOLDINGS_ITEMS_POSTGRES_URL}",
-            "maxSize": "${MAX_POOL_SIZE}"
-        } 
-    }
-}
