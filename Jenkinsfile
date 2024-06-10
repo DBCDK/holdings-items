@@ -48,7 +48,7 @@ pipeline {
 
                     // We want code-coverage and pmd/spotbugs even if unittests fails
                     status += sh returnStatus: true, script:  """
-                        mvn -B -Dmaven.repo.local=\$WORKSPACE/.repo -pl !update-ws-transport pmd:pmd pmd:cpd spotbugs:spotbugs javadoc:aggregate -Dspotbugs.excludeFilterFile=src/test/spotbugs/spotbugs-exclude.xml
+                        mvn -B -Dmaven.repo.local=\$WORKSPACE/.repo pmd:pmd pmd:cpd spotbugs:spotbugs javadoc:aggregate -Dspotbugs.excludeFilterFile=src/test/spotbugs/spotbugs-exclude.xml
                     """
 
                     junit testResults: '**/target/*-reports/TEST-*.xml'
@@ -94,7 +94,7 @@ pipeline {
                     def label = imageLabel()
                     if (currentBuild.resultIsBetterOrEqualTo('SUCCESS')) {
                         docker.withRegistry(dockerRepository, 'docker') {
-                            for(def image : ["holdings-items-content-service", "holdings-items-kafka-bridge", "holdings-items-monitor", "holdings-items-postgres", "holdings-items-postgres-content", "holdings-items-purge-tool", "holdings-items-solr-indexer", "holdings-items-update-facade", "holdings-items-update-webservice"]) {
+                            for(def image : ["holdings-items-content-service", "holdings-items-kafka-bridge", "holdings-items-monitor", "holdings-items-postgres", "holdings-items-postgres-content", "holdings-items-purge-tool", "holdings-items-solr-indexer", "holdings-items-update-facade"]) {
                                 def app = docker.image("${image}-${version}:${label}")
                                 app.push()
                                 if (env.BRANCH_NAME == "master") {
