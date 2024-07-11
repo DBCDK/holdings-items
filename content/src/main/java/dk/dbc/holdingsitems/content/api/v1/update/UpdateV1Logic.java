@@ -85,10 +85,9 @@ public class UpdateV1Logic {
                 .sorted()
                 .forEach(bibliographicRecordId -> {
                     BibliographicItemEntity entity = BibliographicItemEntity.from(em, agencyId, bibliographicRecordId,
-                                                                                  Instant.EPOCH, LocalDate.EPOCH);
+                                                                                  Instant.EPOCH, LocalDate.now());
                     if (entity.isNew()) {
                         entity.setTrackingId("");
-                        entity.setFirstAccessionDate(LocalDate.now());
                         entity.save();
                     }
                 });
