@@ -103,7 +103,7 @@ public class UpdateV1Logic {
             Instant modified = modified(bibliographic.getModificationTimeStamp());
             Predicate<Instant> canChange = makeCanChange(modified);
             BibliographicItemEntity root = BibliographicItemEntity.from(em, req.getAgencyId(), bibliographic.getBibliographicRecordId(),
-                                                                        Instant.EPOCH, LocalDate.EPOCH);
+                                                                        Instant.EPOCH, LocalDate.now());
             if (root.isNew()) {
                 log.warn("Didn't find a root - ensureRoot failed?");
             }
@@ -172,7 +172,7 @@ public class UpdateV1Logic {
                 Instant modified = modified(bibliographic.getModificationTimeStamp());
                 Predicate<Instant> canChange = makeCanChange(modified);
                 BibliographicItemEntity root = BibliographicItemEntity.from(em, req.getAgencyId(), bibliographic.getBibliographicRecordId(),
-                                                                            Instant.EPOCH, LocalDate.EPOCH);
+                                                                            Instant.EPOCH, LocalDate.now());
                 if (root.isNew()) {
                     log.warn("Didn't find a root - ensureRoot failed?");
                 }
@@ -226,7 +226,7 @@ public class UpdateV1Logic {
                 Instant modified = modified(bibliographic.getModificationTimeStamp());
                 Predicate<Instant> canChange = makeCanChange(modified);
                 BibliographicItemEntity root = BibliographicItemEntity.from(em, req.getAgencyId(), bibliographic.getBibliographicRecordId(),
-                                                                            Instant.EPOCH, LocalDate.EPOCH);
+                                                                            Instant.EPOCH, LocalDate.now());
                 if (root.isNew()) {
                     log.warn("Didn't find a root - ensureRoot failed?");
                 }
