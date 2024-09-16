@@ -35,7 +35,7 @@ public class Hazelcast {
     public Hazelcast(Map<String, String> extra) {
         HashMap<String, String> env = new HashMap<>(System.getenv());
         env.putAll(extra);
-        try (InputStream is = substInFile("hz.xml", extra)) {
+        try (InputStream is = substInFile("hz.xml", env)) {
             Config hzConfig = new XmlConfigBuilder(is).build();
             hzConfig.setInstanceName(getOrRaise(env, "HOSTNAME"));
             hzConfig.setClassLoader(Hazelcast.class.getClassLoader());
