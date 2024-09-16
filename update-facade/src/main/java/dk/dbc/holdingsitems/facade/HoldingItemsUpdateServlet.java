@@ -37,8 +37,9 @@ public class HoldingItemsUpdateServlet extends AbstractSoapServletWithRestClient
 
     private static final Logger log = LoggerFactory.getLogger(HoldingItemsUpdateServlet.class);
 
-    private final URI baseUri;
+    private final Hazelcast hazelcast;
     private final PrometheusMeterRegistry registry;
+    private final URI baseUri;
     private final Timer completeTimer;
     private final Timer updateTimer;
     private final Timer onlineTimer;
@@ -55,6 +56,7 @@ public class HoldingItemsUpdateServlet extends AbstractSoapServletWithRestClient
 
     public HoldingItemsUpdateServlet(HoldingsItemsFacade config, PrometheusMeterRegistry registry) throws JAXBException {
         super(config, "holdingsItemsUpdate.wsdl");
+        this.hazelcast = new Hazelcast();
         this.registry = registry;
         this.baseUri = URI.create(config.target.endsWith("/") ? config.target : config.target + "/");
         this.completeTimer = registry.timer("request_timings", "type", "complete");
@@ -77,6 +79,19 @@ public class HoldingItemsUpdateServlet extends AbstractSoapServletWithRestClient
         this.completeFailures = registry.counter("method_error", "type", "complete");
         this.updateFailures = registry.counter("method_error", "type", "update");
         this.onlineFailures = registry.counter("method_error", "type", "online");
+        waitForHazelcast();
+    }
+
+    private void waitForHazelcast() throws IllegalStateException {
+        try {
+            for (int i = 0 ; i < 300 * 10 && !hazelcast.isReady() ; i++) {
+                Thread.sleep(100);
+            }
+            if (!hazelcast.isReady())
+                throw new IllegalStateException("Cannot initialize hazelcast");
+        } catch (InterruptedException ex) {
+            throw new IllegalStateException("Cannot initialize hazelcast (interrupted)");
+        }
     }
 
     private Counter createHttpErrorCounter(Response.Status status) {
@@ -94,10 +109,12 @@ public class HoldingItemsUpdateServlet extends AbstractSoapServletWithRestClient
                             .getCompleteHoldingsItemsUpdateRequest();
                     if (req.getAuthentication() != null && req.getAuthentication().getGroupIdAut() != null)
                         mdc.with("agencyId", req.getAuthentication().getGroupIdAut());
-                    HoldingsItemsUpdateResponse resp = client.target(baseUri.resolve(operation))
-                            .request(MediaType.APPLICATION_JSON_TYPE)
-                            .header(HttpHeader.X_FORWARDED_FOR.asString(), remoteIp)
-                            .post(Entity.json(req), HoldingsItemsUpdateResponse.class);
+                    HoldingsItemsUpdateResponse resp = hazelcast.withAgencyLock(
+                            req.getAgencyId(),
+                            () -> client.target(baseUri.resolve(operation))
+                                    .request(MediaType.APPLICATION_JSON_TYPE)
+                                    .header(HttpHeader.X_FORWARDED_FOR.asString(), remoteIp)
+                                    .post(Entity.json(req), HoldingsItemsUpdateResponse.class));
                     if (resp.getHoldingsItemsUpdateResult().getHoldingsItemsUpdateStatus() != HoldingsItemsUpdateStatusEnum.OK) {
                         log.warn("completeHoldingsItemsUpdate ({}/{}) from: {} returned: {}/{}",
                                  req.getAgencyId(), req.getCompleteBibliographicItem().getBibliographicRecordId(),
@@ -122,10 +139,14 @@ public class HoldingItemsUpdateServlet extends AbstractSoapServletWithRestClient
                             .getHoldingsItemsUpdateRequest();
                     if (req.getAuthentication() != null && req.getAuthentication().getGroupIdAut() != null)
                         mdc.with("agencyId", req.getAuthentication().getGroupIdAut());
-                    HoldingsItemsUpdateResponse resp = client.target(baseUri.resolve(operation))
-                            .request(MediaType.APPLICATION_JSON_TYPE)
-                            .header(HttpHeader.X_FORWARDED_FOR.asString(), remoteIp)
-                            .post(Entity.json(req), HoldingsItemsUpdateResponse.class);
+                    HoldingsItemsUpdateResponse resp = hazelcast.withAgencyLock(
+                            req.getAgencyId(),
+                            () ->
+                            client.target(baseUri.resolve(operation))
+                                    .request(MediaType.APPLICATION_JSON_TYPE)
+                                    .header(HttpHeader.X_FORWARDED_FOR.asString(), remoteIp)
+                                    .post(Entity.json(req), HoldingsItemsUpdateResponse.class));
+
                     if (resp.getHoldingsItemsUpdateResult().getHoldingsItemsUpdateStatus() != HoldingsItemsUpdateStatusEnum.OK) {
                         log.warn("holdingsItemsUpdate ({}/{}) from: {} returned: {}/{}",
                                  req.getAgencyId(), req.getBibliographicItem().stream().map(BibliographicItem::getBibliographicRecordId).collect(Collectors.joining(",")),
@@ -150,10 +171,12 @@ public class HoldingItemsUpdateServlet extends AbstractSoapServletWithRestClient
                             .getOnlineHoldingsItemsUpdateRequest();
                     if (req.getAuthentication() != null && req.getAuthentication().getGroupIdAut() != null)
                         mdc.with("agencyId", req.getAuthentication().getGroupIdAut());
-                    HoldingsItemsUpdateResponse resp = client.target(baseUri.resolve(operation))
-                            .request(MediaType.APPLICATION_JSON_TYPE)
-                            .header(HttpHeader.X_FORWARDED_FOR.asString(), remoteIp)
-                            .post(Entity.json(req), HoldingsItemsUpdateResponse.class);
+                    HoldingsItemsUpdateResponse resp = hazelcast.withAgencyLock(
+                            req.getAgencyId(),
+                            () -> client.target(baseUri.resolve(operation))
+                                    .request(MediaType.APPLICATION_JSON_TYPE)
+                                    .header(HttpHeader.X_FORWARDED_FOR.asString(), remoteIp)
+                                    .post(Entity.json(req), HoldingsItemsUpdateResponse.class));
                     if (resp.getHoldingsItemsUpdateResult().getHoldingsItemsUpdateStatus() != HoldingsItemsUpdateStatusEnum.OK) {
                         log.warn("onlineHoldingsItemsUpdate ({}/{}) from: {} returned: {}/{}",
                                  req.getAgencyId(), req.getOnlineBibliographicItem().stream().map(OnlineBibliographicItem::getBibliographicRecordId).collect(Collectors.joining(",")),
