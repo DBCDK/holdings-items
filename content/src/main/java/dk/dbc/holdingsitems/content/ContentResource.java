@@ -23,7 +23,6 @@ import dk.dbc.holdingsitems.content.response.LaesekompasHoldingsEntity;
 import dk.dbc.holdingsitems.TotalStatusCountsForAgency;
 import dk.dbc.holdingsitems.jpa.BibliographicItemDetached;
 import dk.dbc.holdingsitems.jpa.BibliographicItemEntity;
-import dk.dbc.holdingsitems.jpa.ItemEntity;
 import dk.dbc.holdingsitems.jpa.Status;
 import dk.dbc.holdingsitems.jpa.SupersedesEntity;
 import dk.dbc.log.LogWith;
@@ -154,10 +153,9 @@ public class ContentResource {
     @Path("holdings-by-item-id")
     @Produces({MediaType.APPLICATION_JSON})
     @Timed
-    public Response getItemEntity(
-            @QueryParam("agency") Integer agencyId,
-            @QueryParam("itemId") String itemId,
-            @QueryParam("trackingId") @LogAs("trackingId") @GenerateTrackingId String trackingId) {
+    public Response getItemEntity(@QueryParam("agency") Integer agencyId,
+                                  @QueryParam("itemId") String itemId,
+                                  @QueryParam("trackingId") @LogAs("trackingId") @GenerateTrackingId String trackingId) {
         log.info("getItemEntity({}, {})", agencyId, itemId);
         { // argument validation
             if (agencyId == null || agencyId < 0) {
@@ -171,7 +169,10 @@ public class ContentResource {
         }
         log.debug("holdings-by-item-id called with agency: {}, itemId: {}, trackingId: {}", agencyId, itemId, trackingId);
         HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, trackingId);
-        Set<ItemEntity> itemEntities = dao.getItemsFromAgencyIdAndItemId(agencyId, itemId);
+        List<CompleteItemFull> itemEntities = dao.getItemsFromAgencyIdAndItemId(agencyId, itemId)
+                .stream()
+                .map(CompleteItemFull::from)
+                .collect(toList());
         ContentServiceItemResponse res = new ContentServiceItemResponse(trackingId, itemEntities);
         // todo: exception handling?
         return Response.ok(res, MediaType.APPLICATION_JSON_TYPE).build();
@@ -242,11 +243,14 @@ public class ContentResource {
                 .distinct()
                 .collect(Collectors.toMap(identity(), p -> p.split(":", 2)[1]));
 
-        Map<String, Set<ItemEntity>> biblToItems = pidToBibl.values().stream()
+        Map<String, List<CompleteItemFull>> biblToItems = pidToBibl.values().stream()
                 .distinct()
-                .collect(Collectors.toMap(identity(), b -> dao.getItemsFromAgencyAndBibliographicRecordId(agencyId, (String) b)));
+                .collect(Collectors.toMap(identity(), b -> dao.getItemsFromAgencyAndBibliographicRecordId(agencyId, (String) b)
+                                          .stream()
+                                          .map(CompleteItemFull::from)
+                                          .collect(toList())));
 
-        Map<String, Set<ItemEntity>> pidToItems = pidToBibl.entrySet().stream()
+        Map<String, List<CompleteItemFull>> pidToItems = pidToBibl.entrySet().stream()
                 .collect(Collectors.toMap(Map.Entry::getKey, e -> biblToItems.get(e.getValue())));
 
         return Response.ok(new ContentServicePidResponse(trackingId, pidToItems)).build();
