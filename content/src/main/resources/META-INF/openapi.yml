@@ -601,7 +601,7 @@ components:
           maximum: 9999999999
           description: Identifier of the holdings
           nullable: false
-          example: 25912233
+          example: "25912233"
         firstAccessionDate:
           description: When the first item for this material was acquired ISO-8601 format
           type: string
@@ -745,7 +745,7 @@ components:
           maximum: 9999999999
           description: Identifying the holdings as recorded by the database - before supersedes
           nullable: false
-          example: 25912233
+          example: "25912233"
 
     CompleteItem:
       type: object
