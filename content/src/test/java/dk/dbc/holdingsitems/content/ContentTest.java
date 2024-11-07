@@ -171,7 +171,7 @@ public class ContentTest extends JpaBase {
             itemEntity(issueEntity, "1234", Status.ON_SHELF);
             itemEntity(issueEntity, "2345", Status.ON_LOAN);
             bibliographicItemEntity.save();
-            Response response = contentResource.getItemEntities(654321, Arrays.asList("hest:12345678"), "trackPidOnePid");
+            Response response = contentResource.getItemEntities(654321, 654321, Arrays.asList("hest:12345678"), "trackPidOnePid");
             ContentServicePidResponse pidResponse = (ContentServicePidResponse) response.getEntity();
             assertNotNull(pidResponse);
             assertEquals(pidResponse.trackingId, "trackPidOnePid");
@@ -212,7 +212,7 @@ public class ContentTest extends JpaBase {
             itemEntity(issueEntity2, "4321", Status.ON_SHELF);
             bibliographicItemEntity2.save();
 
-            Response response = contentResource.getItemEntities(654321, Arrays.asList("hest:12345678", "fest:87654321"), "trackPidTwoPids");
+            Response response = contentResource.getItemEntities(654321, 654321, Arrays.asList("hest:12345678", "fest:87654321"), "trackPidTwoPids");
             ContentServicePidResponse pidResponse = (ContentServicePidResponse) response.getEntity();
             assertNotNull(pidResponse);
             assertEquals(pidResponse.trackingId, "trackPidTwoPids");
@@ -251,7 +251,7 @@ public class ContentTest extends JpaBase {
             itemEntity(issueEntity, "1234", Status.ON_SHELF);
             itemEntity(issueEntity, "2345", Status.ON_LOAN);
             bibliographicItemEntity.save();
-            Response response = contentResource.getItemEntities(654321, Arrays.asList("hest:123456789"), "trackPidNonExistingPid");
+            Response response = contentResource.getItemEntities(654321, 654321, Arrays.asList("hest:123456789"), "trackPidNonExistingPid");
             ContentServicePidResponse pidResponse = (ContentServicePidResponse) response.getEntity();
             assertNotNull(pidResponse);
             assertEquals(pidResponse.trackingId, "trackPidNonExistingPid");
@@ -268,7 +268,7 @@ public class ContentTest extends JpaBase {
         System.out.println("Test getItemByPid endpoint, no agency");
         jpa(em -> {
             ContentResource contentResource = MockContentResource(em);
-            Response response = contentResource.getItemEntities(-1, Arrays.asList("hest:12345678"), "trackPidNoAgency");
+            Response response = contentResource.getItemEntities(-1, -1, Arrays.asList("hest:12345678"), "trackPidNoAgency");
             assertEquals(response.getStatusInfo().getStatusCode(), Response.Status.BAD_REQUEST.getStatusCode());
         });
     }
@@ -277,7 +277,7 @@ public class ContentTest extends JpaBase {
         ContentResource mock = mock(ContentResource.class);
         mock.em = em;
         doCallRealMethod().when(mock).getItemEntity(anyInt(), anyString(), anyString());
-        doCallRealMethod().when(mock).getItemEntities(anyInt(), anyList(), anyString());
+        doCallRealMethod().when(mock).getItemEntities(anyInt(), anyInt(), anyList(), anyString());
         doCallRealMethod().when(mock).getByBranch(anyInt(), anyString(), anyList(), anyString());
         doCallRealMethod().when(mock).getLaesekompasdataForBibliographicRecordIdsPost(anyString(), anyString());
         doCallRealMethod().when(mock).getComplete(anyInt(), anyString(), anyString());

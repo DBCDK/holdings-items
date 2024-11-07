@@ -199,7 +199,7 @@ public class ContentResource {
             log.error("holdings-by-branch called with no pids");
             return Response.status(Response.Status.BAD_REQUEST).build();
         }
-        log.debug("holdings-by-pid called with branch {},  pids: {}, trackingId: {}", branchId, pids, trackingId);
+        log.debug("holdings-by-branch called with branch {},  pids: {}, trackingId: {}", branchId, pids, trackingId);
         HoldingsItemsDAO dao = HoldingsItemsDAO.newInstance(em, trackingId);
         Set<String> bibliographicIds = pids.stream().map(s -> s.replaceFirst("^\\d+-[a-z0-9]+:", "")).collect(toSet());
 
@@ -223,9 +223,14 @@ public class ContentResource {
     @Produces({MediaType.APPLICATION_JSON})
     @Timed
     public Response getItemEntities(
-            @QueryParam("agency") Integer agencyId,
+            @QueryParam("agency") Integer agency, // Legacy name
+            @QueryParam("agencyId") Integer agencyId, //Preferred name
             @QueryParam("pid") List<String> pids,
             @QueryParam("trackingId") @LogAs("trackingId") @GenerateTrackingId String trackingId) {
+
+        if(agencyId == null && agency != null) // No preferred named parameter use legacy
+            return getItemEntities(agency, agency, pids, trackingId); // Call self with right parameters
+
         log.info("holdings-by-pid({}, {})", agencyId, pids);
         { // argument validation
             if (agencyId == null || agencyId < 0) {

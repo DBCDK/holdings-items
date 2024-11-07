@@ -3,7 +3,9 @@ MAINTAINER os-team
 
 COPY target/docker/*.jar /opt/payara6/jars/
 
-ENV JAVA_MAX_HEAP_SIZE=1G \
+ENV OPENAPI_UI_CONTEXTROOT="http:" \
+    MP_OPENAPI_SERVERS="http:/" \
+    JAVA_MAX_HEAP_SIZE=1G \
     MAX_POOL_SIZE=8 \
     CONTEXT_ROOT=/ \
     HAZELCAST_CLUSTER=
