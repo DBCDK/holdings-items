@@ -229,7 +229,7 @@ public class ContentResource {
             @QueryParam("trackingId") @LogAs("trackingId") @GenerateTrackingId String trackingId) {
 
         if(agencyId == null && agency != null) // No preferred named parameter use legacy
-            return getItemEntities(agency, agency, pids, trackingId);
+            return getItemEntities(agency, agency, pids, trackingId); // Call self with right parameters
 
         log.info("holdings-by-pid({}, {})", agencyId, pids);
         { // argument validation
