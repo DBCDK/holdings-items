@@ -55,6 +55,42 @@
             </plugin>
 
             <plugin>
+                <artifactId>exec-maven-plugin</artifactId>
+                <groupId>org.codehaus.mojo</groupId>
+                <version>3.2.0</version>
+                <executions>
+                    <execution>
+                        <id>openapi-check</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                        <configuration>
+                            <executableDependency>
+                                <groupId>org.openapitools</groupId>
+                                <artifactId>openapi-generator-cli</artifactId>
+                            </executableDependency>
+                            <mainClass>org.openapitools.codegen.OpenAPIGenerator</mainClass>
+                            <arguments>
+                                <argument>validate</argument>
+                                <argument>-i</argument>
+                                <argument>${basedir}/src/main/resources/META-INF/openapi.yml</argument>
+                            </arguments>
+                            <includePluginDependencies>true</includePluginDependencies>
+                            <includeProjectDependencies>false</includeProjectDependencies>
+                        </configuration>
+                    </execution>
+                </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.openapitools</groupId>
+                        <artifactId>openapi-generator-cli</artifactId>
+                        <version>LATEST</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-deploy-plugin</artifactId>
                 <version>2.8.2</version>
@@ -158,6 +194,12 @@
             <groupId>com.fasterxml.jackson.datatype</groupId>
             <artifactId>jackson-datatype-jsr310</artifactId>
             <version>${jackson.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.microprofile-ext.openapi-ext</groupId>
+            <artifactId>openapi-ui</artifactId>
+            <version>2.0.0</version>
         </dependency>
 
         <dependency>

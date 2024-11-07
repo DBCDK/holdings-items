@@ -1,0 +1,872 @@
+openapi: 3.0.0
+info:
+  title: Holdings-Items
+  description: >-
+    Interface for adding/removing/updating/retrieving holdings-items
+  contact:
+    url: mailto:dbc@dbc.dk
+  version: "1.0"
+
+paths:
+  /api/agencies-with-holdings/{bibliographicRecordId}:
+    get:
+      summary: Get information about who has holdings on this id
+      description: Produces a list of agencies, that has active holdings on this id. This is used to determine which
+                   agencies that needs to have a new/updated rawrepo-record in case of changes to location
+      operationId: agenciesWithHoldings
+      parameters:
+      - $ref: "#/components/parameters/bibliographicRecordId"
+      - $ref: "#/components/parameters/trackingId"
+      responses:
+        "400":
+          $ref: "#/components/responses/bad_request"
+        "200":
+          description: The agencies that has holding on this bibliographicRecordId
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgenciesWithHoldings'
+
+  /api/complete/{agencyId}/{bibliographicRecordId}:
+    get:
+      summary: Extract all holdingsdetails about an id for a given agency
+      description: Extract a complete picture of a holding for use in Kafka et.al. This will return 404 in case of a
+                   superceded bibliographicRecordId
+      operationId: getComplete
+      parameters:
+      - $ref: "#/components/parameters/agencyId"
+      - $ref: "#/components/parameters/bibliographicRecordId"
+      - $ref: "#/components/parameters/trackingId"
+      responses:
+        "400":
+          $ref: "#/components/responses/bad_request"
+        "404":
+          $ref: "#/components/responses/not_found"
+        "200":
+          description: All information about issues and items
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Complete'
+
+  /api/holdings-by-agency-id/{agencyId}:
+    get:
+      summary: "*SLOW* get all holdings an agency has"
+      description: Get all bibliographicRecordIds that an agency has items for
+      operationId: getHoldingsItems
+      parameters:
+      - $ref: "#/components/parameters/agencyId"
+      - $ref: "#/components/parameters/trackingId"
+      responses:
+        "400":
+          $ref: "#/components/responses/bad_request"
+        "200":
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: >
+                  00010537
+
+                  00010626
+
+                  00010634
+                  
+                  ...
+          description: All bibliographicRecordIds for the agency. One bibliographicRecordId pr line
+
+  /api/holdings-by-branch:
+    get:
+      summary: Get holdings for a pid limited to a specific branchId
+      description: Finds all holdings that an agency had on a specific branch, that relates to a pid
+      operationId: getByBranch
+      parameters:
+      - $ref: "#/components/parameters/qAgencyId"
+      - $ref: "#/components/parameters/qBranchId"
+      - $ref: "#/components/parameters/qPid"
+      - $ref: "#/components/parameters/trackingId"
+      responses:
+        "400":
+          $ref: "#/components/responses/bad_request"
+        "200":
+          description: Informlation about all holdings that are on this specific branch
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - completeItems
+                properties:
+                  completeItems:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CompleteItem'
+                  trackingId:
+                    $ref: '#/components/schemas/trackingId'
+
+  /api/holdings-by-item-id:
+    get:
+      summary: Inquire about a specific itemId
+      description: Find information related to a specific item, for a given agency. This is returned in a list
+                   of length 0 (if item doesn't exist) or 1 (if it exists).
+      operationId: getItemEntity
+      parameters:
+      - $ref: "#/components/parameters/qAgencyId"
+      - $ref: "#/components/parameters/qItemId"
+      - $ref: "#/components/parameters/trackingId"
+      responses:
+        "400":
+          $ref: "#/components/responses/bad_request"
+        "200":
+          description: Information about a single item
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - holdings
+                properties:
+                  holdings:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CompleteItem'
+                  trackingId:
+                    $ref: '#/components/schemas/trackingId'
+
+  /api/holdings-by-pid:
+    get:
+      summary: Get holdings for an agency related to a number of pid(s)
+      description: Find the complete holdings for a number of pids returned in a "lookup" map
+      operationId: getItemEntities
+      parameters:
+      - $ref: "#/components/parameters/qAgencyId"
+      - $ref: "#/components/parameters/qPids"
+      - $ref: "#/components/parameters/trackingId"
+      responses:
+        "400":
+          $ref: "#/components/responses/bad_request"
+        "200":
+          description: Lookup map of pids to holdings.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - holdings
+                properties:
+                  holdings:
+                    type: object
+                    description: Pid to
+                    additionalProperties:
+                      type: array
+                      items:
+                          $ref: '#/components/schemas/CompleteItem'
+                  trackingId:
+                    $ref: '#/components/schemas/trackingId'
+
+  /api/holdings-per-status/{agencyId}:
+    get:
+      summary: "*SLOW* find distribution of statuses"
+      description: For use in introspect, find number of each status type
+      operationId: holdingsPerStatusByAgency
+      parameters:
+      - $ref: "#/components/parameters/agencyId"
+      - $ref: "#/components/parameters/trackingId"
+      responses:
+        "400":
+          $ref: "#/components/responses/bad_request"
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - agencyId
+                  - statusCounts
+                properties:
+                  agencyId:
+                    type: integer
+                    description: mirror of request parameter
+                  statusCounts:
+                    type: object
+                    example:
+                      ON_SHELF: 10
+                      ON_LOAN: 2
+                    description: Status name to number
+                    additionalProperties:
+                      type: integer
+                      description: Number of items with this status
+                  trackingId:
+                    $ref: '#/components/schemas/trackingId'
+          description: Status type distribution
+
+  /api/laesekompas-data-for-bibliographicrecordids:
+    post:
+      summary: Batch endpoint for laesekompas
+      description: Supply a lookup map for bibliographicReocdIds to list of agency/branch that has it
+      operationId: getLaesekompasdataForBibliographicRecordIdsPost
+      parameters:
+      - $ref: "#/components/parameters/trackingId"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: string
+                description: BibliographicRecordId
+                example: 25912233
+      responses:
+        "400":
+          $ref: "#/components/responses/bad_request"
+        "200":
+          description: Information about bibliographicRecordIds
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Laesekompas'
+
+  /api/solr/all-holdings:
+    get:
+      summary: Get summarised how many of each status in the SolR
+      description: For use in introspect - gets details about the distribution of status on bibliographicItems and items
+      operationId: getAllSolrHoldings
+      parameters:
+      - $ref: "#/components/parameters/qAgencyId"
+      - $ref: "#/components/parameters/trackingId"
+      responses:
+        "400":
+          $ref: "#/components/responses/bad_request"
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - bibliographicItems
+                  - items
+                properties:
+                  bibliographicItems:
+                    type: object
+                    example:
+                      OnShelf: 10
+                      Lost: 2
+                    description: Status name to number
+                    additionalProperties:
+                      type: integer
+                      description: Number of bibliographic items with this status
+                  items:
+                    type: object
+                    example:
+                      OnLoan: 10
+                      OnOrder: 2
+                    description: Status name to number
+                    additionalProperties:
+                      type: integer
+                      description: Number of items with this status
+                  trackingId:
+                    $ref: '#/components/schemas/trackingId'
+          description: SolR status distribution
+
+  /api/solr/status-by-pid:
+    get:
+      summary: Get status in SolR pr item pr pid
+      description: For use in introspect, get detailed status of items in SolR
+      operationId: getStatusByPid
+      parameters:
+      - $ref: "#/components/parameters/qAgencyId"
+      - $ref: "#/components/parameters/qPids"
+      - $ref: "#/components/parameters/trackingId"
+      responses:
+        "400":
+          $ref: "#/components/responses/bad_request"
+        "200":
+          description: Detailed status response.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - holdings
+                properties:
+                  holdings:
+                    type: object
+                    additionalProperties:
+                      description: Pid to
+                      type: object
+                      additionalProperties:
+                        description: ItemId to Status
+                        type: string
+                        enum:
+                          - Discarded
+                          - Lost
+                          - NotForLoan
+                          - OnLoan
+                          - OnOrder
+                          - OnShelf
+                          - Online
+                    example:
+                      "870970-basis:25912233":
+                        "1234567890": "OnLoan"
+                        "2143658709": "Lost"
+                  trackingId:
+                    $ref: '#/components/schemas/trackingId'
+
+  /api/v1/supersedes/{bibliographicRecordId}:
+    get:
+      summary: Endpoint for supersedes updated/inserted
+      description: Receives a payload of bibliographic record ids that are superseded
+        by the one in the path. Then rearranges the database to reflect this.
+      parameters:
+        - $ref: "#/components/parameters/bibliographicRecordId"
+        - $ref: "#/components/parameters/trackingId"
+      responses:
+        "200":
+          description: The records that are superseded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Supersedes'
+        "400":
+          $ref: "#/components/responses/bad_request"
+        "404":
+          $ref: "#/components/responses/not_found"
+    put:
+      summary: Endpoint for supersedes updated/inserted
+      description: Receives a payload of bibliographic record ids that are superseded
+        by the one in the path. Then rearranges the database to reflect this.
+      parameters:
+        - $ref: "#/components/parameters/bibliographicRecordId"
+        - $ref: "#/components/parameters/trackingId"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Supersedes'
+      responses:
+        "200":
+          $ref: "#/components/responses/success"
+        "400":
+          $ref: "#/components/responses/bad_request"
+    delete:
+      summary: Endpoint for supersedes removing
+      description: Not implemented - superseded is a one way action
+      parameters:
+        - $ref: "#/components/parameters/bibliographicRecordId"
+        - $ref: "#/components/parameters/trackingId"
+      responses:
+        "200":
+          $ref: "#/components/responses/success"
+        "400":
+          $ref: "#/components/responses/bad_request"
+
+  /api/v1/update/completeHoldingsItemsUpdate:
+    post:
+      summary: SOAP-gateway service endpoint
+      operationId: completeHoldingsItemsUpdate
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Mirror object from the XSD
+      responses:
+        default:
+          content:
+            application/json:
+              schema:
+                type: object
+          description: Mirror object from the XSD
+
+  /api/v1/update/holdingsItemsUpdate:
+    post:
+      summary: SOAP-gateway service endpoint
+      operationId: holdingsItemsUpdate
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Mirror object from the XSD
+      responses:
+        default:
+          content:
+            application/json:
+              schema:
+                type: object
+          description: Mirror object from the XSD
+
+  /api/v1/update/onlineHoldingsItemsUpdate:
+    post:
+      summary: SOAP-gateway service endpoint
+      operationId: onlineHoldingsItemsUpdate
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Mirror object from the XSD
+      responses:
+        default:
+          content:
+            application/json:
+              schema:
+                type: object
+          description: Mirror object from the XSD
+
+components:
+
+  parameters:
+
+    agencyId:
+      name: agencyId
+      in: path
+      description: library number
+      allowEmptyValue: false
+      required: true
+      schema:
+        type: number
+        minimum: 100000
+        maximum: 999999
+      example: 710100
+
+    bibliographicRecordId:
+      name: bibliographicRecordId
+      in: path
+      description: bibliographicRecordId (faust number)
+      allowEmptyValue: false
+      required: true
+      schema:
+        type: string
+      example: "51068432"
+
+    qAgencyId:
+      name: agencyId
+      in: query
+      description: library number
+      allowEmptyValue: false
+      required: true
+      schema:
+        type: number
+        minimum: 100000
+        maximum: 999999
+      example: 710100
+
+    qBibliographicRecordId:
+      name: bibliographicRecordId
+      in: query
+      description: bibliographic record id (faust number)
+      allowEmptyValue: false
+      required: true
+      schema:
+        type: string
+      example: "51068432"
+
+    qBranchId:
+      name: branchId
+      in: query
+      description: branch number
+      allowEmptyValue: false
+      required: true
+      schema:
+        type: number
+        minimum: 100000
+        maximum: 999999
+      example: 710101
+
+    qItemId:
+      name: itemId
+      in: query
+      description: Id of the item, usually barcode or refid
+      allowEmptyValue: false
+      required: true
+      schema:
+        type: string
+      example: "3800691345"
+
+    qPid:
+      name: pid
+      in: query
+      description: manifestation pid
+      allowEmptyValue: false
+      required: true
+      schema:
+        type: string
+      example: 870970-basis:25912233
+
+    qPids:
+      name: pid
+      in: query
+      allowEmptyValue: false
+      required: true
+      description: Multiple manifestation pid
+      schema:
+        type: array
+        items:
+          type: string
+          example: 870970-basis:25912233
+
+    trackingId:
+      name: trackingId
+      in: query
+      description: Useful for tracking a request in log files, will be generated automatically
+      allowEmptyValue: false
+      required: false
+      schema:
+        type: string
+      example: "uuid"
+
+
+  responses:
+    #
+    # Basic responses
+    #
+    success:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/status"
+      description: The data was successfully (see `ok` in json) updated/inserted
+    bad_request:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/status"
+      description: An error occurred while mapping the incoming content / parameters.
+    not_found:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/status"
+      description: The resource was not found.
+
+  schemas:
+    status:
+      type: object
+      properties:
+        ok:
+          description: If the call was a success
+          type: boolean
+          example: false
+          nullable: false
+        message:
+          description: Human readable message about reason for the not ok value
+          type: string
+          example: Database is gone
+          nullable: false
+        trackingId:
+          $ref: "#/components/schemas/trackingId"
+          example: "uuid"
+
+    AgenciesWithHoldings:
+      type: object
+      properties:
+        agencies:
+          description: Agencies in no particular order
+          type: array
+          items:
+            type: number
+            minimum: 100000
+            maximum: 999999
+            description: Identifying the agencyId that has holdings
+            nullable: false
+          example:
+            - 710100
+            - 756700
+          nullable: false
+        trackingId:
+          $ref: "#/components/schemas/trackingId"
+          example: "uuid"
+
+    Complete:
+      type: object
+      description: Request for a complete update of a bibliographic item
+      required:
+        - agencyId
+        - bibliographicRecordId
+        - firstAccessionDate
+        - note
+        - modified
+      properties:
+        agencyId:
+          type: number
+          minimum: 100000
+          maximum: 999999
+          description: Identifying the agencyId that owns this
+          nullable: false
+          example: 756700
+        bibliographicRecordId:
+          type: number
+          minimum: 0
+          maximum: 9999999999
+          description: Identifier of the holdings
+          nullable: false
+          example: 25912233
+        firstAccessionDate:
+          description: When the first item for this material was acquired ISO-8601 format
+          type: string
+          nullable: true
+          example: 2024-01-04
+        note:
+          type: string
+        issues:
+          description: Issues
+          type: array
+          items:
+            $ref: "#/components/schemas/Issue"
+        modified:
+          type: string
+          description: When this structure was last modified in ISO-8601 format with timezone Z
+          nullable: false
+          example: 2024-01-04T12:45:01.333Z
+
+    Issue:
+      type: object
+      description: Grouping of an issue (specifically for magazines et. al.)
+      required:
+        - issueId
+        - issueText
+        - readyForLoan
+      properties:
+        issueId:
+          type: string
+          description: Identifier for the issue - either blank or periodica description
+          nullable: false
+          example: 2024-01
+        issueText:
+          type: string
+          description: The text describing the issue - for magazines et. al. - use an empty string when no issues are present
+          nullable: false
+          example: Year 2024, Issue 1
+        expectedDelivery:
+          description: When an item is expeced to be available for loan in ISO-8601 format
+          type: string
+          nullable: true
+          example: 2024-01-04
+        readyForLoan:
+          description: How many items are ready to be lent out. If 0 expectedDelivery is required to be set
+          type: number
+          minimum: 0
+          nullable: true
+          example: 0
+        items:
+          description: Items
+          type: array
+          items:
+            $ref: "#/components/schemas/Item"
+
+    Item:
+      required:
+        - itemId
+        - branch
+        - branchId
+        - department
+        - location
+        - subLocation
+        - circulationRule
+        - accessionDate
+        - status
+      properties:
+        itemId:
+          type: string
+          description: Identification of the physical item - usually a barcode/refid
+          nullable: false
+          example: 2143658709
+        branch:
+          type: string
+          description: Human readable text describing the branch
+          nullable: false
+          example: Hovedebiblioteket
+        branchId:
+          type: number
+          minimum: 100000
+          maximum: 999999
+          description: Identifying number of the branch
+          nullable: false
+          example: 710104
+        department:
+          type: string
+          description: Human readable text describing the department within the branch
+          nullable: false
+          example: Voksen
+        location:
+          type: string
+          description: Human readable text describing the location within the department
+          nullable: false
+          example: Lydbøger
+        subLocation:
+          type: string
+          description: Human readable text describing the sub-location within the location
+          nullable: false
+          example: CD
+        circulationRule:
+          type: string
+          description: Human readable text describing the rules for lending
+          nullable: false
+          example: "Normal udlån"
+        accessionDate:
+          description: When an item was acquired in ISO-8601 format
+          type: string
+          nullable: false
+          example: 2024-01-04
+        loanRestriction:
+          description: Rule for lending according to DanMarc 096r
+          type: string
+          enum:
+            - ''
+            - a
+            - b
+            - c
+            - d
+            - e
+            - f
+            - g
+          nullable: true
+          example: 2024-01-04
+        status:
+          description: The status of the item
+          type: string
+          enum:
+            - Discarded
+            - Lost
+            - NotForLoan
+            - OnLoan
+            - OnOrder
+            - OnShelf
+            - Online
+        lastLoanDate:
+          description: When this item was lent
+          type: string
+          nullable: true
+          example: 2024-01-04
+        bibliographicRecordId:
+          type: number
+          minimum: 0
+          maximum: 9999999999
+          description: Identifying the holdings as recorded by the database - before supersedes
+          nullable: false
+          example: 25912233
+
+    CompleteItem:
+      type: object
+      required:
+        - agencyId
+        - bibliographicRecordId
+        - issueId
+        - issueText
+        - readyForLoan
+        - note
+      allOf:
+        - $ref: "#/components/schemas/Item"
+      properties:
+        agencyId:
+          type: number
+          minimum: 100000
+          maximum: 999999
+          description: Identifying the agencyId that owns this
+          nullable: false
+          example: 756700
+        bibliographicRecordId:
+          type: number
+          minimum: 0
+          maximum: 9999999999
+          description: Identifying the bibliographic item - after supersedes
+          nullable: false
+          example: 25912233
+        issueId:
+          type: string
+          description: Identifier for the issue - either blank or periodica description
+          nullable: false
+          example: 2024-01
+        issueText:
+          type: string
+          description: The text describing the issue - for magazines et. al. - use an empty string when no issues are present
+          nullable: false
+          example: Year 2024, Issue 1
+        note:
+          type: string
+        readyForLoan:
+          description: How many items are ready to be lent out. If 0 expectedDelivery is required to be set
+          type: number
+          minimum: 0
+          nullable: true
+          example: 0
+
+    Laesekompas:
+      type: object
+      required:
+        - holdings
+      properties:
+        holdings:
+          type: object
+          additionalProperties:
+            description: bibliographicRecordId to
+            type: object
+            required:
+              - agencyId
+              - bibliographicRecordId
+              - branch
+              - status
+            properties:
+              agencyId:
+                type: number
+                minimum: 100000
+                maximum: 999999
+                description: Identifying the agencyId that owns this
+                nullable: false
+                example: 756700
+              bibliographicRecordId:
+                type: number
+                minimum: 0
+                maximum: 9999999999
+                description: Identifier of the holdings
+                nullable: false
+                example: 25912233
+              branch:
+                type: string
+                description: Human readable text describing the branch
+                nullable: false
+                example: Hovedebiblioteket
+              status:
+                description: The status of the item
+                type: string
+                enum:
+                  - DISCARDED
+                  - LOST
+                  - NOT_FOR_LOAN
+                  - ON_LOAN
+                  - ON_ORDER
+                  - ON_SHELF
+                  - ONLINE
+          example:
+            "25912233":
+              - agencyId: 756100
+                bibliographicRecordId: "25912233"
+                branch: "Filial"
+                status: "ON_SHELF"
+
+        trackingId:
+          $ref: "#/components/schemas/trackingId"
+
+    Supersedes:
+      type: object
+      description: Payload of records that supersedes other records - according to DanMarc 002a
+      example:
+        supersedes:
+          - "51068440"
+          - "51068459"
+          - "51068467"
+      properties:
+        supersedes:
+          description: ids that are superseded
+          type: array
+          items:
+            type: string
+            description: bibliographicRecordId (faust number)
+            nullable: false
+
+    trackingId:
+      description: "Useful for tracking a request in log files, will be generated automatically is missing"
+      type: string
+      nullable: true
+      example: uuid

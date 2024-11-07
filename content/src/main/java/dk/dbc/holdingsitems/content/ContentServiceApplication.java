@@ -9,6 +9,7 @@ import java.util.Set;
 import jakarta.ws.rs.ApplicationPath;
 import jakarta.ws.rs.core.Application;
 import org.glassfish.jersey.jackson.JacksonFeature;
+import org.microprofileext.openapi.swaggerui.OpenApiUiService;
 
 @ApplicationPath("api")
 public class ContentServiceApplication extends Application {
@@ -28,7 +29,8 @@ public class ContentServiceApplication extends Application {
             MDCRequestInfo.class,
             RequestLogLevel.class,
             JacksonFeature.class,
-            JacksonObjectMapperProvider.class);
+            JacksonObjectMapperProvider.class,
+            OpenApiUiService.class);
 
     @Override
     @SuppressFBWarnings(value = "EI_EXPOSE_REP")
