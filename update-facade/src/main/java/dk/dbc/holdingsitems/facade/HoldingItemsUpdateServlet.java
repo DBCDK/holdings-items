@@ -3,6 +3,7 @@ package dk.dbc.holdingsitems.facade;
 import dk.dbc.oss.ns.holdingsitemsupdate.BibliographicItem;
 import dk.dbc.oss.ns.holdingsitemsupdate.CompleteHoldingsItemsUpdate;
 import dk.dbc.oss.ns.holdingsitemsupdate.CompleteHoldingsItemsUpdateRequest;
+import dk.dbc.oss.ns.holdingsitemsupdate.Holding;
 import dk.dbc.oss.ns.holdingsitemsupdate.HoldingsItemsUpdate;
 import dk.dbc.oss.ns.holdingsitemsupdate.HoldingsItemsUpdateRequest;
 import dk.dbc.oss.ns.holdingsitemsupdate.HoldingsItemsUpdateResponse;
@@ -26,11 +27,13 @@ import jakarta.ws.rs.core.Response;
 import jakarta.xml.bind.JAXBException;
 import java.util.EnumMap;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
 import org.eclipse.jetty.http.HttpHeader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.w3c.dom.Element;
 
 public class HoldingItemsUpdateServlet extends AbstractSoapServletWithRestClient {
@@ -46,6 +49,8 @@ public class HoldingItemsUpdateServlet extends AbstractSoapServletWithRestClient
     private final Timer badRequestTimer;
     private final Counter requests;
     private final Counter failures;
+    private final Counter itemsUpdated;
+    private final Counter bibliographicsUpdated;
     private final Counter soapSyntaxError;
     private final Counter badOperation;
     private final Counter completeFailures;
@@ -65,6 +70,8 @@ public class HoldingItemsUpdateServlet extends AbstractSoapServletWithRestClient
         this.badRequestTimer = registry.timer("request_timings", "type", "bad_request");
         this.requests = registry.counter("requests");
         this.failures = registry.counter("failures");
+        this.itemsUpdated = registry.counter("items");
+        this.bibliographicsUpdated = registry.counter("bibliographics");
         this.soapSyntaxError = registry.counter("errors", "type", "soap_request");
         this.badOperation = registry.counter("errors", "type", "bad_soap_operation");
         this.responseErrors = new EnumMap<>(HoldingsItemsUpdateStatusEnum.class);
@@ -109,12 +116,26 @@ public class HoldingItemsUpdateServlet extends AbstractSoapServletWithRestClient
                             .getCompleteHoldingsItemsUpdateRequest();
                     if (req.getAuthentication() != null && req.getAuthentication().getGroupIdAut() != null)
                         mdc.with("agencyId", req.getAuthentication().getGroupIdAut());
+
                     HoldingsItemsUpdateResponse resp = hazelcast.withAgencyLock(
                             req.getAgencyId(),
                             () -> client.target(baseUri.resolve(operation))
                                     .request(MediaType.APPLICATION_JSON_TYPE)
                                     .header(HttpHeader.X_FORWARDED_FOR.asString(), remoteIp)
                                     .post(Entity.json(req), HoldingsItemsUpdateResponse.class));
+
+                    try (MDC.MDCCloseable closeable = MDC.putCloseable("type", "statistics")) {
+                        this.bibliographicsUpdated.increment();
+                        int itemsProcessed = req.getCompleteBibliographicItem()
+                                .getHolding()
+                                .stream()
+                                .map(Holding::getHoldingsItem)
+                                .mapToInt(List::size)
+                                .sum();
+                        this.itemsUpdated.increment(itemsProcessed);
+                        log.info("bibliographic={}; items={}", req.getCompleteBibliographicItem().getBibliographicRecordId(), itemsProcessed);
+                    }
+
                     if (resp.getHoldingsItemsUpdateResult().getHoldingsItemsUpdateStatus() != HoldingsItemsUpdateStatusEnum.OK) {
                         log.warn("completeHoldingsItemsUpdate ({}/{}) from: {} returned: {}/{}",
                                  req.getAgencyId(), req.getCompleteBibliographicItem().getBibliographicRecordId(),
@@ -146,6 +167,23 @@ public class HoldingItemsUpdateServlet extends AbstractSoapServletWithRestClient
                                     .request(MediaType.APPLICATION_JSON_TYPE)
                                     .header(HttpHeader.X_FORWARDED_FOR.asString(), remoteIp)
                                     .post(Entity.json(req), HoldingsItemsUpdateResponse.class));
+
+                    try (MDC.MDCCloseable closeable = MDC.putCloseable("type", "statistics")) {
+                        String bibliographicIds = req.getBibliographicItem().stream()
+                                .map(BibliographicItem::getBibliographicRecordId)
+                                .sorted()
+                                .distinct()
+                                .collect(Collectors.joining(","));
+                        bibliographicsUpdated.increment(req.getBibliographicItem().size());
+                        int itemsProcessed = req.getBibliographicItem().stream()
+                                .map(BibliographicItem::getHolding)
+                                .flatMap(List::stream)
+                                .map(Holding::getHoldingsItem)
+                                .mapToInt(List::size)
+                                .sum();
+                        itemsUpdated.increment(itemsProcessed);
+                        log.info("bibliographic={}; items={}", bibliographicIds, itemsProcessed);
+                    }
 
                     if (resp.getHoldingsItemsUpdateResult().getHoldingsItemsUpdateStatus() != HoldingsItemsUpdateStatusEnum.OK) {
                         log.warn("holdingsItemsUpdate ({}/{}) from: {} returned: {}/{}",
