@@ -13,7 +13,7 @@
     <parent>
         <groupId>dk.dbc</groupId>
         <artifactId>microservice-pom</artifactId>
-        <version>java11-SNAPSHOT</version>
+        <version>java17-SNAPSHOT</version>
         <relativePath/>
     </parent>
 
@@ -65,7 +65,6 @@
             <plugin>
                 <artifactId>exec-maven-plugin</artifactId>
                 <groupId>org.codehaus.mojo</groupId>
-                <version>3.0.0</version>
                 <executions>
                     <execution>
                         <id>build-docker-image</id>
