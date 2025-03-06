@@ -107,7 +107,7 @@ pipeline {
                 script {
                     if (env.BRANCH_NAME ==~ /master|trunk/) {
                         sh """
-                            mvn -Dmaven.repo.local=\$WORKSPACE/.repo -DskipTests -DskipITs package deploy:deploy
+                            mvn -Dmaven.repo.local=\$WORKSPACE/.repo deploy -B -DskipTests -DskipITs
                         """
                     }
                 }
