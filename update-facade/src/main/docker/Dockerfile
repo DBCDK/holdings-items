@@ -1,4 +1,4 @@
-FROM docker-dbc.artifacts.dbccloud.dk/dbc-java11
+FROM docker-dbc.artifacts.dbccloud.dk/dbc-java17
 
 ENV LOG_FORMAT=json
 EXPOSE 8080/tcp 8686/tcp

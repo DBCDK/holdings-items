@@ -1,4 +1,4 @@
-FROM docker-dbc.artifacts.dbccloud.dk/dbc-java11
+FROM docker-dbc.artifacts.dbccloud.dk/dbc-java17
 MAINTAINER os-team@dbc.dk
 
 ENV JAVA_OPTS=-Xmx10G
